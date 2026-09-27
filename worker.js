@@ -18,7 +18,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // CORS 사전 요청
+    // CORS
     if (request.method === "OPTIONS") {
       return new Response(null, {
         headers: corsHeaders,
@@ -43,6 +43,9 @@ export default {
         httpMetadata: {
           contentType: file.type || "application/octet-stream",
         },
+        customMetadata: {
+          originalName: file.name,
+        },
       });
 
       return jsonResponse({
@@ -57,11 +60,26 @@ export default {
       const list = await env.FILES.list();
 
       return jsonResponse({
-        files: list.objects.map((file) => ({
-          key: file.key,
-          size: file.size,
-          uploaded: file.uploaded,
-        })),
+        files: list.objects.map((file) => {
+          let name = file.key;
+
+          // 새 파일
+          if (file.customMetadata?.originalName) {
+            name = file.customMetadata.originalName;
+          }
+
+          // 기존 파일: 1790551006314-전화.hwp → 전화.hwp
+          else {
+            name = file.key.replace(/^\d+-/, "");
+          }
+
+          return {
+            key: file.key,
+            name: name,
+            size: file.size,
+            uploaded: file.uploaded,
+          };
+        }),
       });
     }
 
@@ -85,16 +103,27 @@ export default {
         });
       }
 
+      let fileName = object.customMetadata?.originalName;
+
+      // 기존 파일
+      if (!fileName) {
+        fileName = key.replace(/^\d+-/, "");
+      }
+
       const headers = new Headers(corsHeaders);
 
       object.writeHttpMetadata(headers);
+
       headers.set("etag", object.httpEtag);
+
       headers.set(
         "Content-Disposition",
-        `attachment; filename="${encodeURIComponent(key)}"`
+        `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`
       );
 
-      return new Response(object.body, { headers });
+      return new Response(object.body, {
+        headers,
+      });
     }
 
     return new Response("API OK", {
