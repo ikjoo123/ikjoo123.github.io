@@ -206,7 +206,15 @@ export default {
         }
       );
     }
-
+// 임시 인증 진단
+if (url.pathname === "/api/debug-auth" && request.method === "GET") {
+  return jsonResponse({
+    authUserExists: !!env.AUTH_USER,
+    authUserLength: env.AUTH_USER ? env.AUTH_USER.length : 0,
+    authPasswordExists: !!env.AUTH_PASSWORD,
+    authPasswordLength: env.AUTH_PASSWORD ? env.AUTH_PASSWORD.length : 0,
+  });
+}
     // 로그인 상태 확인
     if (url.pathname === "/api/me" && request.method === "GET") {
       const authenticated = await verifySession(request, env);
