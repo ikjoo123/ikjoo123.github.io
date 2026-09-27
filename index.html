@@ -85,15 +85,61 @@
             margin-top: 0;
         }
 
+        /* 현재 경로 */
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+            font-size: 14px;
+        }
+
+        .breadcrumb button {
+            border: none;
+            background: none;
+            padding: 0;
+            color: #555;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .breadcrumb button:hover {
+            color: #000;
+            text-decoration: underline;
+        }
+
+        /* 상단 버튼 */
+        .toolbar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+        }
+
+        .toolbar button {
+            border: 1px solid #ddd;
+            background: white;
+            color: #333;
+            padding: 9px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .toolbar button:hover {
+            background: #f5f5f5;
+        }
+
         /* 드래그 영역 */
         .drop-zone {
             border: 2px dashed #ccc;
             border-radius: 14px;
-            padding: 40px 20px;
+            padding: 38px 20px;
             text-align: center;
             color: #777;
             cursor: pointer;
             transition: 0.2s;
+            margin-bottom: 20px;
         }
 
         .drop-zone:hover {
@@ -128,10 +174,11 @@
         #status {
             color: #777;
             font-size: 14px;
-            margin: 18px 0;
+            margin-bottom: 15px;
         }
 
-        .file-item {
+        /* 파일 / 폴더 목록 */
+        .item {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -140,25 +187,80 @@
             border-bottom: 1px solid #eee;
         }
 
-        .file-name {
+        .item-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .item-icon {
+            font-size: 23px;
+            flex-shrink: 0;
+        }
+
+        .item-name {
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
 
-        .download-btn {
+        .item-actions {
+            display: flex;
+            gap: 6px;
             flex-shrink: 0;
+        }
+
+        .item-actions button {
             border: none;
-            background: #222;
-            color: white;
-            padding: 7px 12px;
+            background: #eee;
+            color: #333;
+            padding: 7px 10px;
             border-radius: 7px;
             cursor: pointer;
             font-size: 13px;
         }
 
-        .download-btn:hover {
-            opacity: 0.8;
+        .item-actions button:hover {
+            background: #ddd;
+        }
+
+        .delete-btn {
+            color: #b00020 !important;
+        }
+
+        /* 페이지 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        .pagination button {
+            min-width: 34px;
+            height: 34px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 7px;
+            cursor: pointer;
+        }
+
+        .pagination button:hover {
+            background: #f2f2f2;
+        }
+
+        .pagination button.active {
+            background: #222;
+            color: white;
+            border-color: #222;
+        }
+
+        .empty {
+            color: #888;
+            text-align: center;
+            padding: 30px 0;
         }
     </style>
 </head>
@@ -207,10 +309,22 @@
 
         <h2>📁 파일 보관함</h2>
 
-        <div
-            id="dropZone"
-            class="drop-zone"
-        >
+        <!-- 현재 위치 -->
+        <div id="breadcrumb" class="breadcrumb"></div>
+
+        <!-- 버튼 -->
+        <div class="toolbar">
+            <button onclick="goParent()">
+                ⬅️ 상위 폴더
+            </button>
+
+            <button onclick="createFolder()">
+                📁 새 폴더
+            </button>
+        </div>
+
+        <!-- 드래그 영역 -->
+        <div id="dropZone" class="drop-zone">
 
             <div class="drop-icon">📂</div>
 
@@ -231,7 +345,11 @@
 
         <div id="status"></div>
 
+        <!-- 목록 -->
         <div id="fileList"></div>
+
+        <!-- 페이지 -->
+        <div id="pagination" class="pagination"></div>
 
     </div>
 
@@ -243,6 +361,13 @@
 const API =
     "https://ikjoo123-github-io.zjaghkf0000.workers.dev";
 
+const PAGE_SIZE = 30;
+
+let currentFolder = "";
+let currentPage = 1;
+
+let allFiles = [];
+let allFolders = [];
 
 const dropZone =
     document.getElementById("dropZone");
@@ -251,7 +376,10 @@ const fileInput =
     document.getElementById("fileInput");
 
 
+// ==========================================
 // 파일 보관함 열기
+// ==========================================
+
 function toggleFiles() {
 
     const section =
@@ -263,6 +391,9 @@ function toggleFiles() {
     ) {
 
         section.style.display = "block";
+
+        currentFolder = "";
+        currentPage = 1;
 
         loadFiles();
 
@@ -278,7 +409,10 @@ function toggleFiles() {
 }
 
 
+// ==========================================
 // 드롭 영역 클릭
+// ==========================================
+
 dropZone.addEventListener(
     "click",
     function() {
@@ -287,20 +421,32 @@ dropZone.addEventListener(
 );
 
 
+// ==========================================
 // 파일 선택
+// ==========================================
+
 fileInput.addEventListener(
     "change",
     function() {
 
         if (fileInput.files.length) {
-            uploadFile(fileInput.files[0]);
+
+            for (
+                const file of fileInput.files
+            ) {
+                uploadFile(file);
+            }
+
         }
 
     }
 );
 
 
-// 드래그 들어옴
+// ==========================================
+// 드래그
+// ==========================================
+
 dropZone.addEventListener(
     "dragover",
     function(event) {
@@ -313,7 +459,6 @@ dropZone.addEventListener(
 );
 
 
-// 드래그 나감
 dropZone.addEventListener(
     "dragleave",
     function() {
@@ -324,7 +469,6 @@ dropZone.addEventListener(
 );
 
 
-// 파일 놓기
 dropZone.addEventListener(
     "drop",
     function(event) {
@@ -336,15 +480,20 @@ dropZone.addEventListener(
         const files =
             event.dataTransfer.files;
 
-        if (files.length) {
-            uploadFile(files[0]);
+        for (
+            const file of files
+        ) {
+            uploadFile(file);
         }
 
     }
 );
 
 
+// ==========================================
 // 파일 업로드
+// ==========================================
+
 async function uploadFile(file) {
 
     const status =
@@ -362,6 +511,11 @@ async function uploadFile(file) {
         file
     );
 
+    formData.append(
+        "folder",
+        currentFolder
+    );
+
 
     try {
 
@@ -376,7 +530,9 @@ async function uploadFile(file) {
 
 
         if (!response.ok) {
-            throw new Error("업로드 실패");
+            throw new Error(
+                "업로드 실패"
+            );
         }
 
 
@@ -394,108 +550,721 @@ async function uploadFile(file) {
         console.error(error);
 
         status.textContent =
-            "업로드에 실패했습니다.";
+            `"${file.name}" 업로드 실패`;
 
     }
 }
 
 
-// 파일 목록 불러오기
+// ==========================================
+// 파일 / 폴더 목록
+// ==========================================
+
 async function loadFiles() {
 
     const list =
         document.getElementById("fileList");
 
     list.innerHTML =
-        "파일 목록 불러오는 중...";
+        "불러오는 중...";
 
 
     try {
 
         const response =
             await fetch(
-                API + "/api/files"
+                API +
+                "/api/files?prefix=" +
+                encodeURIComponent(currentFolder)
             );
+
+
+        if (!response.ok) {
+            throw new Error(
+                "목록 불러오기 실패"
+            );
+        }
 
 
         const data =
             await response.json();
 
 
-        if (!data.files.length) {
+        allFiles =
+            data.files || [];
 
-            list.innerHTML = `
-                <p style="color:#777;">
-                    저장된 파일이 없습니다.
-                </p>
-            `;
-
-            return;
-        }
+        allFolders =
+            data.folders || [];
 
 
-        list.innerHTML = "";
+        currentPage = 1;
 
+        renderBreadcrumb();
 
-        data.files.forEach(
-            file => {
-
-                const item =
-                    document.createElement("div");
-
-                item.className =
-                    "file-item";
-
-
-                const name =
-                    document.createElement("div");
-
-                name.className =
-                    "file-name";
-
-                name.textContent =
-                    file.name;
-
-
-                const button =
-                    document.createElement("button");
-
-                button.className =
-                    "download-btn";
-
-                button.textContent =
-                    "다운로드";
-
-
-                button.onclick =
-                    function() {
-
-                        window.open(
-                            API +
-                            "/api/download?key=" +
-                            encodeURIComponent(file.key),
-                            "_blank"
-                        );
-
-                    };
-
-
-                item.appendChild(name);
-
-                item.appendChild(button);
-
-                list.appendChild(item);
-
-            }
-        );
-
+        renderList();
 
     } catch (error) {
 
         console.error(error);
 
         list.innerHTML =
-            "파일 목록을 불러오지 못했습니다.";
+            '<div class="empty">파일 목록을 불러오지 못했습니다.</div>';
+
+    }
+}
+
+
+// ==========================================
+// 경로 표시
+// ==========================================
+
+function renderBreadcrumb() {
+
+    const breadcrumb =
+        document.getElementById("breadcrumb");
+
+    breadcrumb.innerHTML = "";
+
+
+    const homeButton =
+        document.createElement("button");
+
+    homeButton.textContent =
+        "🏠 홈";
+
+    homeButton.onclick =
+        function() {
+
+            currentFolder = "";
+
+            currentPage = 1;
+
+            loadFiles();
+
+        };
+
+
+    breadcrumb.appendChild(
+        homeButton
+    );
+
+
+    if (!currentFolder) {
+        return;
+    }
+
+
+    const parts =
+        currentFolder
+            .replace(/\/$/, "")
+            .split("/");
+
+
+    let path = "";
+
+
+    parts.forEach(
+        (part, index) => {
+
+            const separator =
+                document.createElement("span");
+
+            separator.textContent =
+                " / ";
+
+            breadcrumb.appendChild(
+                separator
+            );
+
+
+            path += part + "/";
+
+
+            const button =
+                document.createElement("button");
+
+            button.textContent =
+                part;
+
+
+            const target =
+                path;
+
+
+            button.onclick =
+                function() {
+
+                    currentFolder =
+                        target;
+
+                    currentPage = 1;
+
+                    loadFiles();
+
+                };
+
+
+            breadcrumb.appendChild(
+                button
+            );
+
+        }
+    );
+}
+
+
+// ==========================================
+// 목록 표시
+// ==========================================
+
+function renderList() {
+
+    const list =
+        document.getElementById("fileList");
+
+    list.innerHTML = "";
+
+
+    // 폴더 먼저
+    allFolders.forEach(
+        folder => {
+
+            const item =
+                document.createElement("div");
+
+            item.className =
+                "item";
+
+
+            const left =
+                document.createElement("div");
+
+            left.className =
+                "item-left";
+
+
+            const icon =
+                document.createElement("div");
+
+            icon.className =
+                "item-icon";
+
+            icon.textContent =
+                "📁";
+
+
+            const name =
+                document.createElement("div");
+
+            name.className =
+                "item-name";
+
+            name.textContent =
+                folder.name;
+
+
+            left.appendChild(icon);
+
+            left.appendChild(name);
+
+
+            const actions =
+                document.createElement("div");
+
+            actions.className =
+                "item-actions";
+
+
+            const openButton =
+                document.createElement("button");
+
+            openButton.textContent =
+                "열기";
+
+
+            openButton.onclick =
+                function() {
+
+                    currentFolder =
+                        folder.key;
+
+                    currentPage = 1;
+
+                    loadFiles();
+
+                };
+
+
+            const deleteButton =
+                document.createElement("button");
+
+            deleteButton.textContent =
+                "삭제";
+
+            deleteButton.className =
+                "delete-btn";
+
+
+            deleteButton.onclick =
+                function() {
+
+                    deleteFolder(
+                        folder.key,
+                        folder.name
+                    );
+
+                };
+
+
+            actions.appendChild(
+                openButton
+            );
+
+            actions.appendChild(
+                deleteButton
+            );
+
+
+            item.appendChild(left);
+
+            item.appendChild(actions);
+
+            list.appendChild(item);
+
+        }
+    );
+
+
+    // 파일 30개씩
+    const start =
+        (currentPage - 1) * PAGE_SIZE;
+
+    const end =
+        start + PAGE_SIZE;
+
+    const pageFiles =
+        allFiles.slice(
+            start,
+            end
+        );
+
+
+    pageFiles.forEach(
+        file => {
+
+            const item =
+                document.createElement("div");
+
+            item.className =
+                "item";
+
+
+            const left =
+                document.createElement("div");
+
+            left.className =
+                "item-left";
+
+
+            const icon =
+                document.createElement("div");
+
+            icon.className =
+                "item-icon";
+
+            icon.textContent =
+                "📄";
+
+
+            const name =
+                document.createElement("div");
+
+            name.className =
+                "item-name";
+
+            name.textContent =
+                file.name;
+
+
+            left.appendChild(icon);
+
+            left.appendChild(name);
+
+
+            const actions =
+                document.createElement("div");
+
+            actions.className =
+                "item-actions";
+
+
+            const downloadButton =
+                document.createElement("button");
+
+            downloadButton.textContent =
+                "다운로드";
+
+
+            downloadButton.onclick =
+                function() {
+
+                    window.open(
+                        API +
+                        "/api/download?key=" +
+                        encodeURIComponent(
+                            file.key
+                        ),
+                        "_blank"
+                    );
+
+                };
+
+
+            const deleteButton =
+                document.createElement("button");
+
+            deleteButton.textContent =
+                "삭제";
+
+            deleteButton.className =
+                "delete-btn";
+
+
+            deleteButton.onclick =
+                function() {
+
+                    deleteFile(
+                        file.key,
+                        file.name
+                    );
+
+                };
+
+
+            actions.appendChild(
+                downloadButton
+            );
+
+            actions.appendChild(
+                deleteButton
+            );
+
+
+            item.appendChild(left);
+
+            item.appendChild(actions);
+
+            list.appendChild(item);
+
+        }
+    );
+
+
+    if (
+        !allFiles.length &&
+        !allFolders.length
+    ) {
+
+        list.innerHTML =
+            '<div class="empty">이 폴더는 비어 있습니다.</div>';
+
+    }
+
+
+    renderPagination();
+}
+
+
+// ==========================================
+// 페이지
+// ==========================================
+
+function renderPagination() {
+
+    const pagination =
+        document.getElementById(
+            "pagination"
+        );
+
+    pagination.innerHTML = "";
+
+
+    const totalPages =
+        Math.ceil(
+            allFiles.length / PAGE_SIZE
+        );
+
+
+    if (totalPages <= 1) {
+        return;
+    }
+
+
+    for (
+        let page = 1;
+        page <= totalPages;
+        page++
+    ) {
+
+        const button =
+            document.createElement("button");
+
+        button.textContent =
+            page;
+
+
+        if (
+            page === currentPage
+        ) {
+
+            button.classList.add(
+                "active"
+            );
+
+        }
+
+
+        button.onclick =
+            function() {
+
+                currentPage =
+                    page;
+
+                renderList();
+
+                document
+                    .getElementById(
+                        "fileSection"
+                    )
+                    .scrollIntoView({
+                        behavior: "smooth"
+                    });
+
+            };
+
+
+        pagination.appendChild(
+            button
+        );
+
+    }
+}
+
+
+// ==========================================
+// 상위 폴더
+// ==========================================
+
+function goParent() {
+
+    if (!currentFolder) {
+        return;
+    }
+
+
+    const clean =
+        currentFolder.replace(
+            /\/$/,
+            ""
+        );
+
+
+    const parts =
+        clean.split("/");
+
+
+    parts.pop();
+
+
+    currentFolder =
+        parts.length
+            ? parts.join("/") + "/"
+            : "";
+
+
+    currentPage = 1;
+
+    loadFiles();
+}
+
+
+// ==========================================
+// 새 폴더
+// ==========================================
+
+async function createFolder() {
+
+    const name =
+        prompt(
+            "새 폴더 이름을 입력하세요."
+        );
+
+
+    if (!name) {
+        return;
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                API + "/api/folder",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        parent:
+                            currentFolder,
+
+                        name:
+                            name
+                    })
+                }
+            );
+
+
+        if (!response.ok) {
+
+            const message =
+                await response.text();
+
+            alert(message);
+
+            return;
+
+        }
+
+
+        loadFiles();
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "폴더 생성에 실패했습니다."
+        );
+
+    }
+}
+
+
+// ==========================================
+// 파일 삭제
+// ==========================================
+
+async function deleteFile(
+    key,
+    name
+) {
+
+    if (
+        !confirm(
+            `"${name}" 파일을 삭제할까요?`
+        )
+    ) {
+        return;
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                API +
+                "/api/file?key=" +
+                encodeURIComponent(key),
+                {
+                    method: "DELETE"
+                }
+            );
+
+
+        if (!response.ok) {
+
+            alert(
+                "파일 삭제에 실패했습니다."
+            );
+
+            return;
+
+        }
+
+
+        loadFiles();
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "파일 삭제에 실패했습니다."
+        );
+
+    }
+}
+
+
+// ==========================================
+// 폴더 삭제
+// ==========================================
+
+async function deleteFolder(
+    key,
+    name
+) {
+
+    if (
+        !confirm(
+            `"${name}" 폴더와 그 안의 모든 파일을 삭제할까요?\n\n이 작업은 되돌릴 수 없습니다.`
+        )
+    ) {
+        return;
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                API +
+                "/api/folder?prefix=" +
+                encodeURIComponent(key),
+                {
+                    method: "DELETE"
+                }
+            );
+
+
+        if (!response.ok) {
+
+            alert(
+                "폴더 삭제에 실패했습니다."
+            );
+
+            return;
+
+        }
+
+
+        loadFiles();
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "폴더 삭제에 실패했습니다."
+        );
 
     }
 }
