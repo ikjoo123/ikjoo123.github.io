@@ -81,10 +81,11 @@ async function createToken(username, secret) {
     })
   );
 
-  const signature = await makeSignature(
-    payload,
-    secret
-  );
+  const signature =
+    await makeSignature(
+      payload,
+      secret
+    );
 
   return `${payload}.${signature}`;
 }
@@ -111,7 +112,8 @@ async function verifyToken(request, env) {
     return false;
   }
 
-  const [payload, signature] = parts;
+  const [payload, signature] =
+    parts;
 
   try {
     const expected =
@@ -137,7 +139,10 @@ async function verifyToken(request, env) {
       return false;
     }
 
-    return data.user === env.AUTH_USER;
+    return (
+      data.user ===
+      env.AUTH_USER
+    );
 
   } catch {
     return false;
@@ -177,7 +182,6 @@ async function getStorageUsage(env) {
 }
 
 function getOriginalName(object) {
-
   if (
     object.customMetadata?.originalName
   ) {
@@ -195,9 +199,12 @@ function getOriginalName(object) {
   );
 }
 
+function cleanFolder(folder) {
+  return String(folder || "")
+    .replace(/^\/+|\/+$/g, "");
+}
 
 export default {
-
   async fetch(request, env) {
 
     if (
@@ -220,7 +227,6 @@ export default {
       url.pathname === "/api/login" &&
       request.method === "POST"
     ) {
-
       try {
 
         const body =
@@ -232,7 +238,6 @@ export default {
           body.password !==
             env.AUTH_PASSWORD
         ) {
-
           return errorResponse(
             "아이디 또는 비밀번호가 틀렸습니다.",
             401
@@ -258,6 +263,7 @@ export default {
           "로그인 요청이 잘못되었습니다.",
           400
         );
+
       }
     }
 
@@ -269,7 +275,6 @@ export default {
       url.pathname === "/api/logout" &&
       request.method === "POST"
     ) {
-
       return jsonResponse({
         ok: true,
       });
@@ -291,7 +296,6 @@ export default {
         );
 
       if (!authenticated) {
-
         return errorResponse(
           "로그인이 필요합니다.",
           401
@@ -316,7 +320,6 @@ export default {
       );
 
     if (!authenticated) {
-
       return errorResponse(
         "로그인이 필요합니다.",
         401
@@ -348,12 +351,10 @@ export default {
         result.delimitedPrefixes
           .map(folder => ({
             type: "folder",
-
             name:
               folder
                 .slice(prefix.length)
                 .replace(/\/$/, ""),
-
             prefix:
               folder,
           }));
@@ -366,10 +367,12 @@ export default {
           )
           .map(object => ({
             type: "file",
-            key: object.key,
+            key:
+              object.key,
             name:
               getOriginalName(object),
-            size: object.size,
+            size:
+              object.size,
             uploaded:
               object.uploaded,
           }));
@@ -422,8 +425,9 @@ export default {
           "confirmedLarge"
         ) === "true";
 
-      if (!(file instanceof File)) {
-
+      if (
+        !(file instanceof File)
+      ) {
         return errorResponse(
           "파일이 없습니다."
         );
@@ -484,11 +488,8 @@ export default {
 
 
       const safeFolder =
-        String(folder)
-          .replace(
-            /^\/+|\/+$/g,
-            ""
-          );
+        cleanFolder(folder);
+
 
       const key =
         safeFolder
@@ -537,13 +538,9 @@ export default {
         await request.json();
 
       const parent =
-        String(
-          body.parent || ""
-        )
-          .replace(
-            /^\/+|\/+$/g,
-            ""
-          );
+        cleanFolder(
+          body.parent
+        );
 
       const name =
         String(
@@ -552,7 +549,6 @@ export default {
 
 
       if (!name) {
-
         return errorResponse(
           "폴더 이름을 입력하세요."
         );
@@ -597,6 +593,125 @@ export default {
 
 
     /*
+     * 파일 이동
+     */
+    if (
+      url.pathname === "/api/move" &&
+      request.method === "POST"
+    ) {
+
+      try {
+
+        const body =
+          await request.json();
+
+        const key =
+          String(
+            body.key || ""
+          );
+
+        const destinationFolder =
+          cleanFolder(
+            body.destinationFolder
+          );
+
+
+        if (!key) {
+          return errorResponse(
+            "파일 키가 없습니다."
+          );
+        }
+
+
+        const object =
+          await env.FILES.get(
+            key
+          );
+
+
+        if (!object) {
+          return errorResponse(
+            "파일을 찾을 수 없습니다.",
+            404
+          );
+        }
+
+
+        const filename =
+          getOriginalName(
+            object
+          );
+
+
+        const newKey =
+          destinationFolder
+            ? `${destinationFolder}/${filename}`
+            : filename;
+
+
+        if (
+          newKey === key
+        ) {
+
+          return errorResponse(
+            "현재 폴더와 같은 위치입니다."
+          );
+        }
+
+
+        const existing =
+          await env.FILES.head(
+            newKey
+          );
+
+
+        if (existing) {
+
+          return errorResponse(
+            "같은 이름의 파일이 이미 존재합니다."
+          );
+        }
+
+
+        await env.FILES.put(
+          newKey,
+          object.body,
+          {
+            httpMetadata:
+              object.httpMetadata,
+
+            customMetadata:
+              object.customMetadata,
+          }
+        );
+
+
+        await env.FILES.delete(
+          key
+        );
+
+
+        return jsonResponse({
+          ok: true,
+          oldKey:
+            key,
+          newKey:
+            newKey,
+        });
+
+      } catch (error) {
+
+        console.error(error);
+
+        return errorResponse(
+          "파일 이동에 실패했습니다.",
+          500
+        );
+      }
+    }
+
+
+    /*
      * 파일 삭제
      */
     if (
@@ -616,7 +731,6 @@ export default {
 
 
       if (!key) {
-
         return errorResponse(
           "파일 키가 없습니다."
         );
@@ -666,7 +780,6 @@ export default {
 
 
       if (!prefix) {
-
         return errorResponse(
           "폴더 경로가 없습니다."
         );
@@ -750,7 +863,6 @@ export default {
 
 
       if (!key) {
-
         return errorResponse(
           "파일 키가 없습니다."
         );
@@ -764,7 +876,6 @@ export default {
 
 
       if (!object) {
-
         return errorResponse(
           "파일을 찾을 수 없습니다.",
           404
