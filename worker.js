@@ -197,8 +197,8 @@ return name.replace(/^\d+-/, "");
 }
 
 function cleanFolder(folder) {
-return String(folder || "")
-.replace(/^/+|/+$/g, "");
+  return String(folder || "")
+    .replace(/^\/+|\/+$/g, "");
 }
 
 function cleanNoteText(value, maxLength) {
