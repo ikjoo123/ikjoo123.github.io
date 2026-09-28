@@ -1,8 +1,10 @@
-```html
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
+
   <meta charset="UTF-8">
+
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0"
@@ -10,329 +12,854 @@
 
   <title>익주</title>
 
+
   <style>
+
     * {
       box-sizing: border-box;
     }
 
+
     body {
       margin: 0;
+
       font-family:
         Arial,
         "Malgun Gothic",
         sans-serif;
-      background: #f5f6f8;
+
+      background: #f4f5f7;
+
       color: #222;
     }
 
+
     button,
-    input {
+    input,
+    textarea {
       font: inherit;
     }
 
+
+    /* =========================
+       로그인
+    ========================= */
+
     #loginScreen {
+
       min-height: 100vh;
+
       display: flex;
+
       justify-content: center;
+
       align-items: center;
+
       padding: 20px;
     }
 
+
     .loginBox {
+
       width: 100%;
+
       max-width: 360px;
+
       background: white;
-      border-radius: 14px;
+
       padding: 30px;
+
+      border-radius: 14px;
+
       box-shadow:
-        0 8px 30px rgba(0,0,0,0.08);
+        0 8px 30px
+        rgba(0,0,0,0.08);
     }
+
 
     .loginBox h1 {
-      margin-top: 0;
-      margin-bottom: 25px;
+
       text-align: center;
-      font-size: 24px;
+
+      margin-top: 0;
+
+      margin-bottom: 25px;
     }
 
+
     .loginBox input {
+
       width: 100%;
+
       padding: 13px;
-      border: 1px solid #ddd;
+
+      border:
+        1px solid #ddd;
+
       border-radius: 8px;
+
       margin-bottom: 10px;
     }
 
+
     .loginBox button {
+
       width: 100%;
+
       padding: 13px;
+
       border: 0;
+
       border-radius: 8px;
+
       background: #222;
+
       color: white;
+
       cursor: pointer;
     }
 
-    .loginBox button:disabled {
-      opacity: 0.5;
-      cursor: default;
-    }
 
     #loginMessage {
+
       margin-top: 12px;
-      color: #d33;
+
       text-align: center;
+
+      color: #d33;
+
       font-size: 14px;
     }
 
+
+    /* =========================
+       앱
+    ========================= */
+
     #app {
       display: none;
+
       min-height: 100vh;
     }
 
+
     .header {
+
       height: 60px;
+
       background: white;
-      border-bottom: 1px solid #ddd;
+
+      border-bottom:
+        1px solid #ddd;
+
       display: flex;
+
       align-items: center;
+
       justify-content: space-between;
-      padding: 0 20px;
+
+      padding:
+        0 20px;
     }
 
+
     .headerTitle {
+
       font-weight: bold;
+
       font-size: 18px;
     }
 
+
     .headerRight {
+
       display: flex;
+
       align-items: center;
+
       gap: 10px;
     }
 
+
     .headerRight button {
-      border: 1px solid #ddd;
+
+      border:
+        1px solid #ddd;
+
       background: white;
-      padding: 7px 12px;
+
+      padding:
+        7px 12px;
+
       border-radius: 7px;
+
       cursor: pointer;
     }
 
+
     .container {
+
       max-width: 1100px;
+
       margin: 0 auto;
+
       padding: 20px;
     }
 
-    .toolbar {
+
+    /* =========================
+       탭
+    ========================= */
+
+    .tabs {
+
       display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
+
+      gap: 5px;
+
       margin-bottom: 15px;
     }
 
-    .toolbar button {
-      border: 1px solid #ddd;
-      background: white;
-      padding: 9px 13px;
-      border-radius: 8px;
+
+    .tabButton {
+
+      border: 0;
+
+      background: #ddd;
+
+      padding:
+        11px 22px;
+
+      border-radius:
+        9px 9px 0 0;
+
       cursor: pointer;
+
+      font-weight: bold;
+
+      color: #555;
     }
 
-    .toolbar button:hover {
-      background: #f0f0f0;
-    }
 
-    .breadcrumb {
+    .tabButton.active {
+
       background: white;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 15px;
-      overflow-x: auto;
-      white-space: nowrap;
+
+      color: #222;
+
+      box-shadow:
+        0 -1px 5px
+        rgba(0,0,0,0.04);
     }
 
-    .breadcrumb span {
-      cursor: pointer;
-    }
 
-    .dropZone {
-      border: 2px dashed #bbb;
-      border-radius: 10px;
-      padding: 25px;
-      text-align: center;
-      background: white;
-      margin-bottom: 15px;
-      cursor: pointer;
-    }
+    .tabContent {
 
-    .dropZone.dragover {
-      background: #f0f4ff;
-      border-color: #557;
-    }
-
-    #fileInput {
       display: none;
     }
 
-    .fileList {
+
+    .tabContent.active {
+
+      display: block;
+    }
+
+
+    /* =========================
+       파일 영역
+    ========================= */
+
+    .toolbar {
+
+      display: flex;
+
+      gap: 8px;
+
+      flex-wrap: wrap;
+
+      margin-bottom: 15px;
+    }
+
+
+    .toolbar button {
+
+      border:
+        1px solid #ddd;
+
       background: white;
-      border: 1px solid #ddd;
+
+      padding:
+        9px 13px;
+
+      border-radius: 8px;
+
+      cursor: pointer;
+    }
+
+
+    .breadcrumb {
+
+      background: white;
+
+      border:
+        1px solid #ddd;
+
+      border-radius: 8px;
+
+      padding: 12px;
+
+      margin-bottom: 15px;
+
+      white-space: nowrap;
+
+      overflow-x: auto;
+    }
+
+
+    .breadcrumb span {
+
+      cursor: pointer;
+    }
+
+
+    .dropZone {
+
+      border:
+        2px dashed #bbb;
+
       border-radius: 10px;
+
+      padding: 25px;
+
+      text-align: center;
+
+      background: white;
+
+      margin-bottom: 15px;
+
+      cursor: pointer;
+    }
+
+
+    .dropZone.dragover {
+
+      background: #f0f4ff;
+
+      border-color: #557;
+    }
+
+
+    #fileInput {
+
+      display: none;
+    }
+
+
+    .fileList {
+
+      background: white;
+
+      border:
+        1px solid #ddd;
+
+      border-radius: 10px;
+
       overflow: hidden;
     }
 
+
     .fileRow {
+
       display: grid;
-      grid-template-columns: 1fr auto auto;
+
+      grid-template-columns:
+        1fr auto auto;
+
       gap: 10px;
+
       align-items: center;
-      padding: 12px 15px;
-      border-bottom: 1px solid #eee;
+
+      padding:
+        12px 15px;
+
+      border-bottom:
+        1px solid #eee;
     }
 
+
     .fileRow:last-child {
+
       border-bottom: 0;
     }
 
+
     .fileName {
+
       overflow: hidden;
+
       text-overflow: ellipsis;
+
       white-space: nowrap;
     }
 
+
     .folderRow {
+
       cursor: pointer;
+
+      transition:
+        background 0.15s;
     }
 
+
     .folderRow:hover {
+
       background: #f8f8f8;
     }
 
+
+    .folderRow.dragTarget {
+
+      background: #eaf0ff;
+
+      outline:
+        2px dashed #557;
+
+      outline-offset: -2px;
+    }
+
+
+    .fileRow.dragging {
+
+      opacity: 0.45;
+    }
+
+
     .fileButtons {
+
       display: flex;
+
       gap: 5px;
     }
 
+
     .fileButtons button {
-      border: 1px solid #ddd;
+
+      border:
+        1px solid #ddd;
+
       background: white;
+
       border-radius: 6px;
-      padding: 5px 9px;
+
+      padding:
+        5px 9px;
+
       cursor: pointer;
     }
 
+
     .deleteBtn {
+
       color: #d22;
     }
 
+
+    .moveBtn {
+
+      color: #2455aa;
+    }
+
+
     .empty {
+
       padding: 40px;
+
       text-align: center;
+
       color: #888;
     }
 
+
     .pagination {
+
       display: flex;
+
       justify-content: center;
+
       align-items: center;
+
       gap: 10px;
+
       margin-top: 20px;
     }
 
+
     .pagination button {
-      border: 1px solid #ddd;
+
+      border:
+        1px solid #ddd;
+
       background: white;
+
       border-radius: 6px;
-      padding: 7px 12px;
+
+      padding:
+        7px 12px;
+
       cursor: pointer;
     }
 
+
     .pagination button:disabled {
+
       opacity: 0.4;
-      cursor: default;
     }
 
+
     .storage {
+
       margin-top: 12px;
+
       color: #777;
+
       font-size: 13px;
     }
 
-    @media (max-width: 600px) {
+
+    /* =========================
+       메모
+    ========================= */
+
+    .memoBox {
+
+      background: white;
+
+      border:
+        1px solid #ddd;
+
+      border-radius: 12px;
+
+      padding: 18px;
+
+      margin-bottom: 18px;
+    }
+
+
+    .memoTitle {
+
+      font-size: 18px;
+
+      font-weight: bold;
+
+      margin-bottom: 12px;
+    }
+
+
+    .memoInput {
+
+      width: 100%;
+
+      min-height: 140px;
+
+      resize: vertical;
+
+      border:
+        1px solid #ddd;
+
+      border-radius: 9px;
+
+      padding: 13px;
+
+      line-height: 1.6;
+
+      outline: none;
+    }
+
+
+    .memoInput:focus {
+
+      border-color: #999;
+    }
+
+
+    .memoAddArea {
+
+      display: flex;
+
+      justify-content:
+        flex-end;
+
+      margin-top: 10px;
+    }
+
+
+    .memoAddButton {
+
+      border: 0;
+
+      background: #222;
+
+      color: white;
+
+      padding:
+        9px 18px;
+
+      border-radius: 8px;
+
+      cursor: pointer;
+    }
+
+
+    .memoList {
+
+      display: flex;
+
+      flex-direction: column;
+
+      gap: 12px;
+    }
+
+
+    .memoCard {
+
+      position: relative;
+
+      background: #fffde7;
+
+      border:
+        1px solid #eee4a8;
+
+      border-radius: 10px;
+
+      padding: 18px 45px 18px 18px;
+
+      box-shadow:
+        0 3px 8px
+        rgba(0,0,0,0.04);
+
+      white-space: pre-wrap;
+
+      word-break: break-word;
+
+      line-height: 1.65;
+    }
+
+
+    .memoDate {
+
+      color: #999;
+
+      font-size: 12px;
+
+      margin-bottom: 8px;
+    }
+
+
+    .memoText {
+
+      font-size: 15px;
+    }
+
+
+    .memoDelete {
+
+      position: absolute;
+
+      right: 10px;
+
+      top: 10px;
+
+      border: 0;
+
+      background: transparent;
+
+      color: #999;
+
+      font-size: 18px;
+
+      cursor: pointer;
+    }
+
+
+    .memoDelete:hover {
+
+      color: #d33;
+    }
+
+
+    .memoEmpty {
+
+      background: white;
+
+      border:
+        1px solid #ddd;
+
+      border-radius: 10px;
+
+      padding: 45px;
+
+      text-align: center;
+
+      color: #999;
+    }
+
+
+    @media (
+      max-width: 600px
+    ) {
+
       .fileRow {
-        grid-template-columns: 1fr;
+
+        grid-template-columns:
+          1fr;
       }
 
       .fileButtons {
-        justify-content: flex-end;
+
+        justify-content:
+          flex-end;
       }
+
     }
+
   </style>
+
 </head>
+
 
 <body>
 
-  <!-- 로그인 -->
-  <div id="loginScreen">
-    <div class="loginBox">
-      <h1>익주</h1>
 
-      <input
-        id="username"
-        type="text"
-        placeholder="아이디"
-        autocomplete="username"
+<!-- =========================
+     로그인
+========================= -->
+
+<div id="loginScreen">
+
+  <div class="loginBox">
+
+    <h1>익주</h1>
+
+    <input
+      id="username"
+      type="text"
+      placeholder="아이디"
+      autocomplete="username"
+    >
+
+    <input
+      id="password"
+      type="password"
+      placeholder="비밀번호"
+      autocomplete="current-password"
+    >
+
+    <button id="loginButton">
+      로그인
+    </button>
+
+    <div id="loginMessage"></div>
+
+  </div>
+
+</div>
+
+
+<!-- =========================
+     앱
+========================= -->
+
+<div id="app">
+
+
+  <div class="header">
+
+    <div class="headerTitle">
+      익주
+    </div>
+
+    <div class="headerRight">
+
+      <span
+        id="usernameDisplay"
+      ></span>
+
+      <button
+        onclick="logout()"
       >
-
-      <input
-        id="password"
-        type="password"
-        placeholder="비밀번호"
-        autocomplete="current-password"
-      >
-
-      <button id="loginButton">
-        로그인
+        로그아웃
       </button>
 
-      <div id="loginMessage"></div>
     </div>
+
   </div>
 
 
-  <!-- 파일관리 -->
-  <div id="app">
+  <div class="container">
 
-    <div class="header">
-      <div class="headerTitle">
-        익주
-      </div>
 
-      <div class="headerRight">
-        <span id="usernameDisplay"></span>
+    <!-- =====================
+         탭
+    ====================== -->
 
-        <button onclick="logout()">
-          로그아웃
-        </button>
-      </div>
+    <div class="tabs">
+
+      <button
+        id="fileTabButton"
+        class="tabButton active"
+        onclick="showTab('files')"
+      >
+        📁 파일
+      </button>
+
+      <button
+        id="memoTabButton"
+        class="tabButton"
+        onclick="showTab('memos')"
+      >
+        📝 메모
+      </button>
+
     </div>
 
-    <div class="container">
+
+    <!-- =====================
+         파일 탭
+    ====================== -->
+
+    <div
+      id="filesTab"
+      class="tabContent active"
+    >
+
 
       <div class="toolbar">
-        <button onclick="createFolder()">
+
+        <button
+          onclick="createFolder()"
+        >
           + 폴더 만들기
         </button>
 
-        <button onclick="document.getElementById('fileInput').click()">
+        <button
+          onclick="
+            document
+              .getElementById('fileInput')
+              .click()
+          "
+        >
           + 파일 업로드
         </button>
+
       </div>
 
-      <div id="breadcrumb" class="breadcrumb"></div>
+
+      <div
+        id="breadcrumb"
+        class="breadcrumb"
+      ></div>
+
 
       <div
         id="dropZone"
@@ -343,23 +870,93 @@
         또는 클릭해서 파일 선택
       </div>
 
+
       <input
         id="fileInput"
         type="file"
         multiple
       >
 
-      <div id="fileList" class="fileList"></div>
 
-      <div id="pagination" class="pagination"></div>
+      <div
+        id="fileList"
+        class="fileList"
+      ></div>
 
-      <div id="storage" class="storage"></div>
+
+      <div
+        id="pagination"
+        class="pagination"
+      ></div>
+
+
+      <div
+        id="storage"
+        class="storage"
+      ></div>
+
 
     </div>
+
+
+    <!-- =====================
+         메모 탭
+    ====================== -->
+
+    <div
+      id="memosTab"
+      class="tabContent"
+    >
+
+
+      <div class="memoBox">
+
+        <div class="memoTitle">
+          📝 새 메모
+        </div>
+
+
+        <textarea
+          id="memoInput"
+          class="memoInput"
+          placeholder="인수인계 받은 내용이나 기억해둘 내용을 자유롭게 적어주세요."
+        ></textarea>
+
+
+        <div class="memoAddArea">
+
+          <button
+            class="memoAddButton"
+            onclick="addMemo()"
+          >
+            메모 추가
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <div
+        id="memoList"
+        class="memoList"
+      ></div>
+
+
+    </div>
+
+
   </div>
+
+</div>
 
 
 <script>
+
+
+/* =========================
+   기본 설정
+========================= */
 
 const API =
   "https://ikjoo123-github-io.zjaghkf0000.workers.dev";
@@ -367,65 +964,100 @@ const API =
 const TOKEN_KEY =
   "ju_files_token";
 
-const PAGE_SIZE = 30;
+const PAGE_SIZE =
+  30;
+
 
 let currentFolder = "";
+
 let currentPage = 1;
 
 let allFiles = [];
+
 let allFolders = [];
 
+let draggedFileKey =
+  null;
 
-// ============================
-// 인증
-// ============================
+
+/* =========================
+   인증
+========================= */
 
 function getToken() {
-  return localStorage.getItem(TOKEN_KEY);
+
+  return localStorage.getItem(
+    TOKEN_KEY
+  );
+
 }
 
+
 function authHeaders() {
-  const token = getToken();
+
+  const token =
+    getToken();
 
   return token
     ? {
-        Authorization: "Bearer " + token
+        Authorization:
+          "Bearer " + token
       }
     : {};
 }
 
 
-async function apiFetch(url, options = {}) {
+async function apiFetch(
+  url,
+  options = {}
+) {
 
   options.headers = {
+
     ...(options.headers || {}),
+
     ...authHeaders()
+
   };
 
+
   const response =
-    await fetch(url, options);
+    await fetch(
+      url,
+      options
+    );
 
-  if (response.status === 401) {
 
-    localStorage.removeItem(TOKEN_KEY);
+  if (
+    response.status === 401
+  ) {
+
+    localStorage.removeItem(
+      TOKEN_KEY
+    );
 
     showLogin();
 
     throw new Error(
       "로그인이 필요합니다."
     );
+
   }
 
+
   return response;
+
 }
 
 
-// ============================
-// 로그인
-// ============================
+/* =========================
+   로그인
+========================= */
 
 document
-  .getElementById("loginButton")
+  .getElementById(
+    "loginButton"
+  )
   .addEventListener(
     "click",
     login
@@ -433,13 +1065,19 @@ document
 
 
 document
-  .getElementById("password")
+  .getElementById(
+    "password"
+  )
   .addEventListener(
     "keydown",
-    function(event) {
+    event => {
 
-      if (event.key === "Enter") {
+      if (
+        event.key === "Enter"
+      ) {
+
         login();
+
       }
 
     }
@@ -450,35 +1088,40 @@ async function login() {
 
   const username =
     document
-      .getElementById("username")
+      .getElementById(
+        "username"
+      )
       .value
       .trim();
 
+
   const password =
     document
-      .getElementById("password")
+      .getElementById(
+        "password"
+      )
       .value;
+
 
   const message =
     document
-      .getElementById("loginMessage");
+      .getElementById(
+        "loginMessage"
+      );
 
-  const button =
-    document
-      .getElementById("loginButton");
 
-  if (!username || !password) {
+  if (
+    !username ||
+    !password
+  ) {
 
     message.textContent =
       "아이디와 비밀번호를 입력해주세요.";
 
     return;
+
   }
 
-  button.disabled = true;
-
-  message.textContent =
-    "로그인 중...";
 
   try {
 
@@ -486,6 +1129,7 @@ async function login() {
       await fetch(
         `${API}/api/login`,
         {
+
           method: "POST",
 
           headers: {
@@ -493,29 +1137,38 @@ async function login() {
               "application/json"
           },
 
-          body: JSON.stringify({
-            username,
-            password
-          })
+          body:
+            JSON.stringify({
+              username,
+              password
+            })
+
         }
       );
+
 
     const data =
       await response.json();
 
-    if (!response.ok) {
+
+    if (
+      !response.ok
+    ) {
 
       message.textContent =
         data.error ||
         "로그인에 실패했습니다.";
 
       return;
+
     }
+
 
     localStorage.setItem(
       TOKEN_KEY,
       data.token
     );
+
 
     document
       .getElementById(
@@ -524,73 +1177,161 @@ async function login() {
       .textContent =
         data.username;
 
+
     showApp();
+
 
     await loadFiles();
 
-  } catch (error) {
 
-    console.error(error);
+  } catch {
 
     message.textContent =
       "서버에 연결할 수 없습니다.";
 
-  } finally {
-
-    button.disabled = false;
-
   }
+
 }
 
 
-// ============================
-// 로그인 화면
-// ============================
+/* =========================
+   화면
+========================= */
 
 function showLogin() {
 
   document
-    .getElementById("loginScreen")
-    .style.display = "flex";
+    .getElementById(
+      "loginScreen"
+    )
+    .style.display =
+      "flex";
+
 
   document
-    .getElementById("app")
-    .style.display = "none";
+    .getElementById(
+      "app"
+    )
+    .style.display =
+      "none";
+
 }
 
-
-// ============================
-// 앱 화면
-// ============================
 
 function showApp() {
 
   document
-    .getElementById("loginScreen")
-    .style.display = "none";
+    .getElementById(
+      "loginScreen"
+    )
+    .style.display =
+      "none";
+
 
   document
-    .getElementById("app")
-    .style.display = "block";
+    .getElementById(
+      "app"
+    )
+    .style.display =
+      "block";
 
 }
 
 
-// ============================
-// 로그인 확인
-// ============================
+/* =========================
+   탭
+========================= */
+
+function showTab(
+  tab
+) {
+
+  const filesTab =
+    document.getElementById(
+      "filesTab"
+    );
+
+  const memosTab =
+    document.getElementById(
+      "memosTab"
+    );
+
+  const fileButton =
+    document.getElementById(
+      "fileTabButton"
+    );
+
+  const memoButton =
+    document.getElementById(
+      "memoTabButton"
+    );
+
+
+  filesTab.classList.remove(
+    "active"
+  );
+
+  memosTab.classList.remove(
+    "active"
+  );
+
+  fileButton.classList.remove(
+    "active"
+  );
+
+  memoButton.classList.remove(
+    "active"
+  );
+
+
+  if (
+    tab === "memos"
+  ) {
+
+    memosTab.classList.add(
+      "active"
+    );
+
+    memoButton.classList.add(
+      "active"
+    );
+
+
+    loadMemos();
+
+  } else {
+
+    filesTab.classList.add(
+      "active"
+    );
+
+    fileButton.classList.add(
+      "active"
+    );
+
+  }
+
+}
+
+
+/* =========================
+   로그인 확인
+========================= */
 
 async function checkLogin() {
 
   const token =
     getToken();
 
+
   if (!token) {
 
     showLogin();
 
-    return false;
+    return;
+
   }
+
 
   try {
 
@@ -599,15 +1340,21 @@ async function checkLogin() {
         `${API}/api/me`
       );
 
-    if (!response.ok) {
+
+    if (
+      !response.ok
+    ) {
 
       showLogin();
 
-      return false;
+      return;
+
     }
+
 
     const data =
       await response.json();
+
 
     document
       .getElementById(
@@ -616,24 +1363,25 @@ async function checkLogin() {
       .textContent =
         data.user;
 
+
     showApp();
+
 
     await loadFiles();
 
-    return true;
 
   } catch {
 
     showLogin();
 
-    return false;
   }
+
 }
 
 
-// ============================
-// 로그아웃
-// ============================
+/* =========================
+   로그아웃
+========================= */
 
 function logout() {
 
@@ -642,6 +1390,7 @@ function logout() {
   );
 
   currentFolder = "";
+
   currentPage = 1;
 
   showLogin();
@@ -649,9 +1398,9 @@ function logout() {
 }
 
 
-// ============================
-// 파일 목록
-// ============================
+/* =========================
+   파일 목록
+========================= */
 
 async function loadFiles() {
 
@@ -664,10 +1413,14 @@ async function loadFiles() {
         )}`
       );
 
+
     const data =
       await response.json();
 
-    if (!response.ok) {
+
+    if (
+      !response.ok
+    ) {
 
       alert(
         data.error ||
@@ -675,7 +1428,9 @@ async function loadFiles() {
       );
 
       return;
+
     }
+
 
     allFiles =
       data.files || [];
@@ -685,23 +1440,26 @@ async function loadFiles() {
 
     currentPage = 1;
 
+
     renderBreadcrumb();
 
     renderFiles();
 
     loadUsage();
 
+
   } catch (error) {
 
     console.error(error);
 
   }
+
 }
 
 
-// ============================
-// 경로 표시
-// ============================
+/* =========================
+   경로
+========================= */
 
 function renderBreadcrumb() {
 
@@ -710,74 +1468,96 @@ function renderBreadcrumb() {
       "breadcrumb"
     );
 
+
   element.innerHTML = "";
+
 
   const home =
     document.createElement(
       "span"
     );
 
+
   home.textContent =
     "홈";
+
 
   home.onclick =
     () => openFolder("");
 
-  element.appendChild(home);
+
+  element.appendChild(
+    home
+  );
 
 
-  if (!currentFolder) {
+  if (
+    !currentFolder
+  ) {
     return;
   }
 
 
   const parts =
     currentFolder
-      .replace(/\/$/, "")
+      .replace(
+        /\/$/,
+        ""
+      )
       .split("/");
+
 
   let path = "";
 
-  parts.forEach(
-    (part) => {
 
-      const separator =
-        document.createTextNode(
-          " / "
-        );
+  parts.forEach(
+    part => {
 
       element.appendChild(
-        separator
+        document.createTextNode(
+          " / "
+        )
       );
 
-      path += part + "/";
+
+      path +=
+        part + "/";
+
 
       const item =
         document.createElement(
           "span"
         );
 
+
       item.textContent =
         part;
+
 
       const target =
         path;
 
-      item.onclick =
-        () => openFolder(target);
 
-      element.appendChild(item);
+      item.onclick =
+        () =>
+          openFolder(
+            target
+          );
+
+
+      element.appendChild(
+        item
+      );
 
     }
   );
+
 }
 
 
-// ============================
-// 폴더 열기
-// ============================
-
-function openFolder(folder) {
+function openFolder(
+  folder
+) {
 
   currentFolder =
     folder;
@@ -789,9 +1569,9 @@ function openFolder(folder) {
 }
 
 
-// ============================
-// 파일 표시
-// ============================
+/* =========================
+   파일 표시
+========================= */
 
 function renderFiles() {
 
@@ -800,10 +1580,14 @@ function renderFiles() {
       "fileList"
     );
 
+
   list.innerHTML = "";
 
 
-  // 폴더
+  /*
+   * 폴더
+   */
+
   allFolders.forEach(
     folder => {
 
@@ -812,19 +1596,24 @@ function renderFiles() {
           "div"
         );
 
+
       row.className =
         "fileRow folderRow";
+
 
       const name =
         document.createElement(
           "div"
         );
 
+
       name.className =
         "fileName";
 
+
       name.textContent =
-        "📁 " + folder.name;
+        "📁 " +
+        folder.name;
 
 
       const empty =
@@ -838,6 +1627,7 @@ function renderFiles() {
           "div"
         );
 
+
       buttons.className =
         "fileButtons";
 
@@ -847,11 +1637,14 @@ function renderFiles() {
           "button"
         );
 
+
       deleteButton.textContent =
         "삭제";
 
+
       deleteButton.className =
         "deleteBtn";
+
 
       deleteButton.onclick =
         event => {
@@ -870,35 +1663,135 @@ function renderFiles() {
       );
 
 
-      row.appendChild(name);
-      row.appendChild(empty);
-      row.appendChild(buttons);
+      row.appendChild(
+        name
+      );
+
+      row.appendChild(
+        empty
+      );
+
+      row.appendChild(
+        buttons
+      );
 
 
       row.onclick =
-        () => openFolder(
-          folder.prefix
-        );
+        () =>
+          openFolder(
+            folder.prefix
+          );
 
 
-      list.appendChild(row);
+      /*
+       * 파일을 폴더로 드래그
+       */
+
+      row.addEventListener(
+        "dragover",
+        event => {
+
+          if (
+            !draggedFileKey
+          ) {
+            return;
+          }
+
+          event.preventDefault();
+
+          event.stopPropagation();
+
+          row.classList.add(
+            "dragTarget"
+          );
+
+          event.dataTransfer.dropEffect =
+            "move";
+
+        }
+      );
+
+
+      row.addEventListener(
+        "dragleave",
+        event => {
+
+          if (
+            !row.contains(
+              event.relatedTarget
+            )
+          ) {
+
+            row.classList.remove(
+              "dragTarget"
+            );
+
+          }
+
+        }
+      );
+
+
+      row.addEventListener(
+        "drop",
+        async event => {
+
+          event.preventDefault();
+
+          event.stopPropagation();
+
+
+          row.classList.remove(
+            "dragTarget"
+          );
+
+
+          if (
+            !draggedFileKey
+          ) {
+            return;
+          }
+
+
+          const key =
+            draggedFileKey;
+
+
+          draggedFileKey =
+            null;
+
+
+          await moveFileToFolder(
+            key,
+            folder.prefix
+          );
+
+        }
+      );
+
+
+      list.appendChild(
+        row
+      );
 
     }
   );
 
 
-  // 파일
+  /*
+   * 파일
+   */
+
   const start =
     (currentPage - 1) *
     PAGE_SIZE;
 
-  const end =
-    start + PAGE_SIZE;
 
   const pageFiles =
     allFiles.slice(
       start,
-      end
+      start +
+        PAGE_SIZE
     );
 
 
@@ -910,8 +1803,67 @@ function renderFiles() {
           "div"
         );
 
+
       row.className =
         "fileRow";
+
+
+      row.draggable =
+        true;
+
+
+      row.addEventListener(
+        "dragstart",
+        event => {
+
+          draggedFileKey =
+            file.key;
+
+
+          row.classList.add(
+            "dragging"
+          );
+
+
+          event.dataTransfer.effectAllowed =
+            "move";
+
+
+          event.dataTransfer.setData(
+            "text/plain",
+            file.key
+          );
+
+        }
+      );
+
+
+      row.addEventListener(
+        "dragend",
+        () => {
+
+          draggedFileKey =
+            null;
+
+
+          row.classList.remove(
+            "dragging"
+          );
+
+
+          document
+            .querySelectorAll(
+              ".dragTarget"
+            )
+            .forEach(
+              element =>
+                element.classList.remove(
+                  "dragTarget"
+                )
+            );
+
+        }
+      );
 
 
       const name =
@@ -919,17 +1871,21 @@ function renderFiles() {
           "div"
         );
 
+
       name.className =
         "fileName";
 
+
       name.textContent =
-        "📄 " + file.name;
+        "📄 " +
+        file.name;
 
 
       const size =
         document.createElement(
           "div"
         );
+
 
       size.textContent =
         formatSize(
@@ -942,40 +1898,82 @@ function renderFiles() {
           "div"
         );
 
+
       buttons.className =
         "fileButtons";
 
+
+      /*
+       * 다운로드
+       */
 
       const downloadButton =
         document.createElement(
           "button"
         );
 
+
       downloadButton.textContent =
         "다운로드";
 
+
       downloadButton.onclick =
-        () => downloadFile(
-          file.key
+        () =>
+          downloadFile(
+            file.key
+          );
+
+
+      /*
+       * 이동
+       */
+
+      const moveButton =
+        document.createElement(
+          "button"
         );
 
+
+      moveButton.textContent =
+        "이동";
+
+
+      moveButton.className =
+        "moveBtn";
+
+
+      moveButton.onclick =
+        () =>
+          moveFileByPrompt(
+            file.key,
+            file.name
+          );
+
+
+      /*
+       * 삭제
+       */
 
       const deleteButton =
         document.createElement(
           "button"
         );
 
+
       deleteButton.textContent =
         "삭제";
+
 
       deleteButton.className =
         "deleteBtn";
 
+
       deleteButton.onclick =
-        () => deleteFile(
-          file.key,
-          file.name
-        );
+        () =>
+          deleteFile(
+            file.key,
+            file.name
+          );
 
 
       buttons.appendChild(
@@ -983,16 +1981,30 @@ function renderFiles() {
       );
 
       buttons.appendChild(
+        moveButton
+      );
+
+      buttons.appendChild(
         deleteButton
       );
 
 
-      row.appendChild(name);
-      row.appendChild(size);
-      row.appendChild(buttons);
+      row.appendChild(
+        name
+      );
+
+      row.appendChild(
+        size
+      );
+
+      row.appendChild(
+        buttons
+      );
 
 
-      list.appendChild(row);
+      list.appendChild(
+        row
+      );
 
     }
   );
@@ -1016,9 +2028,9 @@ function renderFiles() {
 }
 
 
-// ============================
-// 페이지
-// ============================
+/* =========================
+   페이지
+========================= */
 
 function renderPagination() {
 
@@ -1027,7 +2039,10 @@ function renderPagination() {
       "pagination"
     );
 
-  pagination.innerHTML = "";
+
+  pagination.innerHTML =
+    "";
+
 
   const totalPages =
     Math.max(
@@ -1044,11 +2059,14 @@ function renderPagination() {
       "button"
     );
 
+
   prev.textContent =
     "이전";
 
+
   prev.disabled =
     currentPage <= 1;
+
 
   prev.onclick =
     () => {
@@ -1065,6 +2083,7 @@ function renderPagination() {
       "span"
     );
 
+
   page.textContent =
     `${currentPage} / ${totalPages}`;
 
@@ -1074,11 +2093,15 @@ function renderPagination() {
       "button"
     );
 
+
   next.textContent =
     "다음";
 
+
   next.disabled =
-    currentPage >= totalPages;
+    currentPage >=
+    totalPages;
+
 
   next.onclick =
     () => {
@@ -1105,11 +2128,13 @@ function renderPagination() {
 }
 
 
-// ============================
-// 파일 다운로드
-// ============================
+/* =========================
+   파일 다운로드
+========================= */
 
-async function downloadFile(key) {
+async function downloadFile(
+  key
+) {
 
   try {
 
@@ -1120,7 +2145,10 @@ async function downloadFile(key) {
         )}`
       );
 
-    if (!response.ok) {
+
+    if (
+      !response.ok
+    ) {
 
       const data =
         await response.json();
@@ -1131,6 +2159,7 @@ async function downloadFile(key) {
       );
 
       return;
+
     }
 
 
@@ -1138,26 +2167,31 @@ async function downloadFile(key) {
       await response.blob();
 
 
-    const contentDisposition =
+    const disposition =
       response.headers.get(
         "Content-Disposition"
       );
 
 
     let filename =
-      key.split("/").pop();
+      key
+        .split("/")
+        .pop();
 
 
     if (
-      contentDisposition
+      disposition
     ) {
 
       const match =
-        contentDisposition.match(
+        disposition.match(
           /filename\*=UTF-8''([^;]+)/i
         );
 
-      if (match) {
+
+      if (
+        match
+      ) {
 
         filename =
           decodeURIComponent(
@@ -1174,51 +2208,161 @@ async function downloadFile(key) {
         blob
       );
 
+
     const a =
       document.createElement(
         "a"
       );
 
-    a.href = url;
+
+    a.href =
+      url;
 
     a.download =
       filename;
 
-    document.body.appendChild(a);
+
+    document.body.appendChild(
+      a
+    );
+
 
     a.click();
 
     a.remove();
 
-    URL.revokeObjectURL(url);
 
-  } catch (error) {
+    URL.revokeObjectURL(
+      url
+    );
 
-    console.error(error);
+
+  } catch {
 
     alert(
       "다운로드에 실패했습니다."
     );
 
   }
+
 }
 
 
-// ============================
-// 파일 삭제
-// ============================
+/* =========================
+   파일 이동
+========================= */
+
+async function moveFileByPrompt(
+  key,
+  filename
+) {
+
+  const destination =
+    prompt(
+      `"${filename}" 파일을 어느 폴더로 이동할까요?\n\n예: 문서 또는 문서/간호\n\n루트로 이동하려면 / 입력`,
+      currentFolder || ""
+    );
+
+
+  if (
+    destination === null
+  ) {
+    return;
+  }
+
+
+  const destinationFolder =
+    destination
+      .trim()
+      .replace(
+        /^\/+|\/+$/g,
+        ""
+      );
+
+
+  await moveFileToFolder(
+    key,
+    destinationFolder
+  );
+
+}
+
+
+async function moveFileToFolder(
+  key,
+  destinationFolder
+) {
+
+  try {
+
+    const response =
+      await apiFetch(
+        `${API}/api/move`,
+        {
+
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+              key,
+              destinationFolder
+            })
+
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if (
+      !response.ok
+    ) {
+
+      alert(
+        data.error ||
+        "파일 이동에 실패했습니다."
+      );
+
+      return;
+
+    }
+
+
+    await loadFiles();
+
+
+  } catch {
+
+    alert(
+      "파일 이동 중 오류가 발생했습니다."
+    );
+
+  }
+
+}
+
+
+/* =========================
+   파일 삭제
+========================= */
 
 async function deleteFile(
   key,
   filename
 ) {
 
-  const first =
-    confirm(
+  if (
+    !confirm(
       `"${filename}" 파일을 삭제할까요?`
-    );
-
-  if (!first) {
+    )
+  ) {
     return;
   }
 
@@ -1229,17 +2373,9 @@ async function deleteFile(
     );
 
 
-  if (password === null) {
-    return;
-  }
-
-
-  if (!password) {
-
-    alert(
-      "비밀번호를 입력해주세요."
-    );
-
+  if (
+    password === null
+  ) {
     return;
   }
 
@@ -1263,47 +2399,42 @@ async function deleteFile(
       await response.json();
 
 
-    if (!response.ok) {
+    if (
+      !response.ok
+    ) {
 
-      if (
+      alert(
         data.error ===
-        "DELETE_PASSWORD_INVALID"
-      ) {
-
-        alert(
-          "삭제 비밀번호가 틀렸습니다."
-        );
-
-      } else {
-
-        alert(
-          data.error ||
-          "삭제에 실패했습니다."
-        );
-
-      }
+          "DELETE_PASSWORD_INVALID"
+          ? "삭제 비밀번호가 틀렸습니다."
+          : (
+            data.error ||
+            "삭제에 실패했습니다."
+          )
+      );
 
       return;
+
     }
 
 
     await loadFiles();
 
-  } catch (error) {
 
-    console.error(error);
+  } catch {
 
     alert(
       "삭제 중 오류가 발생했습니다."
     );
 
   }
+
 }
 
 
-// ============================
-// 폴더 삭제
-// ============================
+/* =========================
+   폴더 삭제
+========================= */
 
 async function deleteFolder(
   prefix
@@ -1311,18 +2442,19 @@ async function deleteFolder(
 
   const folderName =
     prefix
-      .replace(/\/$/, "")
+      .replace(
+        /\/$/,
+        ""
+      )
       .split("/")
       .pop();
 
 
-  const first =
-    confirm(
+  if (
+    !confirm(
       `"${folderName}" 폴더를 삭제할까요?\n\n폴더 안의 모든 파일도 함께 삭제됩니다.`
-    );
-
-
-  if (!first) {
+    )
+  ) {
     return;
   }
 
@@ -1333,17 +2465,9 @@ async function deleteFolder(
     );
 
 
-  if (password === null) {
-    return;
-  }
-
-
-  if (!password) {
-
-    alert(
-      "비밀번호를 입력해주세요."
-    );
-
+  if (
+    password === null
+  ) {
     return;
   }
 
@@ -1367,47 +2491,42 @@ async function deleteFolder(
       await response.json();
 
 
-    if (!response.ok) {
+    if (
+      !response.ok
+    ) {
 
-      if (
+      alert(
         data.error ===
-        "DELETE_PASSWORD_INVALID"
-      ) {
-
-        alert(
-          "삭제 비밀번호가 틀렸습니다."
-        );
-
-      } else {
-
-        alert(
-          data.error ||
-          "폴더 삭제에 실패했습니다."
-        );
-
-      }
+          "DELETE_PASSWORD_INVALID"
+          ? "삭제 비밀번호가 틀렸습니다."
+          : (
+            data.error ||
+            "폴더 삭제에 실패했습니다."
+          )
+      );
 
       return;
+
     }
 
 
     await loadFiles();
 
-  } catch (error) {
 
-    console.error(error);
+  } catch {
 
     alert(
       "폴더 삭제 중 오류가 발생했습니다."
     );
 
   }
+
 }
 
 
-// ============================
-// 폴더 생성
-// ============================
+/* =========================
+   폴더 생성
+========================= */
 
 async function createFolder() {
 
@@ -1431,6 +2550,7 @@ async function createFolder() {
       await apiFetch(
         `${API}/api/folder`,
         {
+
           method: "POST",
 
           headers: {
@@ -1438,12 +2558,15 @@ async function createFolder() {
               "application/json"
           },
 
-          body: JSON.stringify({
-            parent:
-              currentFolder,
-            name:
-              name.trim()
-          })
+          body:
+            JSON.stringify({
+              parent:
+                currentFolder,
+
+              name:
+                name.trim()
+            })
+
         }
       );
 
@@ -1452,7 +2575,9 @@ async function createFolder() {
       await response.json();
 
 
-    if (!response.ok) {
+    if (
+      !response.ok
+    ) {
 
       alert(
         data.error ||
@@ -1460,29 +2585,32 @@ async function createFolder() {
       );
 
       return;
+
     }
 
 
     await loadFiles();
 
-  } catch (error) {
 
-    console.error(error);
+  } catch {
 
     alert(
       "폴더 생성에 실패했습니다."
     );
 
   }
+
 }
 
 
-// ============================
-// 업로드
-// ============================
+/* =========================
+   업로드
+========================= */
 
 document
-  .getElementById("fileInput")
+  .getElementById(
+    "fileInput"
+  )
   .addEventListener(
     "change",
     event => {
@@ -1491,7 +2619,8 @@ document
         event.target.files
       );
 
-      event.target.value = "";
+      event.target.value =
+        "";
 
     }
   );
@@ -1501,7 +2630,10 @@ async function uploadFiles(
   files
 ) {
 
-  if (!files || !files.length) {
+  if (
+    !files ||
+    !files.length
+  ) {
     return;
   }
 
@@ -1525,7 +2657,9 @@ async function uploadFiles(
         );
 
 
-      if (!confirmedLarge) {
+      if (
+        !confirmedLarge
+      ) {
         continue;
       }
 
@@ -1535,15 +2669,18 @@ async function uploadFiles(
     const formData =
       new FormData();
 
+
     formData.append(
       "file",
       file
     );
 
+
     formData.append(
       "folder",
       currentFolder
     );
+
 
     formData.append(
       "confirmedLarge",
@@ -1560,7 +2697,9 @@ async function uploadFiles(
           `${API}/api/upload`,
           {
             method: "POST",
-            body: formData
+
+            body:
+              formData
           }
         );
 
@@ -1569,32 +2708,18 @@ async function uploadFiles(
         await response.json();
 
 
-      if (!response.ok) {
+      if (
+        !response.ok
+      ) {
 
-        if (
-          data.error ===
-          "LARGE_FILE_CONFIRM_REQUIRED"
-        ) {
+        alert(
+          data.error ||
+          `"${file.name}" 업로드 실패`
+        );
 
-          alert(
-            "100MB 이상 파일은 확인 후 업로드할 수 있습니다."
-          );
-
-        } else {
-
-          alert(
-            data.error ||
-            `"${file.name}" 업로드 실패`
-          );
-
-        }
-
-        continue;
       }
 
-    } catch (error) {
-
-      console.error(error);
+    } catch {
 
       alert(
         `"${file.name}" 업로드 중 오류가 발생했습니다.`
@@ -1610,9 +2735,9 @@ async function uploadFiles(
 }
 
 
-// ============================
-// 드래그 앤 드롭
-// ============================
+/* =========================
+   업로드 드래그
+========================= */
 
 const dropZone =
   document.getElementById(
@@ -1637,6 +2762,12 @@ dropZone.addEventListener(
 dropZone.addEventListener(
   "dragover",
   event => {
+
+    if (
+      draggedFileKey
+    ) {
+      return;
+    }
 
     event.preventDefault();
 
@@ -1664,11 +2795,25 @@ dropZone.addEventListener(
   "drop",
   event => {
 
+    if (
+      draggedFileKey
+    ) {
+
+      draggedFileKey =
+        null;
+
+      return;
+
+    }
+
+
     event.preventDefault();
+
 
     dropZone.classList.remove(
       "dragover"
     );
+
 
     uploadFiles(
       event.dataTransfer.files
@@ -1678,9 +2823,9 @@ dropZone.addEventListener(
 );
 
 
-// ============================
-// 용량 표시
-// ============================
+/* =========================
+   저장공간
+========================= */
 
 async function loadUsage() {
 
@@ -1691,23 +2836,16 @@ async function loadUsage() {
         `${API}/api/usage`
       );
 
-    if (!response.ok) {
+
+    if (
+      !response.ok
+    ) {
       return;
     }
 
+
     const data =
       await response.json();
-
-
-    const used =
-      formatSize(
-        data.used
-      );
-
-    const max =
-      formatSize(
-        data.max
-      );
 
 
     document
@@ -1715,19 +2853,376 @@ async function loadUsage() {
         "storage"
       )
       .textContent =
-        `저장공간: ${used} / ${max}`;
+        `저장공간: ${formatSize(
+          data.used
+        )} / ${formatSize(
+          data.max
+        )}`;
 
-  } catch (error) {
+  } catch {}
 
-    console.error(error);
-
-  }
 }
 
 
-// ============================
-// 용량 표시
-// ============================
+/* =========================
+   메모 목록
+========================= */
+
+async function loadMemos() {
+
+  const list =
+    document.getElementById(
+      "memoList"
+    );
+
+
+  list.innerHTML =
+    `<div class="memoEmpty">
+      메모를 불러오는 중...
+    </div>`;
+
+
+  try {
+
+    const response =
+      await apiFetch(
+        `${API}/api/notes`
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if (
+      !response.ok
+    ) {
+
+      list.innerHTML =
+        `<div class="memoEmpty">
+          메모를 불러오지 못했습니다.
+        </div>`;
+
+      return;
+
+    }
+
+
+    const notes =
+      data.notes || [];
+
+
+    list.innerHTML =
+      "";
+
+
+    if (
+      notes.length === 0
+    ) {
+
+      list.innerHTML =
+        `<div class="memoEmpty">
+          아직 작성한 메모가 없습니다.
+        </div>`;
+
+      return;
+
+    }
+
+
+    notes.forEach(
+      note => {
+
+        const card =
+          document.createElement(
+            "div"
+          );
+
+
+        card.className =
+          "memoCard";
+
+
+        const date =
+          document.createElement(
+            "div"
+          );
+
+
+        date.className =
+          "memoDate";
+
+
+        date.textContent =
+          formatDate(
+            note.createdAt
+          );
+
+
+        const text =
+          document.createElement(
+            "div"
+          );
+
+
+        text.className =
+          "memoText";
+
+
+        text.textContent =
+          note.text;
+
+
+        const deleteButton =
+          document.createElement(
+            "button"
+          );
+
+
+        deleteButton.className =
+          "memoDelete";
+
+
+        deleteButton.textContent =
+          "×";
+
+
+        deleteButton.title =
+          "메모 삭제";
+
+
+        deleteButton.onclick =
+          () =>
+            deleteMemo(
+              note.id
+            );
+
+
+        card.appendChild(
+          date
+        );
+
+
+        card.appendChild(
+          text
+        );
+
+
+        card.appendChild(
+          deleteButton
+        );
+
+
+        list.appendChild(
+          card
+        );
+
+      }
+    );
+
+
+  } catch {
+
+    list.innerHTML =
+      `<div class="memoEmpty">
+        메모를 불러오지 못했습니다.
+      </div>`;
+
+  }
+
+}
+
+
+/* =========================
+   메모 추가
+========================= */
+
+async function addMemo() {
+
+  const input =
+    document.getElementById(
+      "memoInput"
+    );
+
+
+  const text =
+    input.value.trim();
+
+
+  if (!text) {
+
+    alert(
+      "메모 내용을 입력해주세요."
+    );
+
+    input.focus();
+
+    return;
+
+  }
+
+
+  try {
+
+    const response =
+      await apiFetch(
+        `${API}/api/notes`,
+        {
+
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+              text
+            })
+
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if (
+      !response.ok
+    ) {
+
+      alert(
+        data.error ||
+        "메모 저장에 실패했습니다."
+      );
+
+      return;
+
+    }
+
+
+    input.value =
+      "";
+
+
+    await loadMemos();
+
+
+  } catch {
+
+    alert(
+      "메모 저장 중 오류가 발생했습니다."
+    );
+
+  }
+
+}
+
+
+/* =========================
+   메모 삭제
+========================= */
+
+async function deleteMemo(
+  id
+) {
+
+  if (
+    !confirm(
+      "이 메모를 삭제할까요?"
+    )
+  ) {
+    return;
+  }
+
+
+  try {
+
+    const response =
+      await apiFetch(
+        `${API}/api/notes?id=${encodeURIComponent(
+          id
+        )}`,
+        {
+          method: "DELETE"
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if (
+      !response.ok
+    ) {
+
+      alert(
+        data.error ||
+        "메모 삭제에 실패했습니다."
+      );
+
+      return;
+
+    }
+
+
+    await loadMemos();
+
+
+  } catch {
+
+    alert(
+      "메모 삭제 중 오류가 발생했습니다."
+    );
+
+  }
+
+}
+
+
+/* =========================
+   메모 날짜
+========================= */
+
+function formatDate(
+  value
+) {
+
+  const date =
+    new Date(value);
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+
+    return "";
+
+  }
+
+
+  return date.toLocaleString(
+    "ko-KR",
+    {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    }
+  );
+
+}
+
+
+/* =========================
+   용량
+========================= */
 
 function formatSize(
   bytes
@@ -1760,7 +3255,8 @@ function formatSize(
       units.length - 1
   ) {
 
-    size /= 1024;
+    size /=
+      1024;
 
     index++;
 
@@ -1780,9 +3276,9 @@ function formatSize(
 }
 
 
-// ============================
-// 시작
-// ============================
+/* =========================
+   시작
+========================= */
 
 checkLogin();
 
@@ -1790,4 +3286,3 @@ checkLogin();
 
 </body>
 </html>
-```
