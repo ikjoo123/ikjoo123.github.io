@@ -5,8 +5,8 @@ const corsHeaders = {
   "Access-Control-Max-Age": "86400",
 };
 
-const MAX_STORAGE = 9 * 1024 * 1024 * 1024; // 9GB
-const LARGE_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+const MAX_STORAGE = 9 * 1024 * 1024 * 1024;
+const LARGE_FILE_SIZE = 100 * 1024 * 1024;
 
 function jsonResponse(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
@@ -90,19 +90,22 @@ async function createToken(username, secret) {
 }
 
 async function verifyToken(request, env) {
-  const auth = request.headers.get("Authorization") || "";
+  const auth =
+    request.headers.get("Authorization") || "";
 
   if (!auth.startsWith("Bearer ")) {
     return false;
   }
 
-  const token = auth.slice(7).trim();
+  const token =
+    auth.slice(7).trim();
 
   if (!token) {
     return false;
   }
 
-  const parts = token.split(".");
+  const parts =
+    token.split(".");
 
   if (parts.length !== 2) {
     return false;
@@ -111,27 +114,31 @@ async function verifyToken(request, env) {
   const [payload, signature] = parts;
 
   try {
-    const expected = await makeSignature(
-      payload,
-      env.AUTH_PASSWORD
-    );
+    const expected =
+      await makeSignature(
+        payload,
+        env.AUTH_PASSWORD
+      );
 
     if (signature !== expected) {
       return false;
     }
 
-    const data = JSON.parse(
-      base64urlDecode(payload)
-    );
+    const data =
+      JSON.parse(
+        base64urlDecode(payload)
+      );
 
     if (
       !data.exp ||
-      data.exp < Math.floor(Date.now() / 1000)
+      data.exp <
+        Math.floor(Date.now() / 1000)
     ) {
       return false;
     }
 
     return data.user === env.AUTH_USER;
+
   } catch {
     return false;
   }
@@ -150,46 +157,61 @@ async function getStorageUsage(env) {
       options.cursor = cursor;
     }
 
-    const result = await env.FILES.list(options);
+    const result =
+      await env.FILES.list(options);
 
-    for (const object of result.objects) {
+    for (
+      const object of result.objects
+    ) {
       total += object.size || 0;
     }
 
-    cursor = result.truncated
-      ? result.cursor
-      : undefined;
+    cursor =
+      result.truncated
+        ? result.cursor
+        : undefined;
+
   } while (cursor);
 
   return total;
 }
 
 function getOriginalName(object) {
-  if (object.customMetadata?.originalName) {
+
+  if (
+    object.customMetadata?.originalName
+  ) {
     return object.customMetadata.originalName;
   }
 
-  const name = object.key.split("/").pop();
+  const name =
+    object.key
+      .split("/")
+      .pop();
 
-  return name.replace(/^\d+-/, "");
+  return name.replace(
+    /^\d+-/,
+    ""
+  );
 }
+
 
 export default {
-  async fetch(request, env) {
-    if (request.method === "OPTIONS") {
-  return new Response(null, {
-    status: 204,
-    headers: corsHeaders,
-  });
-}
-    const url = new URL(request.url);
 
-    if (request.method === "OPTIONS") {
+  async fetch(request, env) {
+
+    if (
+      request.method === "OPTIONS"
+    ) {
       return new Response(null, {
         status: 204,
         headers: corsHeaders,
       });
     }
+
+    const url =
+      new URL(request.url);
+
 
     /*
      * 로그인
@@ -198,30 +220,40 @@ export default {
       url.pathname === "/api/login" &&
       request.method === "POST"
     ) {
+
       try {
-        const body = await request.json();
+
+        const body =
+          await request.json();
 
         if (
-          body.username !== env.AUTH_USER ||
-          body.password !== env.AUTH_PASSWORD
+          body.username !==
+            env.AUTH_USER ||
+          body.password !==
+            env.AUTH_PASSWORD
         ) {
+
           return errorResponse(
             "아이디 또는 비밀번호가 틀렸습니다.",
             401
           );
         }
 
-        const token = await createToken(
-          env.AUTH_USER,
-          env.AUTH_PASSWORD
-        );
+        const token =
+          await createToken(
+            env.AUTH_USER,
+            env.AUTH_PASSWORD
+          );
 
         return jsonResponse({
           ok: true,
           token,
-          username: env.AUTH_USER,
+          username:
+            env.AUTH_USER,
         });
+
       } catch {
+
         return errorResponse(
           "로그인 요청이 잘못되었습니다.",
           400
@@ -229,20 +261,20 @@ export default {
       }
     }
 
+
     /*
      * 로그아웃
-     *
-     * 서버에 저장된 세션이 없는 stateless 방식이라
-     * 실제 로그아웃은 브라우저에서 토큰을 삭제한다.
      */
     if (
       url.pathname === "/api/logout" &&
       request.method === "POST"
     ) {
+
       return jsonResponse({
         ok: true,
       });
     }
+
 
     /*
      * 로그인 상태 확인
@@ -251,10 +283,15 @@ export default {
       url.pathname === "/api/me" &&
       request.method === "GET"
     ) {
+
       const authenticated =
-        await verifyToken(request, env);
+        await verifyToken(
+          request,
+          env
+        );
 
       if (!authenticated) {
+
         return errorResponse(
           "로그인이 필요합니다.",
           401
@@ -263,22 +300,29 @@ export default {
 
       return jsonResponse({
         authenticated: true,
-        user: env.AUTH_USER,
+        user:
+          env.AUTH_USER,
       });
     }
 
+
     /*
-     * 여기부터 모든 파일 관련 API는 로그인 필요
+     * 파일 관련 API 로그인 확인
      */
     const authenticated =
-      await verifyToken(request, env);
+      await verifyToken(
+        request,
+        env
+      );
 
     if (!authenticated) {
+
       return errorResponse(
         "로그인이 필요합니다.",
         401
       );
     }
+
 
     /*
      * 파일 목록
@@ -287,39 +331,74 @@ export default {
       url.pathname === "/api/files" &&
       request.method === "GET"
     ) {
-      const prefix =
-        url.searchParams.get("prefix") || "";
 
-      const result = await env.FILES.list({
-        prefix,
-        delimiter: "/",
-        limit: 1000,
-      });
+      const prefix =
+        url.searchParams.get(
+          "prefix"
+        ) || "";
+
+      const result =
+        await env.FILES.list({
+          prefix,
+          delimiter: "/",
+          limit: 1000,
+        });
 
       const folders =
-        result.delimitedPrefixes.map((folder) => ({
-          type: "folder",
-          name: folder
-            .slice(prefix.length)
-            .replace(/\/$/, ""),
-          prefix: folder,
-        }));
+        result.delimitedPrefixes
+          .map(folder => ({
+            type: "folder",
 
-      const files = result.objects
-        .filter((object) => object.key !== prefix)
-        .map((object) => ({
-          type: "file",
-          key: object.key,
-          name: getOriginalName(object),
-          size: object.size,
-          uploaded: object.uploaded,
-        }));
+            name:
+              folder
+                .slice(prefix.length)
+                .replace(/\/$/, ""),
+
+            prefix:
+              folder,
+          }));
+
+      const files =
+        result.objects
+          .filter(
+            object =>
+              object.key !== prefix
+          )
+          .map(object => ({
+            type: "file",
+            key: object.key,
+            name:
+              getOriginalName(object),
+            size: object.size,
+            uploaded:
+              object.uploaded,
+          }));
 
       return jsonResponse({
         folders,
         files,
       });
     }
+
+
+    /*
+     * 저장공간 사용량
+     */
+    if (
+      url.pathname === "/api/usage" &&
+      request.method === "GET"
+    ) {
+
+      const used =
+        await getStorageUsage(env);
+
+      return jsonResponse({
+        used,
+        max:
+          MAX_STORAGE,
+      });
+    }
+
 
     /*
      * 파일 업로드
@@ -328,74 +407,94 @@ export default {
       url.pathname === "/api/upload" &&
       request.method === "POST"
     ) {
+
       const formData =
         await request.formData();
 
-      const file = formData.get("file");
+      const file =
+        formData.get("file");
 
       const folder =
         formData.get("folder") || "";
 
       const confirmedLarge =
-        formData.get("confirmedLarge") === "true";
+        formData.get(
+          "confirmedLarge"
+        ) === "true";
 
       if (!(file instanceof File)) {
+
         return errorResponse(
           "파일이 없습니다."
         );
       }
 
+
       /*
-       * 100MB 이상 파일 확인
+       * 100MB 이상 확인
        */
       if (
-        file.size >= LARGE_FILE_SIZE &&
+        file.size >=
+          LARGE_FILE_SIZE &&
         !confirmedLarge
       ) {
+
         return errorResponse(
           "100MB 이상 파일은 업로드 확인이 필요합니다.",
           413
         );
       }
 
-      /*
-       * 현재 저장공간 확인
-       */
-      const currentUsage =
-        await getStorageUsage(env);
 
       /*
-       * 9GB 도달 방지
+       * 현재 용량
        */
-      if (currentUsage >= MAX_STORAGE) {
+      const currentUsage =
+        await getStorageUsage(
+          env
+        );
+
+
+      /*
+       * 9GB 제한
+       */
+      if (
+        currentUsage >=
+        MAX_STORAGE
+      ) {
+
         return errorResponse(
           "저장공간이 9GB에 도달하여 더 이상 업로드할 수 없습니다.",
           413
         );
       }
 
-      /*
-       * 9GB 초과 방지
-       */
+
       if (
-        currentUsage + file.size >=
+        currentUsage +
+          file.size >=
         MAX_STORAGE
       ) {
+
         return errorResponse(
           "이 파일을 업로드하면 저장공간 9GB를 초과하므로 업로드할 수 없습니다.",
           413
         );
       }
 
-      const safeFolder =
-        String(folder).replace(
-          /^\/+|\/+$/g,
-          ""
-        );
 
-      const key = safeFolder
-        ? `${safeFolder}/${Date.now()}-${file.name}`
-        : `${Date.now()}-${file.name}`;
+      const safeFolder =
+        String(folder)
+          .replace(
+            /^\/+|\/+$/g,
+            ""
+          );
+
+      const key =
+        safeFolder
+          ? `${safeFolder}/${Date.now()}-${file.name}`
+          : `${Date.now()}-${file.name}`;
+
 
       await env.FILES.put(
         key,
@@ -408,18 +507,23 @@ export default {
           },
 
           customMetadata: {
-            originalName: file.name,
+            originalName:
+              file.name,
           },
         }
       );
 
+
       return jsonResponse({
         ok: true,
         key,
-        name: file.name,
-        size: file.size,
+        name:
+          file.name,
+        size:
+          file.size,
       });
     }
+
 
     /*
      * 폴더 생성
@@ -428,21 +532,32 @@ export default {
       url.pathname === "/api/folder" &&
       request.method === "POST"
     ) {
+
       const body =
         await request.json();
 
       const parent =
-        String(body.parent || "")
-          .replace(/^\/+|\/+$/g, "");
+        String(
+          body.parent || ""
+        )
+          .replace(
+            /^\/+|\/+$/g,
+            ""
+          );
 
       const name =
-        String(body.name || "").trim();
+        String(
+          body.name || ""
+        ).trim();
+
 
       if (!name) {
+
         return errorResponse(
           "폴더 이름을 입력하세요."
         );
       }
+
 
       if (
         name.includes("/") ||
@@ -450,14 +565,18 @@ export default {
         name === "." ||
         name === ".."
       ) {
+
         return errorResponse(
           "사용할 수 없는 폴더 이름입니다."
         );
       }
 
-      const prefix = parent
-        ? `${parent}/${name}/`
-        : `${name}/`;
+
+      const prefix =
+        parent
+          ? `${parent}/${name}/`
+          : `${name}/`;
+
 
       await env.FILES.put(
         prefix,
@@ -469,113 +588,152 @@ export default {
         }
       );
 
+
       return jsonResponse({
         ok: true,
         prefix,
       });
     }
 
-    /*
-     /*
- * 파일 삭제
- */
-if (
-  url.pathname === "/api/file" &&
-  request.method === "DELETE"
-) {
-  const key =
-    url.searchParams.get("key");
-
-  const deletePassword =
-    url.searchParams.get("password") || "";
-
-  if (!key) {
-    return errorResponse(
-      "파일 키가 없습니다."
-    );
-  }
-
-  if (
-    deletePassword !== env.AUTH_PASSWORD
-  ) {
-    return errorResponse(
-      "DELETE_PASSWORD_INVALID",
-      403
-    );
-  }
-
-  await env.FILES.delete(key);
-
-  return jsonResponse({
-    ok: true,
-  });
-}
-    }
 
     /*
-     /*
- * 폴더 삭제
- */
-if (
-  url.pathname === "/api/folder" &&
-  request.method === "DELETE"
-) {
-  const prefix =
-    url.searchParams.get("prefix");
-
-  const deletePassword =
-    url.searchParams.get("password") || "";
-
-  if (!prefix) {
-    return errorResponse(
-      "폴더 경로가 없습니다."
-    );
-  }
-
-  if (
-    deletePassword !== env.AUTH_PASSWORD
-  ) {
-    return errorResponse(
-      "DELETE_PASSWORD_INVALID",
-      403
-    );
-  }
-
-  let cursor;
-
-  do {
-    const options = {
-      prefix,
-      limit: 1000,
-    };
-
-    if (cursor) {
-      options.cursor = cursor;
-    }
-
-    const result =
-      await env.FILES.list(options);
-
+     * 파일 삭제
+     */
     if (
-      result.objects.length > 0
+      url.pathname === "/api/file" &&
+      request.method === "DELETE"
     ) {
+
+      const key =
+        url.searchParams.get(
+          "key"
+        );
+
+      const deletePassword =
+        url.searchParams.get(
+          "password"
+        ) || "";
+
+
+      if (!key) {
+
+        return errorResponse(
+          "파일 키가 없습니다."
+        );
+      }
+
+
+      if (
+        deletePassword !==
+        env.AUTH_PASSWORD
+      ) {
+
+        return errorResponse(
+          "DELETE_PASSWORD_INVALID",
+          403
+        );
+      }
+
+
       await env.FILES.delete(
-        result.objects.map(
-          (object) => object.key
-        )
+        key
       );
+
+
+      return jsonResponse({
+        ok: true,
+      });
     }
 
-    cursor = result.truncated
-      ? result.cursor
-      : undefined;
 
-  } while (cursor);
+    /*
+     * 폴더 삭제
+     */
+    if (
+      url.pathname === "/api/folder" &&
+      request.method === "DELETE"
+    ) {
 
-  return jsonResponse({
-    ok: true,
-  });
-}
+      const prefix =
+        url.searchParams.get(
+          "prefix"
+        );
+
+      const deletePassword =
+        url.searchParams.get(
+          "password"
+        ) || "";
+
+
+      if (!prefix) {
+
+        return errorResponse(
+          "폴더 경로가 없습니다."
+        );
+      }
+
+
+      if (
+        deletePassword !==
+        env.AUTH_PASSWORD
+      ) {
+
+        return errorResponse(
+          "DELETE_PASSWORD_INVALID",
+          403
+        );
+      }
+
+
+      let cursor;
+
+
+      do {
+
+        const options = {
+          prefix,
+          limit: 1000,
+        };
+
+
+        if (cursor) {
+          options.cursor =
+            cursor;
+        }
+
+
+        const result =
+          await env.FILES.list(
+            options
+          );
+
+
+        if (
+          result.objects.length > 0
+        ) {
+
+          await env.FILES.delete(
+            result.objects.map(
+              object =>
+                object.key
+            )
+          );
+        }
+
+
+        cursor =
+          result.truncated
+            ? result.cursor
+            : undefined;
+
+      } while (cursor);
+
+
+      return jsonResponse({
+        ok: true,
+      });
+    }
+
 
     /*
      * 파일 다운로드
@@ -584,27 +742,41 @@ if (
       url.pathname === "/api/download" &&
       request.method === "GET"
     ) {
+
       const key =
-        url.searchParams.get("key");
+        url.searchParams.get(
+          "key"
+        );
+
 
       if (!key) {
+
         return errorResponse(
           "파일 키가 없습니다."
         );
       }
 
+
       const object =
-        await env.FILES.get(key);
+        await env.FILES.get(
+          key
+        );
+
 
       if (!object) {
+
         return errorResponse(
           "파일을 찾을 수 없습니다.",
           404
         );
       }
 
+
       const filename =
-        getOriginalName(object);
+        getOriginalName(
+          object
+        );
+
 
       return new Response(
         object.body,
@@ -613,7 +785,8 @@ if (
             ...corsHeaders,
 
             "Content-Type":
-              object.httpMetadata?.contentType ||
+              object.httpMetadata
+                ?.contentType ||
               "application/octet-stream",
 
             "Content-Disposition":
@@ -623,9 +796,11 @@ if (
       );
     }
 
+
     return jsonResponse({
       ok: true,
-      message: "API OK",
+      message:
+        "API OK",
     });
   },
 };
