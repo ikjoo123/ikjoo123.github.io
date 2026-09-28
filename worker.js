@@ -414,7 +414,7 @@ export default {
           }
 
           const oldKey =
-            `${NOTES_PREFIX}${id}.json`;
+  NOTES_PREFIX + id + ".json";
 
           const oldObject =
             await env.FILES.get(oldKey);
@@ -437,8 +437,8 @@ export default {
               createdAt;
           } catch {}
         } else {
-          noteId =
-            `${Date.now()}-${crypto.randomUUID()}`;
+       noteId =
+  Date.now() + "-" + crypto.randomUUID();
         }
 
         const note = {
@@ -452,7 +452,7 @@ export default {
         };
 
         const key =
-          `${NOTES_PREFIX}${noteId}.json`;
+          NOTES_PREFIX + noteId + ".json";
 
         await env.FILES.put(
           key,
@@ -507,7 +507,7 @@ export default {
       }
 
       const key =
-        `${NOTES_PREFIX}${id}.json`;
+        NOTES_PREFIX + id + ".json";
 
       await env.FILES.delete(key);
 
@@ -659,9 +659,9 @@ export default {
         cleanFolder(folder);
 
       const key =
-        safeFolder
-          ? `${safeFolder}/${Date.now()}-${file.name}`
-          : `${Date.now()}-${file.name}`;
+  safeFolder
+    ? safeFolder + "/" + Date.now() + "-" + file.name
+    : Date.now() + "-" + file.name;
 
       await env.FILES.put(
         key,
@@ -723,10 +723,10 @@ export default {
         );
       }
 
-      const prefix =
-        parent
-          ? `${parent}/${name}/`
-          : `${name}/`;
+     const prefix =
+  parent
+    ? parent + "/" + name + "/"
+    : name + "/";
 
       await env.FILES.put(
         prefix,
@@ -786,9 +786,9 @@ export default {
           getOriginalName(object);
 
         const newKey =
-          destinationFolder
-            ? `${destinationFolder}/${Date.now()}-${filename}`
-            : `${Date.now()}-${filename}`;
+  destinationFolder
+    ? destinationFolder + "/" + Date.now() + "-" + filename
+    : Date.now() + "-" + filename;
 
         if (newKey === key) {
           return errorResponse(
@@ -978,8 +978,9 @@ export default {
                 ?.contentType ||
               "application/octet-stream",
 
-            "Content-Disposition":
-              `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
+           "Content-Disposition":
+  "attachment; filename*=UTF-8''" +
+  encodeURIComponent(filename),
           },
         }
       );
