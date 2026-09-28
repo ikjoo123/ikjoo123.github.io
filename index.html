@@ -2,9 +2,12 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
 
-  <title>JU FILES</title>
+  <title>JU Files</title>
 
   <style>
     * {
@@ -15,7 +18,7 @@
       margin: 0;
       font-family:
         Arial,
-        "Noto Sans KR",
+        "Malgun Gothic",
         sans-serif;
       background: #f5f6f8;
       color: #222;
@@ -36,27 +39,27 @@
 
     .loginBox {
       width: 100%;
-      max-width: 380px;
+      max-width: 360px;
       background: white;
-      padding: 35px;
-      border-radius: 16px;
+      border-radius: 14px;
+      padding: 30px;
       box-shadow:
-        0 10px 30px rgba(0, 0, 0, 0.08);
+        0 8px 30px rgba(0,0,0,0.08);
     }
 
     .loginBox h1 {
       margin-top: 0;
       margin-bottom: 25px;
       text-align: center;
+      font-size: 24px;
     }
 
     .loginBox input {
       width: 100%;
       padding: 13px;
-      margin-bottom: 12px;
       border: 1px solid #ddd;
       border-radius: 8px;
-      outline: none;
+      margin-bottom: 10px;
     }
 
     .loginBox button {
@@ -67,6 +70,11 @@
       background: #222;
       color: white;
       cursor: pointer;
+    }
+
+    .loginBox button:disabled {
+      opacity: 0.5;
+      cursor: default;
     }
 
     #loginMessage {
@@ -81,19 +89,19 @@
       min-height: 100vh;
     }
 
-    header {
+    .header {
+      height: 60px;
       background: white;
-      border-bottom: 1px solid #eee;
-      padding: 15px 20px;
+      border-bottom: 1px solid #ddd;
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      gap: 10px;
+      justify-content: space-between;
+      padding: 0 20px;
     }
 
-    header h1 {
-      margin: 0;
-      font-size: 20px;
+    .headerTitle {
+      font-weight: bold;
+      font-size: 18px;
     }
 
     .headerRight {
@@ -102,74 +110,66 @@
       gap: 10px;
     }
 
-    .logoutBtn {
+    .headerRight button {
       border: 1px solid #ddd;
       background: white;
-      border-radius: 7px;
       padding: 7px 12px;
+      border-radius: 7px;
       cursor: pointer;
     }
 
-    main {
+    .container {
       max-width: 1100px;
       margin: 0 auto;
-      padding: 25px 20px 50px;
+      padding: 20px;
     }
 
     .toolbar {
       display: flex;
-      flex-wrap: wrap;
       gap: 8px;
+      flex-wrap: wrap;
       margin-bottom: 15px;
     }
 
     .toolbar button {
-      padding: 9px 13px;
       border: 1px solid #ddd;
-      border-radius: 8px;
       background: white;
+      padding: 9px 13px;
+      border-radius: 8px;
       cursor: pointer;
     }
 
-    .storageInfo {
-      font-size: 13px;
-      color: #777;
-      margin-bottom: 15px;
+    .toolbar button:hover {
+      background: #f0f0f0;
     }
 
     .breadcrumb {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 12px;
       margin-bottom: 15px;
-      font-size: 14px;
+      overflow-x: auto;
+      white-space: nowrap;
     }
 
-    .breadcrumb button {
-      border: 0;
-      background: none;
-      padding: 0;
+    .breadcrumb span {
       cursor: pointer;
-      color: #555;
     }
 
     .dropZone {
-      border: 2px dashed #ccc;
-      background: white;
-      border-radius: 12px;
-      padding: 30px;
+      border: 2px dashed #bbb;
+      border-radius: 10px;
+      padding: 25px;
       text-align: center;
-      margin-bottom: 20px;
+      background: white;
+      margin-bottom: 15px;
       cursor: pointer;
     }
 
     .dropZone.dragover {
-      border-color: #333;
-      background: #f1f1f1;
-    }
-
-    .dropZone p {
-      margin: 5px 0;
+      background: #f0f4ff;
+      border-color: #557;
     }
 
     #fileInput {
@@ -178,50 +178,57 @@
 
     .fileList {
       background: white;
-      border-radius: 12px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
       overflow: hidden;
     }
 
-    .item {
-      display: flex;
+    .fileRow {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 10px;
       align-items: center;
-      gap: 12px;
-      padding: 14px 16px;
+      padding: 12px 15px;
       border-bottom: 1px solid #eee;
     }
 
-    .item:last-child {
+    .fileRow:last-child {
       border-bottom: 0;
     }
 
-    .itemIcon {
-      width: 30px;
-      text-align: center;
-      font-size: 20px;
-    }
-
-    .itemName {
-      flex: 1;
-      min-width: 0;
-      word-break: break-all;
-    }
-
-    .itemInfo {
-      color: #888;
-      font-size: 12px;
+    .fileName {
+      overflow: hidden;
+      text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    .item button {
-      border: 1px solid #ddd;
-      background: white;
-      padding: 6px 9px;
-      border-radius: 6px;
+    .folderRow {
       cursor: pointer;
     }
 
+    .folderRow:hover {
+      background: #f8f8f8;
+    }
+
+    .fileButtons {
+      display: flex;
+      gap: 5px;
+    }
+
+    .fileButtons button {
+      border: 1px solid #ddd;
+      background: white;
+      border-radius: 6px;
+      padding: 5px 9px;
+      cursor: pointer;
+    }
+
+    .deleteBtn {
+      color: #d22;
+    }
+
     .empty {
-      padding: 50px 20px;
+      padding: 40px;
       text-align: center;
       color: #888;
     }
@@ -229,81 +236,37 @@
     .pagination {
       display: flex;
       justify-content: center;
-      gap: 6px;
+      align-items: center;
+      gap: 10px;
       margin-top: 20px;
-      flex-wrap: wrap;
     }
 
     .pagination button {
       border: 1px solid #ddd;
       background: white;
-      padding: 7px 10px;
       border-radius: 6px;
+      padding: 7px 12px;
       cursor: pointer;
     }
 
-    .pagination button.active {
-      background: #222;
-      color: white;
-      border-color: #222;
+    .pagination button:disabled {
+      opacity: 0.4;
+      cursor: default;
     }
 
-    .modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,.45);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-      z-index: 100;
-    }
-
-    .modalBox {
-      width: 100%;
-      max-width: 400px;
-      background: white;
-      border-radius: 14px;
-      padding: 25px;
-    }
-
-    .modalBox h3 {
-      margin-top: 0;
-    }
-
-    .modalBox input {
-      width: 100%;
-      padding: 11px;
-      border: 1px solid #ddd;
-      border-radius: 7px;
-      margin-bottom: 12px;
-    }
-
-    .modalButtons {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-    }
-
-    .modalButtons button {
-      padding: 8px 13px;
-      border: 1px solid #ddd;
-      border-radius: 7px;
-      background: white;
-      cursor: pointer;
+    .storage {
+      margin-top: 12px;
+      color: #777;
+      font-size: 13px;
     }
 
     @media (max-width: 600px) {
-      .item {
-        flex-wrap: wrap;
+      .fileRow {
+        grid-template-columns: 1fr;
       }
 
-      .itemName {
-        flex-basis: calc(100% - 45px);
-      }
-
-      .itemInfo {
-        margin-left: 42px;
+      .fileButtons {
+        justify-content: flex-end;
       }
     }
   </style>
@@ -311,21 +274,16 @@
 
 <body>
 
-<!-- 로그인 -->
-<div id="loginScreen">
-
-  <div class="loginBox">
-
-    <h1>JU FILES</h1>
-
-    <form id="loginForm">
+  <!-- 로그인 -->
+  <div id="loginScreen">
+    <div class="loginBox">
+      <h1>JU Files</h1>
 
       <input
         id="username"
         type="text"
         placeholder="아이디"
         autocomplete="username"
-        required
       >
 
       <input
@@ -333,56 +291,56 @@
         type="password"
         placeholder="비밀번호"
         autocomplete="current-password"
-        required
       >
 
-      <button type="submit">
+      <button id="loginButton">
         로그인
       </button>
 
-    </form>
-
-    <div id="loginMessage"></div>
-
+      <div id="loginMessage"></div>
+    </div>
   </div>
 
-</div>
 
+  <!-- 파일관리 -->
+  <div id="app">
 
-<!-- 파일 관리자 -->
-<div id="app">
+    <div class="header">
+      <div class="headerTitle">
+        JU Files
+      </div>
 
-  <header>
+      <div class="headerRight">
+        <span id="usernameDisplay"></span>
 
-    <h1>JU FILES</h1>
-
-    <div class="headerRight">
-
-      <span id="userName"></span>
-
-      <button
-        class="logoutBtn"
-        onclick="logout()"
-      >
-        로그아웃
-      </button>
-
+        <button onclick="logout()">
+          로그아웃
+        </button>
+      </div>
     </div>
 
-  </header>
+    <div class="container">
 
+      <div class="toolbar">
+        <button onclick="createFolder()">
+          + 폴더 만들기
+        </button>
 
-  <main>
+        <button onclick="document.getElementById('fileInput').click()">
+          + 파일 업로드
+        </button>
+      </div>
 
-    <div class="toolbar">
+      <div id="breadcrumb" class="breadcrumb"></div>
 
-      <button onclick="createFolder()">
-        📁 새 폴더
-      </button>
-
-      <button onclick="document.getElementById('fileInput').click()">
-        ⬆ 파일 업로드
-      </button>
+      <div
+        id="dropZone"
+        class="dropZone"
+      >
+        파일을 여기에 끌어다 놓으세요
+        <br>
+        또는 클릭해서 파일 선택
+      </div>
 
       <input
         id="fileInput"
@@ -390,73 +348,14 @@
         multiple
       >
 
-    </div>
+      <div id="fileList" class="fileList"></div>
 
+      <div id="pagination" class="pagination"></div>
 
-    <div class="storageInfo">
-      저장공간 한도: 9GB
-    </div>
-
-
-    <div id="breadcrumb" class="breadcrumb"></div>
-
-
-    <div
-      id="dropZone"
-      class="dropZone"
-    >
-      <p>파일을 이곳에 끌어다 놓으세요.</p>
-      <p>또는 클릭하여 파일을 선택하세요.</p>
-    </div>
-
-
-    <div
-      id="fileList"
-      class="fileList"
-    ></div>
-
-
-    <div
-      id="pagination"
-      class="pagination"
-    ></div>
-
-  </main>
-
-</div>
-
-
-<!-- 폴더 생성 모달 -->
-<div
-  id="folderModal"
-  class="modal"
->
-
-  <div class="modalBox">
-
-    <h3>새 폴더 만들기</h3>
-
-    <input
-      id="folderName"
-      type="text"
-      placeholder="폴더 이름"
-    >
-
-    <div class="modalButtons">
-
-      <button onclick="closeFolderModal()">
-        취소
-      </button>
-
-      <button onclick="submitFolder()">
-        만들기
-      </button>
+      <div id="storage" class="storage"></div>
 
     </div>
-
   </div>
-
-</div>
 
 
 <script>
@@ -467,60 +366,47 @@ const API =
 const TOKEN_KEY =
   "ju_files_token";
 
-let currentPrefix = "";
-
-let currentItems = [];
-
-let currentPage = 1;
-
 const PAGE_SIZE = 30;
 
+let currentFolder = "";
+let currentPage = 1;
 
-/*
- * 인증 헤더
- */
-function authHeaders(extra = {}) {
+let allFiles = [];
+let allFolders = [];
 
-  const token =
-    localStorage.getItem(TOKEN_KEY);
 
-  return {
-    ...extra,
+// ============================
+// 인증
+// ============================
 
-    ...(token
-      ? {
-          Authorization:
-            `Bearer ${token}`
-        }
-      : {})
-  };
+function getToken() {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+function authHeaders() {
+  const token = getToken();
+
+  return token
+    ? {
+        Authorization: "Bearer " + token
+      }
+    : {};
 }
 
 
-/*
- * 공통 fetch
- */
-async function apiFetch(
-  url,
-  options = {}
-) {
+async function apiFetch(url, options = {}) {
 
-  options.headers =
-    authHeaders(
-      options.headers || {}
-    );
+  options.headers = {
+    ...(options.headers || {}),
+    ...authHeaders()
+  };
 
   const response =
-    await fetch(
-      url,
-      options
-    );
+    await fetch(url, options);
 
   if (response.status === 401) {
 
-    localStorage.removeItem(
-      TOKEN_KEY
-    );
+    localStorage.removeItem(TOKEN_KEY);
 
     showLogin();
 
@@ -533,88 +419,126 @@ async function apiFetch(
 }
 
 
-/*
- * 로그인
- */
+// ============================
+// 로그인
+// ============================
+
 document
-  .getElementById("loginForm")
+  .getElementById("loginButton")
   .addEventListener(
-    "submit",
-    async function(e) {
+    "click",
+    login
+  );
 
-      e.preventDefault();
 
-      const username =
-        document
-          .getElementById("username")
-          .value;
+document
+  .getElementById("password")
+  .addEventListener(
+    "keydown",
+    function(event) {
 
-      const password =
-        document
-          .getElementById("password")
-          .value;
-
-      const message =
-        document
-          .getElementById("loginMessage");
-
-      message.textContent =
-        "로그인 중...";
-
-      try {
-
-        const response =
-          await fetch(
-            `${API}/api/login`,
-            {
-              method: "POST",
-
-              headers: {
-                "Content-Type":
-                  "application/json"
-              },
-
-              body: JSON.stringify({
-                username,
-                password
-              })
-            }
-          );
-
-        const data =
-          await response.json();
-
-        if (!response.ok) {
-          throw new Error(
-            data.error ||
-            "로그인에 실패했습니다."
-          );
-        }
-
-        localStorage.setItem(
-          TOKEN_KEY,
-          data.token
-        );
-
-        message.textContent = "";
-
-        showApp();
-
-        await loadFiles();
-
-      } catch (error) {
-
-        message.textContent =
-          error.message ||
-          "로그인에 실패했습니다.";
+      if (event.key === "Enter") {
+        login();
       }
+
     }
   );
 
 
-/*
- * 로그인 화면 표시
- */
+async function login() {
+
+  const username =
+    document
+      .getElementById("username")
+      .value
+      .trim();
+
+  const password =
+    document
+      .getElementById("password")
+      .value;
+
+  const message =
+    document
+      .getElementById("loginMessage");
+
+  const button =
+    document
+      .getElementById("loginButton");
+
+  if (!username || !password) {
+
+    message.textContent =
+      "아이디와 비밀번호를 입력해주세요.";
+
+    return;
+  }
+
+  button.disabled = true;
+
+  message.textContent =
+    "로그인 중...";
+
+  try {
+
+    const response =
+      await fetch(
+        `${API}/api/login`,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+            username,
+            password
+          })
+        }
+      );
+
+    const data =
+      await response.json();
+
+    if (!response.ok) {
+
+      message.textContent =
+        data.error ||
+        "로그인에 실패했습니다.";
+
+      return;
+    }
+
+    localStorage.setItem(
+      TOKEN_KEY,
+      data.token
+    );
+
+    showApp();
+
+    await loadFiles();
+
+  } catch (error) {
+
+    console.error(error);
+
+    message.textContent =
+      "서버에 연결할 수 없습니다.";
+
+  } finally {
+
+    button.disabled = false;
+
+  }
+}
+
+
+// ============================
+// 로그인 화면
+// ============================
+
 function showLogin() {
 
   document
@@ -627,9 +551,10 @@ function showLogin() {
 }
 
 
-/*
- * 앱 표시
- */
+// ============================
+// 앱 화면
+// ============================
+
 function showApp() {
 
   document
@@ -639,21 +564,23 @@ function showApp() {
   document
     .getElementById("app")
     .style.display = "block";
+
 }
 
 
-/*
- * 로그인 상태 확인
- */
+// ============================
+// 로그인 확인
+// ============================
+
 async function checkLogin() {
 
   const token =
-    localStorage.getItem(
-      TOKEN_KEY
-    );
+    getToken();
 
   if (!token) {
+
     showLogin();
+
     return false;
   }
 
@@ -665,7 +592,9 @@ async function checkLogin() {
       );
 
     if (!response.ok) {
+
       showLogin();
+
       return false;
     }
 
@@ -673,9 +602,11 @@ async function checkLogin() {
       await response.json();
 
     document
-      .getElementById("userName")
+      .getElementById(
+        "usernameDisplay"
+      )
       .textContent =
-      data.user || "";
+        data.username;
 
     showApp();
 
@@ -690,30 +621,28 @@ async function checkLogin() {
 }
 
 
-/*
- * 로그아웃
- */
-async function logout() {
+// ============================
+// 로그아웃
+// ============================
+
+function logout() {
 
   localStorage.removeItem(
     TOKEN_KEY
   );
 
+  currentFolder = "";
+  currentPage = 1;
+
   showLogin();
 
-  document
-    .getElementById("username")
-    .value = "";
-
-  document
-    .getElementById("password")
-    .value = "";
 }
 
 
-/*
- * 파일 목록 불러오기
- */
+// ============================
+// 파일 목록
+// ============================
+
 async function loadFiles() {
 
   try {
@@ -721,7 +650,7 @@ async function loadFiles() {
     const response =
       await apiFetch(
         `${API}/api/files?prefix=${encodeURIComponent(
-          currentPrefix
+          currentFolder
         )}`
       );
 
@@ -729,16 +658,20 @@ async function loadFiles() {
       await response.json();
 
     if (!response.ok) {
-      throw new Error(
+
+      alert(
         data.error ||
         "파일 목록을 불러오지 못했습니다."
       );
+
+      return;
     }
 
-    currentItems = [
-      ...(data.folders || []),
-      ...(data.files || [])
-    ];
+    allFiles =
+      data.files || [];
+
+    allFolders =
+      data.folders || [];
 
     currentPage = 1;
 
@@ -746,105 +679,110 @@ async function loadFiles() {
 
     renderFiles();
 
+    loadUsage();
+
   } catch (error) {
 
-    if (
-      error.message !==
-      "로그인이 필요합니다."
-    ) {
-      alert(error.message);
-    }
+    console.error(error);
+
   }
 }
 
 
-/*
- * Breadcrumb
- */
+// ============================
+// 경로 표시
+// ============================
+
 function renderBreadcrumb() {
 
-  const el =
+  const element =
     document.getElementById(
       "breadcrumb"
     );
 
-  el.innerHTML = "";
+  element.innerHTML = "";
 
-  const root =
+  const home =
     document.createElement(
-      "button"
+      "span"
     );
 
-  root.textContent = "홈";
+  home.textContent =
+    "홈";
 
-  root.onclick = () => {
+  home.onclick =
+    () => openFolder("");
 
-    currentPrefix = "";
+  element.appendChild(home);
 
-    loadFiles();
-  };
 
-  el.appendChild(root);
-
-  if (!currentPrefix) {
+  if (!currentFolder) {
     return;
   }
 
-  const parts =
-    currentPrefix
-      .split("/")
-      .filter(Boolean);
 
-  let prefix = "";
+  const parts =
+    currentFolder
+      .replace(/\/$/, "")
+      .split("/");
+
+  let path = "";
 
   parts.forEach(
     (part, index) => {
 
       const separator =
+        document.createTextNode(
+          " / "
+        );
+
+      element.appendChild(
+        separator
+      );
+
+      path += part + "/";
+
+      const item =
         document.createElement(
           "span"
         );
 
-      separator.textContent =
-        " / ";
-
-      el.appendChild(
-        separator
-      );
-
-      prefix +=
-        part + "/";
-
-      const button =
-        document.createElement(
-          "button"
-        );
-
-      button.textContent =
+      item.textContent =
         part;
 
-      const targetPrefix =
-        prefix;
+      const target =
+        path;
 
-      button.onclick = () => {
+      item.onclick =
+        () => openFolder(target);
 
-        currentPrefix =
-          targetPrefix;
+      element.appendChild(item);
 
-        loadFiles();
-      };
-
-      el.appendChild(
-        button
-      );
     }
   );
 }
 
 
-/*
- * 파일 목록 표시
- */
+// ============================
+// 폴더 열기
+// ============================
+
+function openFolder(folder) {
+
+  currentFolder =
+    folder;
+
+  currentPage = 1;
+
+  loadFiles();
+
+}
+
+
+// ============================
+// 파일 표시
+// ============================
+
 function renderFiles() {
 
   const list =
@@ -852,102 +790,20 @@ function renderFiles() {
       "fileList"
     );
 
-  const pagination =
-    document.getElementById(
-      "pagination"
-    );
-
   list.innerHTML = "";
 
-  pagination.innerHTML = "";
 
-  if (
-    currentItems.length === 0
-  ) {
-
-    list.innerHTML =
-      `<div class="empty">
-        저장된 파일이 없습니다.
-      </div>`;
-
-    return;
-  }
-
-  /*
-   * 폴더 먼저
-   */
-  currentItems.sort(
-    (a, b) => {
-
-      if (
-        a.type === "folder" &&
-        b.type !== "folder"
-      ) {
-        return -1;
-      }
-
-      if (
-        a.type !== "folder" &&
-        b.type === "folder"
-      ) {
-        return 1;
-      }
-
-      return a.name.localeCompare(
-        b.name,
-        "ko"
-      );
-    }
-  );
-
-  const totalPages =
-    Math.ceil(
-      currentItems.length /
-      PAGE_SIZE
-    );
-
-  if (
-    currentPage > totalPages
-  ) {
-    currentPage = totalPages;
-  }
-
-  const start =
-    (currentPage - 1) *
-    PAGE_SIZE;
-
-  const end =
-    start + PAGE_SIZE;
-
-  const items =
-    currentItems.slice(
-      start,
-      end
-    );
-
-  items.forEach(
-    (item) => {
+  // 폴더
+  allFolders.forEach(
+    folder => {
 
       const row =
         document.createElement(
           "div"
         );
 
-      row.className = "item";
-
-      const icon =
-        document.createElement(
-          "div"
-        );
-
-      icon.className =
-        "itemIcon";
-
-      icon.textContent =
-        item.type === "folder"
-          ? "📁"
-          : "📄";
-
+      row.className =
+        "fileRow folderRow";
 
       const name =
         document.createElement(
@@ -955,63 +811,25 @@ function renderFiles() {
         );
 
       name.className =
-        "itemName";
+        "fileName";
 
       name.textContent =
-        item.name;
+        "📁 " + folder.name;
 
 
-      const info =
+      const empty =
         document.createElement(
           "div"
         );
 
-      info.className =
-        "itemInfo";
 
-
-      if (
-        item.type === "file"
-      ) {
-
-        info.textContent =
-          formatSize(item.size);
-      }
-
-
-      const action =
+      const buttons =
         document.createElement(
-          "button"
+          "div"
         );
 
-
-      if (
-        item.type === "folder"
-      ) {
-
-        action.textContent =
-          "열기";
-
-        action.onclick = () => {
-
-          currentPrefix =
-            item.prefix;
-
-          loadFiles();
-        };
-
-      } else {
-
-        action.textContent =
-          "다운로드";
-
-        action.onclick = () => {
-
-          downloadFile(
-            item.key
-          );
-        };
-      }
+      buttons.className =
+        "fileButtons";
 
 
       const deleteButton =
@@ -1022,273 +840,266 @@ function renderFiles() {
       deleteButton.textContent =
         "삭제";
 
+      deleteButton.className =
+        "deleteBtn";
 
       deleteButton.onclick =
-        async () => {
+        event => {
 
-          if (
-            item.type === "folder"
-          ) {
+          event.stopPropagation();
 
-            const ok =
-              confirm(
-                `"${item.name}" 폴더와 안의 모든 파일을 삭제할까요?`
-              );
+          deleteFolder(
+            folder.key
+          );
 
-            if (!ok) {
-              return;
-            }
-
-            await deleteFolder(
-              item.prefix
-            );
-
-          } else {
-
-            const ok =
-              confirm(
-                `"${item.name}" 파일을 삭제할까요?`
-              );
-
-            if (!ok) {
-              return;
-            }
-
-            await deleteFile(
-              item.key
-            );
-          }
         };
 
 
-      row.appendChild(icon);
+      buttons.appendChild(
+        deleteButton
+      );
+
+
       row.appendChild(name);
-      row.appendChild(info);
-      row.appendChild(action);
-      row.appendChild(deleteButton);
+      row.appendChild(empty);
+      row.appendChild(buttons);
+
+
+      row.onclick =
+        () => openFolder(
+          folder.key
+        );
+
 
       list.appendChild(row);
+
     }
   );
 
 
-  /*
-   * 페이지 버튼
-   */
-  for (
-    let i = 1;
-    i <= totalPages;
-    i++
+  // 파일
+  const start =
+    (currentPage - 1) *
+    PAGE_SIZE;
+
+  const end =
+    start + PAGE_SIZE;
+
+  const pageFiles =
+    allFiles.slice(
+      start,
+      end
+    );
+
+
+  pageFiles.forEach(
+    file => {
+
+      const row =
+        document.createElement(
+          "div"
+        );
+
+      row.className =
+        "fileRow";
+
+
+      const name =
+        document.createElement(
+          "div"
+        );
+
+      name.className =
+        "fileName";
+
+      name.textContent =
+        "📄 " + file.name;
+
+
+      const size =
+        document.createElement(
+          "div"
+        );
+
+      size.textContent =
+        formatSize(
+          file.size
+        );
+
+
+      const buttons =
+        document.createElement(
+          "div"
+        );
+
+      buttons.className =
+        "fileButtons";
+
+
+      const downloadButton =
+        document.createElement(
+          "button"
+        );
+
+      downloadButton.textContent =
+        "다운로드";
+
+      downloadButton.onclick =
+        () => downloadFile(
+          file.key
+        );
+
+
+      const deleteButton =
+        document.createElement(
+          "button"
+        );
+
+      deleteButton.textContent =
+        "삭제";
+
+      deleteButton.className =
+        "deleteBtn";
+
+      deleteButton.onclick =
+        () => deleteFile(
+          file.key,
+          file.name
+        );
+
+
+      buttons.appendChild(
+        downloadButton
+      );
+
+      buttons.appendChild(
+        deleteButton
+      );
+
+
+      row.appendChild(name);
+      row.appendChild(size);
+      row.appendChild(buttons);
+
+
+      list.appendChild(row);
+
+    }
+  );
+
+
+  if (
+    allFiles.length === 0 &&
+    allFolders.length === 0
   ) {
 
-    const button =
-      document.createElement(
-        "button"
-      );
+    list.innerHTML =
+      `<div class="empty">
+        저장된 파일이 없습니다.
+      </div>`;
 
-    button.textContent = i;
+  }
 
-    if (
-      i === currentPage
-    ) {
-      button.classList.add(
-        "active"
-      );
-    }
 
-    button.onclick = () => {
+  renderPagination();
 
-      currentPage = i;
+}
+
+
+// ============================
+// 페이지
+// ============================
+
+function renderPagination() {
+
+  const pagination =
+    document.getElementById(
+      "pagination"
+    );
+
+  pagination.innerHTML = "";
+
+  const totalPages =
+    Math.max(
+      1,
+      Math.ceil(
+        allFiles.length /
+        PAGE_SIZE
+      )
+    );
+
+
+  const prev =
+    document.createElement(
+      "button"
+    );
+
+  prev.textContent =
+    "이전";
+
+  prev.disabled =
+    currentPage <= 1;
+
+  prev.onclick =
+    () => {
+
+      currentPage--;
 
       renderFiles();
+
     };
 
-    pagination.appendChild(
-      button
+
+  const page =
+    document.createElement(
+      "span"
     );
-  }
+
+  page.textContent =
+    `${currentPage} / ${totalPages}`;
+
+
+  const next =
+    document.createElement(
+      "button"
+    );
+
+  next.textContent =
+    "다음";
+
+  next.disabled =
+    currentPage >= totalPages;
+
+  next.onclick =
+    () => {
+
+      currentPage++;
+
+      renderFiles();
+
+    };
+
+
+  pagination.appendChild(
+    prev
+  );
+
+  pagination.appendChild(
+    page
+  );
+
+  pagination.appendChild(
+    next
+  );
+
 }
 
 
-/*
- * 파일 업로드
- */
-async function uploadFiles(
-  files
-) {
+// ============================
+// 파일 다운로드
+// ============================
 
-  for (const file of files) {
-
-    let confirmedLarge =
-      false;
-
-    if (
-      file.size >=
-      100 * 1024 * 1024
-    ) {
-
-      confirmedLarge =
-        confirm(
-          `"${file.name}"은 100MB 이상 파일입니다.\n\n업로드하시겠습니까?`
-        );
-
-      if (!confirmedLarge) {
-        continue;
-      }
-    }
-
-
-    const formData =
-      new FormData();
-
-    formData.append(
-      "file",
-      file
-    );
-
-    formData.append(
-      "folder",
-      currentPrefix
-    );
-
-    formData.append(
-      "confirmedLarge",
-      confirmedLarge
-    );
-
-
-    try {
-
-      const response =
-        await apiFetch(
-          `${API}/api/upload`,
-          {
-            method: "POST",
-            body: formData
-          }
-        );
-
-      const data =
-        await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.error ||
-          "업로드에 실패했습니다."
-        );
-      }
-
-    } catch (error) {
-
-      alert(
-        `${file.name}\n${error.message}`
-      );
-    }
-  }
-
-  await loadFiles();
-}
-
-
-/*
- * 파일 선택
- */
-document
-  .getElementById("fileInput")
-  .addEventListener(
-    "change",
-    function() {
-
-      if (
-        this.files.length > 0
-      ) {
-
-        uploadFiles(
-          Array.from(
-            this.files
-          )
-        );
-      }
-
-      this.value = "";
-    }
-  );
-
-
-/*
- * 드래그앤드롭
- */
-const dropZone =
-  document.getElementById(
-    "dropZone"
-  );
-
-
-dropZone.addEventListener(
-  "click",
-  () => {
-
-    document
-      .getElementById(
-        "fileInput"
-      )
-      .click();
-  }
-);
-
-
-dropZone.addEventListener(
-  "dragover",
-  (e) => {
-
-    e.preventDefault();
-
-    dropZone.classList.add(
-      "dragover"
-    );
-  }
-);
-
-
-dropZone.addEventListener(
-  "dragleave",
-  () => {
-
-    dropZone.classList.remove(
-      "dragover"
-    );
-  }
-);
-
-
-dropZone.addEventListener(
-  "drop",
-  (e) => {
-
-    e.preventDefault();
-
-    dropZone.classList.remove(
-      "dragover"
-    );
-
-    const files =
-      Array.from(
-        e.dataTransfer.files
-      );
-
-    if (files.length > 0) {
-      uploadFiles(files);
-    }
-  }
-);
-
-
-/*
- * 다운로드
- */
-async function downloadFile(
-  key
-) {
+async function downloadFile(key) {
 
   try {
 
@@ -1304,15 +1115,49 @@ async function downloadFile(
       const data =
         await response.json();
 
-      throw new Error(
+      alert(
         data.error ||
         "다운로드에 실패했습니다."
       );
+
+      return;
     }
 
 
     const blob =
       await response.blob();
+
+
+    const contentDisposition =
+      response.headers.get(
+        "Content-Disposition"
+      );
+
+
+    let filename =
+      key.split("/").pop();
+
+
+    if (
+      contentDisposition
+    ) {
+
+      const match =
+        contentDisposition.match(
+          /filename\*=UTF-8''([^;]+)/i
+        );
+
+      if (match) {
+
+        filename =
+          decodeURIComponent(
+            match[1]
+          );
+
+      }
+
+    }
+
 
     const url =
       URL.createObjectURL(
@@ -1326,20 +1171,8 @@ async function downloadFile(
 
     a.href = url;
 
-    /*
-     * Worker에서
-     * Content-Disposition으로
-     * 원래 파일명을 내려주므로
-     * 브라우저 기본 다운로드를 사용
-     */
     a.download =
-      key
-        .split("/")
-        .pop()
-        .replace(
-          /^\d+-/,
-          ""
-        );
+      filename;
 
     document.body.appendChild(a);
 
@@ -1347,23 +1180,60 @@ async function downloadFile(
 
     a.remove();
 
-    URL.revokeObjectURL(
-      url
-    );
+    URL.revokeObjectURL(url);
 
   } catch (error) {
 
-    alert(error.message);
+    console.error(error);
+
+    alert(
+      "다운로드에 실패했습니다."
+    );
+
   }
 }
 
 
-/*
- * 파일 삭제
- */
+// ============================
+// 파일 삭제
+// ============================
+
 async function deleteFile(
-  key
+  key,
+  filename
 ) {
+
+  const first =
+    confirm(
+      `"${filename}" 파일을 삭제할까요?`
+    );
+
+  if (!first) {
+    return;
+  }
+
+
+  // 삭제 비밀번호
+  const password =
+    prompt(
+      "삭제하려면 비밀번호를 입력하세요."
+    );
+
+
+  if (password === null) {
+    return;
+  }
+
+
+  if (!password) {
+
+    alert(
+      "비밀번호를 입력해주세요."
+    );
+
+    return;
+  }
+
 
   try {
 
@@ -1371,37 +1241,103 @@ async function deleteFile(
       await apiFetch(
         `${API}/api/file?key=${encodeURIComponent(
           key
+        )}&password=${encodeURIComponent(
+          password
         )}`,
         {
           method: "DELETE"
         }
       );
 
+
     const data =
       await response.json();
 
+
     if (!response.ok) {
-      throw new Error(
-        data.error ||
-        "삭제에 실패했습니다."
-      );
+
+      if (
+        data.error ===
+        "DELETE_PASSWORD_INVALID"
+      ) {
+
+        alert(
+          "삭제 비밀번호가 틀렸습니다."
+        );
+
+      } else {
+
+        alert(
+          data.error ||
+          "삭제에 실패했습니다."
+        );
+
+      }
+
+      return;
     }
+
 
     await loadFiles();
 
   } catch (error) {
 
-    alert(error.message);
+    console.error(error);
+
+    alert(
+      "삭제 중 오류가 발생했습니다."
+    );
+
   }
 }
 
 
-/*
- * 폴더 삭제
- */
+// ============================
+// 폴더 삭제
+// ============================
+
 async function deleteFolder(
   prefix
 ) {
+
+  const folderName =
+    prefix
+      .replace(/\/$/, "")
+      .split("/")
+      .pop();
+
+
+  const first =
+    confirm(
+      `"${folderName}" 폴더를 삭제할까요?\n\n폴더 안의 모든 파일도 함께 삭제됩니다.`
+    );
+
+
+  if (!first) {
+    return;
+  }
+
+
+  const password =
+    prompt(
+      "폴더를 삭제하려면 비밀번호를 입력하세요."
+    );
+
+
+  if (password === null) {
+    return;
+  }
+
+
+  if (!password) {
+
+    alert(
+      "비밀번호를 입력해주세요."
+    );
+
+    return;
+  }
+
 
   try {
 
@@ -1409,84 +1345,76 @@ async function deleteFolder(
       await apiFetch(
         `${API}/api/folder?prefix=${encodeURIComponent(
           prefix
+        )}&password=${encodeURIComponent(
+          password
         )}`,
         {
           method: "DELETE"
         }
       );
 
+
     const data =
       await response.json();
 
+
     if (!response.ok) {
-      throw new Error(
-        data.error ||
-        "폴더 삭제에 실패했습니다."
-      );
+
+      if (
+        data.error ===
+        "DELETE_PASSWORD_INVALID"
+      ) {
+
+        alert(
+          "삭제 비밀번호가 틀렸습니다."
+        );
+
+      } else {
+
+        alert(
+          data.error ||
+          "폴더 삭제에 실패했습니다."
+        );
+
+      }
+
+      return;
     }
+
 
     await loadFiles();
 
   } catch (error) {
 
-    alert(error.message);
-  }
-}
-
-
-/*
- * 새 폴더 모달
- */
-function createFolder() {
-
-  document
-    .getElementById(
-      "folderModal"
-    )
-    .style.display = "flex";
-
-  document
-    .getElementById(
-      "folderName"
-    )
-    .value = "";
-
-  document
-    .getElementById(
-      "folderName"
-    )
-    .focus();
-}
-
-
-function closeFolderModal() {
-
-  document
-    .getElementById(
-      "folderModal"
-    )
-    .style.display = "none";
-}
-
-
-async function submitFolder() {
-
-  const name =
-    document
-      .getElementById(
-        "folderName"
-      )
-      .value
-      .trim();
-
-  if (!name) {
+    console.error(error);
 
     alert(
-      "폴더 이름을 입력하세요."
+      "폴더 삭제 중 오류가 발생했습니다."
     );
 
+  }
+}
+
+
+// ============================
+// 폴더 생성
+// ============================
+
+async function createFolder() {
+
+  const name =
+    prompt(
+      "새 폴더 이름을 입력하세요."
+    );
+
+
+  if (
+    name === null ||
+    !name.trim()
+  ) {
     return;
   }
+
 
   try {
 
@@ -1502,38 +1430,296 @@ async function submitFolder() {
           },
 
           body: JSON.stringify({
-            parent:
-              currentPrefix,
-            name
+            folder:
+              currentFolder,
+            name:
+              name.trim()
           })
         }
       );
 
+
     const data =
       await response.json();
 
+
     if (!response.ok) {
 
-      throw new Error(
+      alert(
         data.error ||
         "폴더 생성에 실패했습니다."
       );
+
+      return;
     }
 
-    closeFolderModal();
 
     await loadFiles();
 
   } catch (error) {
 
-    alert(error.message);
+    console.error(error);
+
+    alert(
+      "폴더 생성에 실패했습니다."
+    );
+
   }
 }
 
 
-/*
- * 용량 표시
- */
+// ============================
+// 업로드
+// ============================
+
+document
+  .getElementById("fileInput")
+  .addEventListener(
+    "change",
+    event => {
+
+      uploadFiles(
+        event.target.files
+      );
+
+      event.target.value = "";
+
+    }
+  );
+
+
+async function uploadFiles(
+  files
+) {
+
+  if (!files || !files.length) {
+    return;
+  }
+
+
+  for (
+    const file of files
+  ) {
+
+    let confirmedLarge =
+      false;
+
+
+    if (
+      file.size >=
+      100 * 1024 * 1024
+    ) {
+
+      confirmedLarge =
+        confirm(
+          `"${file.name}"은 100MB 이상입니다.\n\n업로드하시겠습니까?`
+        );
+
+
+      if (!confirmedLarge) {
+        continue;
+      }
+
+    }
+
+
+    const formData =
+      new FormData();
+
+    formData.append(
+      "file",
+      file
+    );
+
+    formData.append(
+      "folder",
+      currentFolder
+    );
+
+    formData.append(
+      "confirmedLarge",
+      confirmedLarge
+        ? "true"
+        : "false"
+    );
+
+
+    try {
+
+      const response =
+        await apiFetch(
+          `${API}/api/upload`,
+          {
+            method: "POST",
+            body: formData
+          }
+        );
+
+
+      const data =
+        await response.json();
+
+
+      if (!response.ok) {
+
+        if (
+          data.error ===
+          "LARGE_FILE_CONFIRM_REQUIRED"
+        ) {
+
+          alert(
+            "100MB 이상 파일은 확인 후 업로드할 수 있습니다."
+          );
+
+        } else {
+
+          alert(
+            data.error ||
+            `"${file.name}" 업로드 실패`
+          );
+
+        }
+
+        continue;
+      }
+
+    } catch (error) {
+
+      console.error(error);
+
+      alert(
+        `"${file.name}" 업로드 중 오류가 발생했습니다.`
+      );
+
+    }
+
+  }
+
+
+  await loadFiles();
+
+}
+
+
+// ============================
+// 드래그 앤 드롭
+// ============================
+
+const dropZone =
+  document.getElementById(
+    "dropZone"
+  );
+
+
+dropZone.addEventListener(
+  "click",
+  () => {
+
+    document
+      .getElementById(
+        "fileInput"
+      )
+      .click();
+
+  }
+);
+
+
+dropZone.addEventListener(
+  "dragover",
+  event => {
+
+    event.preventDefault();
+
+    dropZone.classList.add(
+      "dragover"
+    );
+
+  }
+);
+
+
+dropZone.addEventListener(
+  "dragleave",
+  () => {
+
+    dropZone.classList.remove(
+      "dragover"
+    );
+
+  }
+);
+
+
+dropZone.addEventListener(
+  "drop",
+  event => {
+
+    event.preventDefault();
+
+    dropZone.classList.remove(
+      "dragover"
+    );
+
+    uploadFiles(
+      event.dataTransfer.files
+    );
+
+  }
+);
+
+
+// ============================
+// 용량 표시
+// ============================
+
+async function loadUsage() {
+
+  try {
+
+    const response =
+      await apiFetch(
+        `${API}/api/usage`
+      );
+
+    if (!response.ok) {
+      return;
+    }
+
+    const data =
+      await response.json();
+
+
+    const used =
+      formatSize(
+        data.used
+      );
+
+    const max =
+      formatSize(
+        data.max
+      );
+
+
+    document
+      .getElementById(
+        "storage"
+      )
+      .textContent =
+        `저장공간: ${used} / ${max}`;
+
+  } catch (error) {
+
+    console.error(error);
+
+  }
+}
+
+
+// ============================
+// 용량 표시
+// ============================
+
 function formatSize(
   bytes
 ) {
@@ -1542,15 +1728,22 @@ function formatSize(
     return "0 B";
   }
 
+
   const units = [
     "B",
     "KB",
     "MB",
-    "GB"
+    "GB",
+    "TB"
   ];
 
-  let size = bytes;
-  let index = 0;
+
+  let size =
+    bytes;
+
+  let index =
+    0;
+
 
   while (
     size >= 1024 &&
@@ -1559,28 +1752,30 @@ function formatSize(
   ) {
 
     size /= 1024;
+
     index++;
+
   }
 
-  return `${size.toFixed(
-    index === 0 ? 0 : 1
-  )} ${units[index]}`;
+
+  return (
+    size.toFixed(
+      index === 0
+        ? 0
+        : 2
+    ) +
+    " " +
+    units[index]
+  );
+
 }
 
 
-/*
- * 페이지 최초 실행
- */
-(async function() {
+// ============================
+// 시작
+// ============================
 
-  const loggedIn =
-    await checkLogin();
-
-  if (loggedIn) {
-    await loadFiles();
-  }
-
-})();
+checkLogin();
 
 </script>
 
