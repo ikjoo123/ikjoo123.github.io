@@ -293,8 +293,42 @@ main {
 }
 
 .notesComposer textarea {
-  min-height: 130px;
-  resize: vertical;
+  height: 180px;
+  min-height: 180px;
+  max-height: 420px;
+  resize: none;
+  overflow-y: auto;
+  transition: height .15s ease;
+}
+
+.notesComposer.expanded {
+  position: fixed;
+  inset: 20px;
+  max-width: none;
+  width: auto;
+  height: calc(100vh - 40px);
+  margin: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+
+.notesComposer.expanded textarea {
+  flex: 1;
+  height: auto !important;
+  max-height: none;
+  min-height: 0;
+  resize: none;
+}
+
+.noteExpandButton {
+  border: 0;
+  background: transparent;
+  padding: 7px 10px;
+}
+
+.notesComposer.expanded + .notesGrid {
+  display: none;
 }
 
 .notesComposer input {
@@ -620,14 +654,23 @@ main {
       </div>
 
       <div class="noteButtons">
-        <button id="cancelNote">
-          취소
-        </button>
 
-        <button id="saveNote">
-          저장
-        </button>
-      </div>
+  <button
+    id="expandNote"
+    class="noteExpandButton"
+  >
+    ↗ 확대
+  </button>
+
+  <button id="cancelNote">
+    취소
+  </button>
+
+  <button id="saveNote">
+    저장
+  </button>
+
+</div>
 
     </div>
   </div>
@@ -1972,6 +2015,64 @@ const noteText =
     "noteText"
   );
 
+  const notesComposer =
+  document.getElementById(
+    "notesComposer"
+  );
+
+const expandNote =
+  document.getElementById(
+    "expandNote"
+  );
+
+function resizeNoteTextarea() {
+
+  if (
+    notesComposer.classList.contains(
+      "expanded"
+    )
+  ) {
+    return;
+  }
+
+  noteText.style.height =
+    "180px";
+
+  const newHeight =
+    Math.min(
+      noteText.scrollHeight,
+      420
+    );
+
+  noteText.style.height =
+    newHeight + "px";
+}
+
+noteText.addEventListener(
+  "input",
+  resizeNoteTextarea
+);
+
+expandNote.onclick =
+  function() {
+
+    const expanded =
+      notesComposer.classList.toggle(
+        "expanded"
+      );
+
+    if (expanded) {
+      expandNote.textContent =
+        "↙ 축소";
+    } else {
+      expandNote.textContent =
+        "↗ 확대";
+
+      resizeNoteTextarea();
+    }
+  };
+  
+
 document.querySelectorAll(
   ".colorDot"
 ).forEach(
@@ -2068,6 +2169,16 @@ function clearNoteComposer() {
 
   noteTitle.value = "";
   noteText.value = "";
+
+  notesComposer.classList.remove(
+  "expanded"
+);
+
+expandNote.textContent =
+  "↗ 확대";
+
+noteText.style.height =
+  "180px";
 
   selectedColor =
     "yellow";
@@ -2214,6 +2325,7 @@ function renderNotes(
           );
 
           editNote(note);
+          
         };
 
       const remove =
@@ -2320,7 +2432,17 @@ function editNote(note) {
     top: 0,
     behavior: "smooth"
   });
+notesComposer.classList.remove(
+  "expanded"
+);
 
+expandNote.textContent =
+  "↗ 확대";
+
+noteText.style.height =
+  "180px";
+
+resizeNoteTextarea();
   noteTitle.focus();
 }
 
