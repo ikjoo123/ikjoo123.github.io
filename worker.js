@@ -1,8 +1,8 @@
 const corsHeaders = {
-"Access-Control-Allow-Origin": "https://ikjoo123.github.io",
-"Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
-"Access-Control-Allow-Headers": "Content-Type, Authorization",
-"Access-Control-Max-Age": "86400"
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "*",
+  "Access-Control-Max-Age": "86400"
 };
 
 const MAX_STORAGE = 9 * 1024 * 1024 * 1024;
