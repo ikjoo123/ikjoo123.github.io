@@ -2,6 +2,7 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "https://ikjoo123.github.io",
   "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Max-Age": "86400",
 };
 
 const MAX_STORAGE = 9 * 1024 * 1024 * 1024; // 9GB
@@ -175,6 +176,12 @@ function getOriginalName(object) {
 
 export default {
   async fetch(request, env) {
+    if (request.method === "OPTIONS") {
+  return new Response(null, {
+    status: 204,
+    headers: corsHeaders,
+  });
+}
     const url = new URL(request.url);
 
     if (request.method === "OPTIONS") {
