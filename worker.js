@@ -31,10 +31,11 @@ return jsonResponse({ error: message }, status);
 }
 
 function base64urlEncode(data) {
-return btoa(data)
-.replace(/+/g, "-")
-.replace(///g, "_")
-.replace(/=+$/, "");
+  var result = btoa(data);
+  result = result.replace(/\+/g, "-");
+  result = result.replace(/\//g, "_");
+  result = result.replace(/=+$/, "");
+  return result;
 }
 
 function base64urlDecode(data) {
