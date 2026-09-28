@@ -1,729 +1,666 @@
+```html
 <!DOCTYPE html>
 <html lang="ko">
 
 <head>
 
-  <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
-  <title>익주</title>
-
-
-  <style>
-
-    * {
-      box-sizing: border-box;
-    }
-
-
-    body {
-      margin: 0;
-
-      font-family:
-        Arial,
-        "Malgun Gothic",
-        sans-serif;
-
-      background: #f4f5f7;
-
-      color: #222;
-    }
-
-
-    button,
-    input,
-    textarea {
-      font: inherit;
-    }
-
-
-    /* =========================
-       로그인
-    ========================= */
-
-    #loginScreen {
-
-      min-height: 100vh;
-
-      display: flex;
-
-      justify-content: center;
-
-      align-items: center;
-
-      padding: 20px;
-    }
-
-
-    .loginBox {
-
-      width: 100%;
-
-      max-width: 360px;
-
-      background: white;
-
-      padding: 30px;
-
-      border-radius: 14px;
-
-      box-shadow:
-        0 8px 30px
-        rgba(0,0,0,0.08);
-    }
-
-
-    .loginBox h1 {
-
-      text-align: center;
-
-      margin-top: 0;
-
-      margin-bottom: 25px;
-    }
-
-
-    .loginBox input {
-
-      width: 100%;
-
-      padding: 13px;
-
-      border:
-        1px solid #ddd;
-
-      border-radius: 8px;
-
-      margin-bottom: 10px;
-    }
-
-
-    .loginBox button {
-
-      width: 100%;
-
-      padding: 13px;
-
-      border: 0;
-
-      border-radius: 8px;
-
-      background: #222;
-
-      color: white;
-
-      cursor: pointer;
-    }
-
-
-    #loginMessage {
-
-      margin-top: 12px;
-
-      text-align: center;
-
-      color: #d33;
-
-      font-size: 14px;
-    }
-
-
-    /* =========================
-       앱
-    ========================= */
-
-    #app {
-      display: none;
-
-      min-height: 100vh;
-    }
-
-
-    .header {
-
-      height: 60px;
-
-      background: white;
-
-      border-bottom:
-        1px solid #ddd;
-
-      display: flex;
-
-      align-items: center;
-
-      justify-content: space-between;
-
-      padding:
-        0 20px;
-    }
-
-
-    .headerTitle {
-
-      font-weight: bold;
-
-      font-size: 18px;
-    }
-
-
-    .headerRight {
-
-      display: flex;
-
-      align-items: center;
-
-      gap: 10px;
-    }
-
-
-    .headerRight button {
-
-      border:
-        1px solid #ddd;
-
-      background: white;
-
-      padding:
-        7px 12px;
-
-      border-radius: 7px;
-
-      cursor: pointer;
-    }
-
-
-    .container {
-
-      max-width: 1100px;
-
-      margin: 0 auto;
-
-      padding: 20px;
-    }
-
-
-    /* =========================
-       탭
-    ========================= */
-
-    .tabs {
-
-      display: flex;
-
-      gap: 5px;
-
-      margin-bottom: 15px;
-    }
-
-
-    .tabButton {
-
-      border: 0;
-
-      background: #ddd;
-
-      padding:
-        11px 22px;
-
-      border-radius:
-        9px 9px 0 0;
-
-      cursor: pointer;
-
-      font-weight: bold;
-
-      color: #555;
-    }
-
-
-    .tabButton.active {
-
-      background: white;
-
-      color: #222;
-
-      box-shadow:
-        0 -1px 5px
-        rgba(0,0,0,0.04);
-    }
-
-
-    .tabContent {
-
-      display: none;
-    }
-
-
-    .tabContent.active {
-
-      display: block;
-    }
-
-
-    /* =========================
-       파일 영역
-    ========================= */
-
-    .toolbar {
-
-      display: flex;
-
-      gap: 8px;
-
-      flex-wrap: wrap;
-
-      margin-bottom: 15px;
-    }
-
-
-    .toolbar button {
-
-      border:
-        1px solid #ddd;
-
-      background: white;
-
-      padding:
-        9px 13px;
-
-      border-radius: 8px;
-
-      cursor: pointer;
-    }
-
-
-    .breadcrumb {
-
-      background: white;
-
-      border:
-        1px solid #ddd;
-
-      border-radius: 8px;
-
-      padding: 12px;
-
-      margin-bottom: 15px;
-
-      white-space: nowrap;
-
-      overflow-x: auto;
-    }
-
-
-    .breadcrumb span {
-
-      cursor: pointer;
-    }
-
-
-    .dropZone {
-
-      border:
-        2px dashed #bbb;
-
-      border-radius: 10px;
-
-      padding: 25px;
-
-      text-align: center;
-
-      background: white;
-
-      margin-bottom: 15px;
-
-      cursor: pointer;
-    }
-
-
-    .dropZone.dragover {
-
-      background: #f0f4ff;
-
-      border-color: #557;
-    }
-
-
-    #fileInput {
-
-      display: none;
-    }
-
-
-    .fileList {
-
-      background: white;
-
-      border:
-        1px solid #ddd;
-
-      border-radius: 10px;
-
-      overflow: hidden;
-    }
-
-
-    .fileRow {
-
-      display: grid;
-
-      grid-template-columns:
-        1fr auto auto;
-
-      gap: 10px;
-
-      align-items: center;
-
-      padding:
-        12px 15px;
-
-      border-bottom:
-        1px solid #eee;
-    }
-
-
-    .fileRow:last-child {
-
-      border-bottom: 0;
-    }
-
-
-    .fileName {
-
-      overflow: hidden;
-
-      text-overflow: ellipsis;
-
-      white-space: nowrap;
-    }
-
-
-    .folderRow {
-
-      cursor: pointer;
-
-      transition:
-        background 0.15s;
-    }
-
-
-    .folderRow:hover {
-
-      background: #f8f8f8;
-    }
-
-
-    .folderRow.dragTarget {
-
-      background: #eaf0ff;
-
-      outline:
-        2px dashed #557;
-
-      outline-offset: -2px;
-    }
-
-
-    .fileRow.dragging {
-
-      opacity: 0.45;
-    }
-
-
-    .fileButtons {
-
-      display: flex;
-
-      gap: 5px;
-    }
-
-
-    .fileButtons button {
-
-      border:
-        1px solid #ddd;
-
-      background: white;
-
-      border-radius: 6px;
-
-      padding:
-        5px 9px;
-
-      cursor: pointer;
-    }
-
-
-    .deleteBtn {
-
-      color: #d22;
-    }
-
-
-    .moveBtn {
-
-      color: #2455aa;
-    }
-
-
-    .empty {
-
-      padding: 40px;
-
-      text-align: center;
-
-      color: #888;
-    }
-
-
-    .pagination {
-
-      display: flex;
-
-      justify-content: center;
-
-      align-items: center;
-
-      gap: 10px;
-
-      margin-top: 20px;
-    }
-
-
-    .pagination button {
-
-      border:
-        1px solid #ddd;
-
-      background: white;
-
-      border-radius: 6px;
-
-      padding:
-        7px 12px;
-
-      cursor: pointer;
-    }
-
-
-    .pagination button:disabled {
-
-      opacity: 0.4;
-    }
-
-
-    .storage {
-
-      margin-top: 12px;
-
-      color: #777;
-
-      font-size: 13px;
-    }
-
-
-    /* =========================
-       메모
-    ========================= */
-
-    .memoBox {
-
-      background: white;
-
-      border:
-        1px solid #ddd;
-
-      border-radius: 12px;
-
-      padding: 18px;
-
-      margin-bottom: 18px;
-    }
-
-
-    .memoTitle {
-
-      font-size: 18px;
-
-      font-weight: bold;
-
-      margin-bottom: 12px;
-    }
-
-
-    .memoInput {
-
-      width: 100%;
-
-      min-height: 140px;
-
-      resize: vertical;
-
-      border:
-        1px solid #ddd;
-
-      border-radius: 9px;
-
-      padding: 13px;
-
-      line-height: 1.6;
-
-      outline: none;
-    }
-
-
-    .memoInput:focus {
-
-      border-color: #999;
-    }
-
-
-    .memoAddArea {
-
-      display: flex;
-
-      justify-content:
-        flex-end;
-
-      margin-top: 10px;
-    }
-
-
-    .memoAddButton {
-
-      border: 0;
-
-      background: #222;
-
-      color: white;
-
-      padding:
-        9px 18px;
-
-      border-radius: 8px;
-
-      cursor: pointer;
-    }
-
-
-    .memoList {
-
-      display: flex;
-
-      flex-direction: column;
-
-      gap: 12px;
-    }
-
-
-    .memoCard {
-
-      position: relative;
-
-      background: #fffde7;
-
-      border:
-        1px solid #eee4a8;
-
-      border-radius: 10px;
-
-      padding: 18px 45px 18px 18px;
-
-      box-shadow:
-        0 3px 8px
-        rgba(0,0,0,0.04);
-
-      white-space: pre-wrap;
-
-      word-break: break-word;
-
-      line-height: 1.65;
-    }
-
-
-    .memoDate {
-
-      color: #999;
-
-      font-size: 12px;
-
-      margin-bottom: 8px;
-    }
-
-
-    .memoText {
-
-      font-size: 15px;
-    }
-
-
-    .memoDelete {
-
-      position: absolute;
-
-      right: 10px;
-
-      top: 10px;
-
-      border: 0;
-
-      background: transparent;
-
-      color: #999;
-
-      font-size: 18px;
-
-      cursor: pointer;
-    }
-
-
-    .memoDelete:hover {
-
-      color: #d33;
-    }
-
-
-    .memoEmpty {
-
-      background: white;
-
-      border:
-        1px solid #ddd;
-
-      border-radius: 10px;
-
-      padding: 45px;
-
-      text-align: center;
-
-      color: #999;
-    }
-
-
-    @media (
-      max-width: 600px
-    ) {
-
-      .fileRow {
-
-        grid-template-columns:
-          1fr;
-      }
-
-      .fileButtons {
-
-        justify-content:
-          flex-end;
-      }
-
-    }
-
-  </style>
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
+>
+
+<title>익주</title>
+
+<style>
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family:
+    Arial,
+    "Malgun Gothic",
+    sans-serif;
+  background: #f7f7f7;
+  color: #202124;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+
+/* =========================
+   로그인
+========================= */
+
+#loginScreen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.loginBox {
+  width: 100%;
+  max-width: 360px;
+  background: white;
+  padding: 30px;
+  border-radius: 14px;
+  box-shadow:
+    0 5px 25px
+    rgba(0,0,0,.08);
+}
+
+.loginBox h1 {
+  text-align: center;
+  margin: 0 0 25px;
+}
+
+.loginBox input {
+  width: 100%;
+  padding: 13px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.loginBox button {
+  width: 100%;
+  padding: 13px;
+  border: 0;
+  border-radius: 8px;
+  background: #202124;
+  color: white;
+  cursor: pointer;
+}
+
+#loginMessage {
+  margin-top: 10px;
+  text-align: center;
+  color: #d93025;
+  font-size: 14px;
+}
+
+
+/* =========================
+   앱
+========================= */
+
+#app {
+  display: none;
+  min-height: 100vh;
+}
+
+.header {
+  height: 60px;
+  background: white;
+  border-bottom: 1px solid #e5e5e5;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 20px;
+
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.headerTitle {
+  font-size: 19px;
+  font-weight: bold;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.headerRight button {
+  border: 1px solid #ddd;
+  background: white;
+  padding: 7px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+
+/* =========================
+   탭
+========================= */
+
+.tabs {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 20px;
+}
+
+.tabButton {
+  border: 0;
+  background: transparent;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #777;
+  font-weight: bold;
+}
+
+.tabButton:hover {
+  background: #eee;
+}
+
+.tabButton.active {
+  background: #e8eaed;
+  color: #202124;
+}
+
+.tabContent {
+  display: none;
+}
+
+.tabContent.active {
+  display: block;
+}
+
+
+/* =========================
+   파일
+========================= */
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 15px;
+}
+
+.toolbar button {
+  border: 1px solid #ddd;
+  background: white;
+  padding: 9px 13px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.breadcrumb {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 15px;
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+.breadcrumb span {
+  cursor: pointer;
+}
+
+.dropZone {
+  border: 2px dashed #bbb;
+  border-radius: 10px;
+  padding: 25px;
+  text-align: center;
+  background: white;
+  margin-bottom: 15px;
+  cursor: pointer;
+}
+
+.dropZone.dragover {
+  background: #eef3ff;
+  border-color: #557;
+}
+
+#fileInput {
+  display: none;
+}
+
+.fileList {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.fileRow {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.fileRow:last-child {
+  border-bottom: 0;
+}
+
+.fileName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.folderRow {
+  cursor: pointer;
+  transition: .15s;
+}
+
+.folderRow:hover {
+  background: #f7f7f7;
+}
+
+.folderRow.dragTarget {
+  background: #e8f0fe;
+  outline: 2px dashed #4285f4;
+  outline-offset: -2px;
+}
+
+.fileRow.dragging {
+  opacity: .4;
+}
+
+.fileButtons {
+  display: flex;
+  gap: 5px;
+}
+
+.fileButtons button {
+  border: 1px solid #ddd;
+  background: white;
+  border-radius: 6px;
+  padding: 5px 9px;
+  cursor: pointer;
+}
+
+.deleteBtn {
+  color: #d93025;
+}
+
+.moveBtn {
+  color: #1967d2;
+}
+
+.empty {
+  padding: 40px;
+  text-align: center;
+  color: #888;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.pagination button {
+  border: 1px solid #ddd;
+  background: white;
+  border-radius: 6px;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+
+.pagination button:disabled {
+  opacity: .4;
+}
+
+.storage {
+  margin-top: 12px;
+  color: #777;
+  font-size: 13px;
+}
+
+
+/* =========================
+   Google Keep 스타일 메모
+========================= */
+
+.memoTop {
+  max-width: 600px;
+  margin: 0 auto 30px;
+}
+
+.memoComposer {
+  background: white;
+  border-radius: 9px;
+  box-shadow:
+    0 2px 7px
+    rgba(60,64,67,.18);
+
+  overflow: hidden;
+}
+
+.memoCollapsed {
+  min-height: 55px;
+
+  display: flex;
+  align-items: center;
+
+  padding: 0 18px;
+
+  color: #777;
+  cursor: text;
+}
+
+.memoExpanded {
+  display: none;
+  padding: 14px;
+}
+
+.memoExpanded input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  font-size: 16px;
+  font-weight: bold;
+  padding: 5px 3px 10px;
+}
+
+.memoExpanded textarea {
+  width: 100%;
+  min-height: 110px;
+  resize: vertical;
+
+  border: 0;
+  outline: 0;
+
+  padding: 5px 3px;
+
+  line-height: 1.6;
+}
+
+.memoBottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding-top: 10px;
+}
+
+.memoColors {
+  display: flex;
+  gap: 5px;
+}
+
+.colorDot {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.colorDot.selected {
+  border-color: #555;
+}
+
+.memoActions {
+  display: flex;
+  gap: 5px;
+}
+
+.memoActions button {
+  border: 0;
+  background: transparent;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.memoActions button:hover {
+  background: rgba(0,0,0,.07);
+}
+
+.memoSave {
+  font-weight: bold;
+}
+
+.memoGrid {
+  column-width: 260px;
+  column-gap: 15px;
+}
+
+.memoCard {
+  display: inline-block;
+
+  width: 100%;
+
+  margin: 0 0 15px;
+
+  border-radius: 9px;
+
+  padding: 16px;
+
+  position: relative;
+
+  vertical-align: top;
+
+  border: 1px solid rgba(0,0,0,.08);
+
+  box-shadow:
+    0 1px 3px
+    rgba(60,64,67,.15);
+
+  transition:
+    box-shadow .15s,
+    transform .15s;
+
+  break-inside: avoid;
+}
+
+.memoCard:hover {
+  box-shadow:
+    0 3px 10px
+    rgba(60,64,67,.22);
+}
+
+.memoCardTitle {
+  font-weight: bold;
+  margin-bottom: 9px;
+  padding-right: 30px;
+  word-break: break-word;
+}
+
+.memoCardText {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.6;
+  font-size: 14px;
+  padding-right: 5px;
+}
+
+.memoDate {
+  margin-top: 15px;
+  font-size: 11px;
+  color: #777;
+}
+
+.memoMenuButton {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+
+  width: 30px;
+  height: 30px;
+
+  border: 0;
+  border-radius: 50%;
+
+  background: transparent;
+
+  font-size: 18px;
+
+  cursor: pointer;
+}
+
+.memoMenuButton:hover {
+  background: rgba(0,0,0,.08);
+}
+
+.memoMenu {
+  display: none;
+
+  position: absolute;
+
+  right: 10px;
+  top: 40px;
+
+  background: white;
+
+  border-radius: 6px;
+
+  box-shadow:
+    0 3px 12px
+    rgba(0,0,0,.2);
+
+  z-index: 10;
+
+  min-width: 100px;
+
+  overflow: hidden;
+}
+
+.memoMenu button {
+  width: 100%;
+
+  border: 0;
+
+  background: white;
+
+  text-align: left;
+
+  padding: 10px 14px;
+
+  cursor: pointer;
+}
+
+.memoMenu button:hover {
+  background: #f1f3f4;
+}
+
+.memoEmpty {
+  text-align: center;
+  color: #888;
+  padding: 60px 20px;
+}
+
+
+/* 메모 색 */
+
+.memo-yellow {
+  background: #fff8b5;
+}
+
+.memo-green {
+  background: #d7f8d7;
+}
+
+.memo-blue {
+  background: #d9f0ff;
+}
+
+.memo-purple {
+  background: #eadcff;
+}
+
+.memo-pink {
+  background: #ffdce8;
+}
+
+.memo-gray {
+  background: #eeeeee;
+}
+
+
+/* 수정창 */
+
+.memoEdit {
+  width: 100%;
+}
+
+.memoEdit input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+
+  font-weight: bold;
+  font-size: 16px;
+
+  margin-bottom: 8px;
+}
+
+.memoEdit textarea {
+  width: 100%;
+  min-height: 120px;
+
+  border: 0;
+  outline: 0;
+  resize: vertical;
+
+  background: transparent;
+
+  line-height: 1.6;
+}
+
+.memoEditBottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.memoEditBottom button {
+  border: 0;
+  background: rgba(255,255,255,.55);
+  padding: 7px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+
+/* 모바일 */
+
+@media(max-width:600px) {
+
+  .container {
+    padding: 12px;
+  }
+
+  .fileRow {
+    grid-template-columns: 1fr;
+  }
+
+  .fileButtons {
+    justify-content: flex-end;
+  }
+
+  .memoGrid {
+    column-width: 100%;
+  }
+
+}
+
+</style>
 
 </head>
 
@@ -772,7 +709,6 @@
 
 <div id="app">
 
-
   <div class="header">
 
     <div class="headerTitle">
@@ -781,13 +717,9 @@
 
     <div class="headerRight">
 
-      <span
-        id="usernameDisplay"
-      ></span>
+      <span id="usernameDisplay"></span>
 
-      <button
-        onclick="logout()"
-      >
+      <button onclick="logout()">
         로그아웃
       </button>
 
@@ -798,10 +730,6 @@
 
   <div class="container">
 
-
-    <!-- =====================
-         탭
-    ====================== -->
 
     <div class="tabs">
 
@@ -825,7 +753,7 @@
 
 
     <!-- =====================
-         파일 탭
+         파일
     ====================== -->
 
     <div
@@ -833,12 +761,9 @@
       class="tabContent active"
     >
 
-
       <div class="toolbar">
 
-        <button
-          onclick="createFolder()"
-        >
+        <button onclick="createFolder()">
           + 폴더 만들기
         </button>
 
@@ -895,12 +820,11 @@
         class="storage"
       ></div>
 
-
     </div>
 
 
     <!-- =====================
-         메모 탭
+         메모
     ====================== -->
 
     <div
@@ -908,29 +832,109 @@
       class="tabContent"
     >
 
+      <div class="memoTop">
 
-      <div class="memoBox">
+        <div
+          id="memoComposer"
+          class="memoComposer"
+        >
 
-        <div class="memoTitle">
-          📝 새 메모
-        </div>
-
-
-        <textarea
-          id="memoInput"
-          class="memoInput"
-          placeholder="인수인계 받은 내용이나 기억해둘 내용을 자유롭게 적어주세요."
-        ></textarea>
-
-
-        <div class="memoAddArea">
-
-          <button
-            class="memoAddButton"
-            onclick="addMemo()"
+          <div
+            id="memoCollapsed"
+            class="memoCollapsed"
+            onclick="openMemoComposer()"
           >
-            메모 추가
-          </button>
+            메모 작성...
+          </div>
+
+
+          <div
+            id="memoExpanded"
+            class="memoExpanded"
+          >
+
+            <input
+              id="memoTitle"
+              type="text"
+              placeholder="제목"
+            >
+
+
+            <textarea
+              id="memoText"
+              placeholder="메모 내용"
+            ></textarea>
+
+
+            <div class="memoBottom">
+
+              <div class="memoColors">
+
+                <button
+                  class="colorDot selected"
+                  data-color="yellow"
+                  style="background:#fff8b5"
+                  onclick="selectComposerColor('yellow')"
+                ></button>
+
+                <button
+                  class="colorDot"
+                  data-color="green"
+                  style="background:#d7f8d7"
+                  onclick="selectComposerColor('green')"
+                ></button>
+
+                <button
+                  class="colorDot"
+                  data-color="blue"
+                  style="background:#d9f0ff"
+                  onclick="selectComposerColor('blue')"
+                ></button>
+
+                <button
+                  class="colorDot"
+                  data-color="purple"
+                  style="background:#eadcff"
+                  onclick="selectComposerColor('purple')"
+                ></button>
+
+                <button
+                  class="colorDot"
+                  data-color="pink"
+                  style="background:#ffdce8"
+                  onclick="selectComposerColor('pink')"
+                ></button>
+
+                <button
+                  class="colorDot"
+                  data-color="gray"
+                  style="background:#eeeeee"
+                  onclick="selectComposerColor('gray')"
+                ></button>
+
+              </div>
+
+
+              <div class="memoActions">
+
+                <button
+                  onclick="closeMemoComposer()"
+                >
+                  취소
+                </button>
+
+                <button
+                  class="memoSave"
+                  onclick="saveNewMemo()"
+                >
+                  저장
+                </button>
+
+              </div>
+
+            </div>
+
+          </div>
 
         </div>
 
@@ -938,13 +942,11 @@
 
 
       <div
-        id="memoList"
-        class="memoList"
+        id="memoGrid"
+        class="memoGrid"
       ></div>
 
-
     </div>
-
 
   </div>
 
@@ -964,9 +966,7 @@ const API =
 const TOKEN_KEY =
   "ju_files_token";
 
-const PAGE_SIZE =
-  30;
-
+const PAGE_SIZE = 30;
 
 let currentFolder = "";
 
@@ -976,8 +976,9 @@ let allFiles = [];
 
 let allFolders = [];
 
-let draggedFileKey =
-  null;
+let draggedFileKey = null;
+
+let composerColor = "yellow";
 
 
 /* =========================
@@ -985,18 +986,14 @@ let draggedFileKey =
 ========================= */
 
 function getToken() {
-
   return localStorage.getItem(
     TOKEN_KEY
   );
-
 }
-
 
 function authHeaders() {
 
-  const token =
-    getToken();
+  const token = getToken();
 
   return token
     ? {
@@ -1006,27 +1003,21 @@ function authHeaders() {
     : {};
 }
 
-
 async function apiFetch(
   url,
   options = {}
 ) {
 
   options.headers = {
-
     ...(options.headers || {}),
-
     ...authHeaders()
-
   };
-
 
   const response =
     await fetch(
       url,
       options
     );
-
 
   if (
     response.status === 401
@@ -1041,12 +1032,9 @@ async function apiFetch(
     throw new Error(
       "로그인이 필요합니다."
     );
-
   }
 
-
   return response;
-
 }
 
 
@@ -1055,19 +1043,14 @@ async function apiFetch(
 ========================= */
 
 document
-  .getElementById(
-    "loginButton"
-  )
+  .getElementById("loginButton")
   .addEventListener(
     "click",
     login
   );
 
-
 document
-  .getElementById(
-    "password"
-  )
+  .getElementById("password")
   .addEventListener(
     "keydown",
     event => {
@@ -1075,40 +1058,30 @@ document
       if (
         event.key === "Enter"
       ) {
-
         login();
-
       }
 
     }
   );
 
-
 async function login() {
 
   const username =
     document
-      .getElementById(
-        "username"
-      )
+      .getElementById("username")
       .value
       .trim();
 
-
   const password =
     document
-      .getElementById(
-        "password"
-      )
+      .getElementById("password")
       .value;
-
 
   const message =
     document
       .getElementById(
         "loginMessage"
       );
-
 
   if (
     !username ||
@@ -1119,9 +1092,7 @@ async function login() {
       "아이디와 비밀번호를 입력해주세요.";
 
     return;
-
   }
-
 
   try {
 
@@ -1129,7 +1100,6 @@ async function login() {
       await fetch(
         `${API}/api/login`,
         {
-
           method: "POST",
 
           headers: {
@@ -1142,14 +1112,11 @@ async function login() {
               username,
               password
             })
-
         }
       );
 
-
     const data =
       await response.json();
-
 
     if (
       !response.ok
@@ -1160,15 +1127,12 @@ async function login() {
         "로그인에 실패했습니다.";
 
       return;
-
     }
-
 
     localStorage.setItem(
       TOKEN_KEY,
       data.token
     );
-
 
     document
       .getElementById(
@@ -1177,12 +1141,9 @@ async function login() {
       .textContent =
         data.username;
 
-
     showApp();
 
-
     await loadFiles();
-
 
   } catch {
 
@@ -1190,13 +1151,8 @@ async function login() {
       "서버에 연결할 수 없습니다.";
 
   }
-
 }
 
-
-/* =========================
-   화면
-========================= */
 
 function showLogin() {
 
@@ -1207,14 +1163,12 @@ function showLogin() {
     .style.display =
       "flex";
 
-
   document
     .getElementById(
       "app"
     )
     .style.display =
       "none";
-
 }
 
 
@@ -1227,111 +1181,23 @@ function showApp() {
     .style.display =
       "none";
 
-
   document
     .getElementById(
       "app"
     )
     .style.display =
       "block";
-
 }
 
-
-/* =========================
-   탭
-========================= */
-
-function showTab(
-  tab
-) {
-
-  const filesTab =
-    document.getElementById(
-      "filesTab"
-    );
-
-  const memosTab =
-    document.getElementById(
-      "memosTab"
-    );
-
-  const fileButton =
-    document.getElementById(
-      "fileTabButton"
-    );
-
-  const memoButton =
-    document.getElementById(
-      "memoTabButton"
-    );
-
-
-  filesTab.classList.remove(
-    "active"
-  );
-
-  memosTab.classList.remove(
-    "active"
-  );
-
-  fileButton.classList.remove(
-    "active"
-  );
-
-  memoButton.classList.remove(
-    "active"
-  );
-
-
-  if (
-    tab === "memos"
-  ) {
-
-    memosTab.classList.add(
-      "active"
-    );
-
-    memoButton.classList.add(
-      "active"
-    );
-
-
-    loadMemos();
-
-  } else {
-
-    filesTab.classList.add(
-      "active"
-    );
-
-    fileButton.classList.add(
-      "active"
-    );
-
-  }
-
-}
-
-
-/* =========================
-   로그인 확인
-========================= */
 
 async function checkLogin() {
 
-  const token =
-    getToken();
-
-
-  if (!token) {
+  if (!getToken()) {
 
     showLogin();
 
     return;
-
   }
-
 
   try {
 
@@ -1340,7 +1206,6 @@ async function checkLogin() {
         `${API}/api/me`
       );
 
-
     if (
       !response.ok
     ) {
@@ -1348,13 +1213,10 @@ async function checkLogin() {
       showLogin();
 
       return;
-
     }
-
 
     const data =
       await response.json();
-
 
     document
       .getElementById(
@@ -1363,25 +1225,17 @@ async function checkLogin() {
       .textContent =
         data.user;
 
-
     showApp();
 
-
     await loadFiles();
-
 
   } catch {
 
     showLogin();
 
   }
-
 }
 
-
-/* =========================
-   로그아웃
-========================= */
 
 function logout() {
 
@@ -1389,12 +1243,63 @@ function logout() {
     TOKEN_KEY
   );
 
-  currentFolder = "";
-
-  currentPage = 1;
-
   showLogin();
 
+}
+
+
+/* =========================
+   탭
+========================= */
+
+function showTab(tab) {
+
+  document
+    .getElementById("filesTab")
+    .classList.remove("active");
+
+  document
+    .getElementById("memosTab")
+    .classList.remove("active");
+
+  document
+    .getElementById("fileTabButton")
+    .classList.remove("active");
+
+  document
+    .getElementById("memoTabButton")
+    .classList.remove("active");
+
+
+  if (
+    tab === "memos"
+  ) {
+
+    document
+      .getElementById("memosTab")
+      .classList.add("active");
+
+    document
+      .getElementById(
+        "memoTabButton"
+      )
+      .classList.add("active");
+
+    loadMemos();
+
+  } else {
+
+    document
+      .getElementById("filesTab")
+      .classList.add("active");
+
+    document
+      .getElementById(
+        "fileTabButton"
+      )
+      .classList.add("active");
+
+  }
 }
 
 
@@ -1413,10 +1318,8 @@ async function loadFiles() {
         )}`
       );
 
-
     const data =
       await response.json();
-
 
     if (
       !response.ok
@@ -1428,9 +1331,7 @@ async function loadFiles() {
       );
 
       return;
-
     }
-
 
     allFiles =
       data.files || [];
@@ -1440,26 +1341,19 @@ async function loadFiles() {
 
     currentPage = 1;
 
-
     renderBreadcrumb();
 
     renderFiles();
 
     loadUsage();
 
-
   } catch (error) {
 
     console.error(error);
 
   }
-
 }
 
-
-/* =========================
-   경로
-========================= */
 
 function renderBreadcrumb() {
 
@@ -1468,104 +1362,66 @@ function renderBreadcrumb() {
       "breadcrumb"
     );
 
-
   element.innerHTML = "";
-
 
   const home =
     document.createElement(
       "span"
     );
 
-
-  home.textContent =
-    "홈";
-
+  home.textContent = "홈";
 
   home.onclick =
     () => openFolder("");
 
+  element.appendChild(home);
 
-  element.appendChild(
-    home
-  );
-
-
-  if (
-    !currentFolder
-  ) {
+  if (!currentFolder) {
     return;
   }
 
-
   const parts =
     currentFolder
-      .replace(
-        /\/$/,
-        ""
-      )
+      .replace(/\/$/, "")
       .split("/");
-
 
   let path = "";
 
+  parts.forEach(part => {
 
-  parts.forEach(
-    part => {
+    element.appendChild(
+      document.createTextNode(
+        " / "
+      )
+    );
 
-      element.appendChild(
-        document.createTextNode(
-          " / "
-        )
+    path += part + "/";
+
+    const item =
+      document.createElement(
+        "span"
       );
 
+    item.textContent = part;
 
-      path +=
-        part + "/";
+    const target = path;
 
+    item.onclick =
+      () => openFolder(target);
 
-      const item =
-        document.createElement(
-          "span"
-        );
+    element.appendChild(item);
 
-
-      item.textContent =
-        part;
-
-
-      const target =
-        path;
-
-
-      item.onclick =
-        () =>
-          openFolder(
-            target
-          );
-
-
-      element.appendChild(
-        item
-      );
-
-    }
-  );
-
+  });
 }
 
 
-function openFolder(
-  folder
-) {
+function openFolder(folder) {
 
-  currentFolder =
-    folder;
+  currentFolder = folder;
 
   currentPage = 1;
 
   loadFiles();
-
 }
 
 
@@ -1580,13 +1436,8 @@ function renderFiles() {
       "fileList"
     );
 
-
   list.innerHTML = "";
 
-
-  /*
-   * 폴더
-   */
 
   allFolders.forEach(
     folder => {
@@ -1596,55 +1447,44 @@ function renderFiles() {
           "div"
         );
 
-
       row.className =
         "fileRow folderRow";
-
 
       const name =
         document.createElement(
           "div"
         );
 
-
       name.className =
         "fileName";
-
 
       name.textContent =
         "📁 " +
         folder.name;
-
 
       const empty =
         document.createElement(
           "div"
         );
 
-
       const buttons =
         document.createElement(
           "div"
         );
 
-
       buttons.className =
         "fileButtons";
-
 
       const deleteButton =
         document.createElement(
           "button"
         );
 
-
       deleteButton.textContent =
         "삭제";
 
-
       deleteButton.className =
         "deleteBtn";
-
 
       deleteButton.onclick =
         event => {
@@ -1657,24 +1497,13 @@ function renderFiles() {
 
         };
 
-
       buttons.appendChild(
         deleteButton
       );
 
-
-      row.appendChild(
-        name
-      );
-
-      row.appendChild(
-        empty
-      );
-
-      row.appendChild(
-        buttons
-      );
-
+      row.appendChild(name);
+      row.appendChild(empty);
+      row.appendChild(buttons);
 
       row.onclick =
         () =>
@@ -1683,9 +1512,7 @@ function renderFiles() {
           );
 
 
-      /*
-       * 파일을 폴더로 드래그
-       */
+      /* 파일 드롭 */
 
       row.addEventListener(
         "dragover",
@@ -1740,11 +1567,9 @@ function renderFiles() {
 
           event.stopPropagation();
 
-
           row.classList.remove(
             "dragTarget"
           );
-
 
           if (
             !draggedFileKey
@@ -1752,14 +1577,10 @@ function renderFiles() {
             return;
           }
 
-
           const key =
             draggedFileKey;
 
-
-          draggedFileKey =
-            null;
-
+          draggedFileKey = null;
 
           await moveFileToFolder(
             key,
@@ -1770,28 +1591,20 @@ function renderFiles() {
       );
 
 
-      list.appendChild(
-        row
-      );
+      list.appendChild(row);
 
     }
   );
 
 
-  /*
-   * 파일
-   */
-
   const start =
     (currentPage - 1) *
     PAGE_SIZE;
 
-
   const pageFiles =
     allFiles.slice(
       start,
-      start +
-        PAGE_SIZE
+      start + PAGE_SIZE
     );
 
 
@@ -1803,13 +1616,10 @@ function renderFiles() {
           "div"
         );
 
-
       row.className =
         "fileRow";
 
-
-      row.draggable =
-        true;
+      row.draggable = true;
 
 
       row.addEventListener(
@@ -1819,15 +1629,12 @@ function renderFiles() {
           draggedFileKey =
             file.key;
 
-
           row.classList.add(
             "dragging"
           );
 
-
           event.dataTransfer.effectAllowed =
             "move";
-
 
           event.dataTransfer.setData(
             "text/plain",
@@ -1842,14 +1649,11 @@ function renderFiles() {
         "dragend",
         () => {
 
-          draggedFileKey =
-            null;
-
+          draggedFileKey = null;
 
           row.classList.remove(
             "dragging"
           );
-
 
           document
             .querySelectorAll(
@@ -1871,10 +1675,8 @@ function renderFiles() {
           "div"
         );
 
-
       name.className =
         "fileName";
-
 
       name.textContent =
         "📄 " +
@@ -1885,7 +1687,6 @@ function renderFiles() {
         document.createElement(
           "div"
         );
-
 
       size.textContent =
         formatSize(
@@ -1898,24 +1699,17 @@ function renderFiles() {
           "div"
         );
 
-
       buttons.className =
         "fileButtons";
 
-
-      /*
-       * 다운로드
-       */
 
       const downloadButton =
         document.createElement(
           "button"
         );
 
-
       downloadButton.textContent =
         "다운로드";
-
 
       downloadButton.onclick =
         () =>
@@ -1924,23 +1718,16 @@ function renderFiles() {
           );
 
 
-      /*
-       * 이동
-       */
-
       const moveButton =
         document.createElement(
           "button"
         );
 
-
       moveButton.textContent =
         "이동";
 
-
       moveButton.className =
         "moveBtn";
-
 
       moveButton.onclick =
         () =>
@@ -1950,23 +1737,16 @@ function renderFiles() {
           );
 
 
-      /*
-       * 삭제
-       */
-
       const deleteButton =
         document.createElement(
           "button"
         );
 
-
       deleteButton.textContent =
         "삭제";
 
-
       deleteButton.className =
         "deleteBtn";
-
 
       deleteButton.onclick =
         () =>
@@ -1989,22 +1769,11 @@ function renderFiles() {
       );
 
 
-      row.appendChild(
-        name
-      );
+      row.appendChild(name);
+      row.appendChild(size);
+      row.appendChild(buttons);
 
-      row.appendChild(
-        size
-      );
-
-      row.appendChild(
-        buttons
-      );
-
-
-      list.appendChild(
-        row
-      );
+      list.appendChild(row);
 
     }
   );
@@ -2022,15 +1791,10 @@ function renderFiles() {
 
   }
 
-
   renderPagination();
 
 }
 
-
-/* =========================
-   페이지
-========================= */
 
 function renderPagination() {
 
@@ -2039,10 +1803,7 @@ function renderPagination() {
       "pagination"
     );
 
-
-  pagination.innerHTML =
-    "";
-
+  pagination.innerHTML = "";
 
   const totalPages =
     Math.max(
@@ -2053,36 +1814,29 @@ function renderPagination() {
       )
     );
 
-
   const prev =
     document.createElement(
       "button"
     );
 
-
-  prev.textContent =
-    "이전";
-
+  prev.textContent = "이전";
 
   prev.disabled =
     currentPage <= 1;
 
+  prev.onclick = () => {
 
-  prev.onclick =
-    () => {
+    currentPage--;
 
-      currentPage--;
+    renderFiles();
 
-      renderFiles();
-
-    };
+  };
 
 
   const page =
     document.createElement(
       "span"
     );
-
 
   page.textContent =
     `${currentPage} / ${totalPages}`;
@@ -2093,48 +1847,32 @@ function renderPagination() {
       "button"
     );
 
-
-  next.textContent =
-    "다음";
-
+  next.textContent = "다음";
 
   next.disabled =
-    currentPage >=
-    totalPages;
+    currentPage >= totalPages;
+
+  next.onclick = () => {
+
+    currentPage++;
+
+    renderFiles();
+
+  };
 
 
-  next.onclick =
-    () => {
-
-      currentPage++;
-
-      renderFiles();
-
-    };
-
-
-  pagination.appendChild(
-    prev
-  );
-
-  pagination.appendChild(
-    page
-  );
-
-  pagination.appendChild(
-    next
-  );
+  pagination.appendChild(prev);
+  pagination.appendChild(page);
+  pagination.appendChild(next);
 
 }
 
 
 /* =========================
-   파일 다운로드
+   다운로드
 ========================= */
 
-async function downloadFile(
-  key
-) {
+async function downloadFile(key) {
 
   try {
 
@@ -2144,7 +1882,6 @@ async function downloadFile(
           key
         )}`
       );
-
 
     if (
       !response.ok
@@ -2159,25 +1896,18 @@ async function downloadFile(
       );
 
       return;
-
     }
-
 
     const blob =
       await response.blob();
-
 
     const disposition =
       response.headers.get(
         "Content-Disposition"
       );
 
-
     let filename =
-      key
-        .split("/")
-        .pop();
-
+      key.split("/").pop();
 
     if (
       disposition
@@ -2188,10 +1918,7 @@ async function downloadFile(
           /filename\*=UTF-8''([^;]+)/i
         );
 
-
-      if (
-        match
-      ) {
+      if (match) {
 
         filename =
           decodeURIComponent(
@@ -2199,43 +1926,29 @@ async function downloadFile(
           );
 
       }
-
     }
-
 
     const url =
       URL.createObjectURL(
         blob
       );
 
-
     const a =
       document.createElement(
         "a"
       );
 
+    a.href = url;
 
-    a.href =
-      url;
+    a.download = filename;
 
-    a.download =
-      filename;
-
-
-    document.body.appendChild(
-      a
-    );
-
+    document.body.appendChild(a);
 
     a.click();
 
     a.remove();
 
-
-    URL.revokeObjectURL(
-      url
-    );
-
+    URL.revokeObjectURL(url);
 
   } catch {
 
@@ -2244,12 +1957,11 @@ async function downloadFile(
     );
 
   }
-
 }
 
 
 /* =========================
-   파일 이동
+   이동
 ========================= */
 
 async function moveFileByPrompt(
@@ -2263,13 +1975,11 @@ async function moveFileByPrompt(
       currentFolder || ""
     );
 
-
   if (
     destination === null
   ) {
     return;
   }
-
 
   const destinationFolder =
     destination
@@ -2279,12 +1989,10 @@ async function moveFileByPrompt(
         ""
       );
 
-
   await moveFileToFolder(
     key,
     destinationFolder
   );
-
 }
 
 
@@ -2299,7 +2007,6 @@ async function moveFileToFolder(
       await apiFetch(
         `${API}/api/move`,
         {
-
           method: "POST",
 
           headers: {
@@ -2312,14 +2019,11 @@ async function moveFileToFolder(
               key,
               destinationFolder
             })
-
         }
       );
 
-
     const data =
       await response.json();
-
 
     if (
       !response.ok
@@ -2331,12 +2035,9 @@ async function moveFileToFolder(
       );
 
       return;
-
     }
 
-
     await loadFiles();
-
 
   } catch {
 
@@ -2345,12 +2046,11 @@ async function moveFileToFolder(
     );
 
   }
-
 }
 
 
 /* =========================
-   파일 삭제
+   삭제
 ========================= */
 
 async function deleteFile(
@@ -2366,19 +2066,16 @@ async function deleteFile(
     return;
   }
 
-
   const password =
     prompt(
       "삭제하려면 비밀번호를 입력하세요."
     );
-
 
   if (
     password === null
   ) {
     return;
   }
-
 
   try {
 
@@ -2394,10 +2091,8 @@ async function deleteFile(
         }
       );
 
-
     const data =
       await response.json();
-
 
     if (
       !response.ok
@@ -2414,12 +2109,9 @@ async function deleteFile(
       );
 
       return;
-
     }
 
-
     await loadFiles();
-
 
   } catch {
 
@@ -2428,13 +2120,8 @@ async function deleteFile(
     );
 
   }
-
 }
 
-
-/* =========================
-   폴더 삭제
-========================= */
 
 async function deleteFolder(
   prefix
@@ -2442,13 +2129,9 @@ async function deleteFolder(
 
   const folderName =
     prefix
-      .replace(
-        /\/$/,
-        ""
-      )
+      .replace(/\/$/, "")
       .split("/")
       .pop();
-
 
   if (
     !confirm(
@@ -2458,19 +2141,16 @@ async function deleteFolder(
     return;
   }
 
-
   const password =
     prompt(
       "폴더를 삭제하려면 비밀번호를 입력하세요."
     );
-
 
   if (
     password === null
   ) {
     return;
   }
-
 
   try {
 
@@ -2486,10 +2166,8 @@ async function deleteFolder(
         }
       );
 
-
     const data =
       await response.json();
-
 
     if (
       !response.ok
@@ -2506,12 +2184,9 @@ async function deleteFolder(
       );
 
       return;
-
     }
 
-
     await loadFiles();
-
 
   } catch {
 
@@ -2520,12 +2195,11 @@ async function deleteFolder(
     );
 
   }
-
 }
 
 
 /* =========================
-   폴더 생성
+   폴더
 ========================= */
 
 async function createFolder() {
@@ -2535,7 +2209,6 @@ async function createFolder() {
       "새 폴더 이름을 입력하세요."
     );
 
-
   if (
     name === null ||
     !name.trim()
@@ -2543,14 +2216,12 @@ async function createFolder() {
     return;
   }
 
-
   try {
 
     const response =
       await apiFetch(
         `${API}/api/folder`,
         {
-
           method: "POST",
 
           headers: {
@@ -2566,14 +2237,11 @@ async function createFolder() {
               name:
                 name.trim()
             })
-
         }
       );
 
-
     const data =
       await response.json();
-
 
     if (
       !response.ok
@@ -2585,12 +2253,9 @@ async function createFolder() {
       );
 
       return;
-
     }
 
-
     await loadFiles();
-
 
   } catch {
 
@@ -2599,7 +2264,6 @@ async function createFolder() {
     );
 
   }
-
 }
 
 
@@ -2608,9 +2272,7 @@ async function createFolder() {
 ========================= */
 
 document
-  .getElementById(
-    "fileInput"
-  )
+  .getElementById("fileInput")
   .addEventListener(
     "change",
     event => {
@@ -2619,16 +2281,13 @@ document
         event.target.files
       );
 
-      event.target.value =
-        "";
+      event.target.value = "";
 
     }
   );
 
 
-async function uploadFiles(
-  files
-) {
+async function uploadFiles(files) {
 
   if (
     !files ||
@@ -2637,14 +2296,12 @@ async function uploadFiles(
     return;
   }
 
-
   for (
     const file of files
   ) {
 
     let confirmedLarge =
       false;
-
 
     if (
       file.size >=
@@ -2656,31 +2313,23 @@ async function uploadFiles(
           `"${file.name}"은 100MB 이상입니다.\n\n업로드하시겠습니까?`
         );
 
-
-      if (
-        !confirmedLarge
-      ) {
+      if (!confirmedLarge) {
         continue;
       }
-
     }
-
 
     const formData =
       new FormData();
-
 
     formData.append(
       "file",
       file
     );
 
-
     formData.append(
       "folder",
       currentFolder
     );
-
 
     formData.append(
       "confirmedLarge",
@@ -2689,7 +2338,6 @@ async function uploadFiles(
         : "false"
     );
 
-
     try {
 
       const response =
@@ -2697,16 +2345,12 @@ async function uploadFiles(
           `${API}/api/upload`,
           {
             method: "POST",
-
-            body:
-              formData
+            body: formData
           }
         );
 
-
       const data =
         await response.json();
-
 
       if (
         !response.ok
@@ -2726,24 +2370,20 @@ async function uploadFiles(
       );
 
     }
-
   }
 
-
   await loadFiles();
-
 }
 
 
 /* =========================
-   업로드 드래그
+   업로드 드롭
 ========================= */
 
 const dropZone =
   document.getElementById(
     "dropZone"
   );
-
 
 dropZone.addEventListener(
   "click",
@@ -2757,7 +2397,6 @@ dropZone.addEventListener(
 
   }
 );
-
 
 dropZone.addEventListener(
   "dragover",
@@ -2778,7 +2417,6 @@ dropZone.addEventListener(
   }
 );
 
-
 dropZone.addEventListener(
   "dragleave",
   () => {
@@ -2790,7 +2428,6 @@ dropZone.addEventListener(
   }
 );
 
-
 dropZone.addEventListener(
   "drop",
   event => {
@@ -2799,21 +2436,16 @@ dropZone.addEventListener(
       draggedFileKey
     ) {
 
-      draggedFileKey =
-        null;
+      draggedFileKey = null;
 
       return;
-
     }
 
-
     event.preventDefault();
-
 
     dropZone.classList.remove(
       "dragover"
     );
-
 
     uploadFiles(
       event.dataTransfer.files
@@ -2836,17 +2468,14 @@ async function loadUsage() {
         `${API}/api/usage`
       );
 
-
     if (
       !response.ok
     ) {
       return;
     }
 
-
     const data =
       await response.json();
-
 
     document
       .getElementById(
@@ -2864,23 +2493,208 @@ async function loadUsage() {
 }
 
 
-/* =========================
-   메모 목록
-========================= */
+/* ==================================================
+   메모
+================================================== */
+
+
+/* 메모 작성창 열기 */
+
+function openMemoComposer() {
+
+  document
+    .getElementById(
+      "memoCollapsed"
+    )
+    .style.display =
+      "none";
+
+  document
+    .getElementById(
+      "memoExpanded"
+    )
+    .style.display =
+      "block";
+
+  document
+    .getElementById(
+      "memoTitle"
+    )
+    .focus();
+
+}
+
+
+/* 작성 취소 */
+
+function closeMemoComposer() {
+
+  document
+    .getElementById(
+      "memoCollapsed"
+    )
+    .style.display =
+      "flex";
+
+  document
+    .getElementById(
+      "memoExpanded"
+    )
+    .style.display =
+      "none";
+
+  document
+    .getElementById(
+      "memoTitle"
+    )
+    .value = "";
+
+  document
+    .getElementById(
+      "memoText"
+    )
+    .value = "";
+
+  composerColor =
+    "yellow";
+
+  updateComposerColors();
+
+}
+
+
+/* 색상 선택 */
+
+function selectComposerColor(
+  color
+) {
+
+  composerColor =
+    color;
+
+  updateComposerColors();
+
+}
+
+
+function updateComposerColors() {
+
+  document
+    .querySelectorAll(
+      ".memoTop .colorDot"
+    )
+    .forEach(
+      button => {
+
+        button.classList.toggle(
+          "selected",
+          button.dataset.color ===
+            composerColor
+        );
+
+      }
+    );
+
+}
+
+
+/* 메모 추가 */
+
+async function saveNewMemo() {
+
+  const title =
+    document
+      .getElementById(
+        "memoTitle"
+      )
+      .value
+      .trim();
+
+  const text =
+    document
+      .getElementById(
+        "memoText"
+      )
+      .value
+      .trim();
+
+  if (
+    !title &&
+    !text
+  ) {
+
+    closeMemoComposer();
+
+    return;
+  }
+
+  try {
+
+    const response =
+      await apiFetch(
+        `${API}/api/notes`,
+        {
+
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+              title,
+              text,
+              color:
+                composerColor
+            })
+
+        }
+      );
+
+    const data =
+      await response.json();
+
+    if (
+      !response.ok
+    ) {
+
+      alert(
+        data.error ||
+        "메모 저장에 실패했습니다."
+      );
+
+      return;
+    }
+
+    closeMemoComposer();
+
+    await loadMemos();
+
+  } catch {
+
+    alert(
+      "메모 저장 중 오류가 발생했습니다."
+    );
+
+  }
+}
+
+
+/* 메모 목록 */
 
 async function loadMemos() {
 
-  const list =
+  const grid =
     document.getElementById(
-      "memoList"
+      "memoGrid"
     );
 
-
-  list.innerHTML =
+  grid.innerHTML =
     `<div class="memoEmpty">
       메모를 불러오는 중...
     </div>`;
-
 
   try {
 
@@ -2889,176 +2703,538 @@ async function loadMemos() {
         `${API}/api/notes`
       );
 
-
     const data =
       await response.json();
-
 
     if (
       !response.ok
     ) {
 
-      list.innerHTML =
+      grid.innerHTML =
         `<div class="memoEmpty">
           메모를 불러오지 못했습니다.
         </div>`;
 
       return;
-
     }
-
 
     const notes =
       data.notes || [];
 
-
-    list.innerHTML =
-      "";
-
+    grid.innerHTML = "";
 
     if (
       notes.length === 0
     ) {
 
-      list.innerHTML =
+      grid.innerHTML =
         `<div class="memoEmpty">
-          아직 작성한 메모가 없습니다.
+          아직 메모가 없습니다.
         </div>`;
 
       return;
-
     }
-
 
     notes.forEach(
       note => {
 
-        const card =
-          document.createElement(
-            "div"
-          );
-
-
-        card.className =
-          "memoCard";
-
-
-        const date =
-          document.createElement(
-            "div"
-          );
-
-
-        date.className =
-          "memoDate";
-
-
-        date.textContent =
-          formatDate(
-            note.createdAt
-          );
-
-
-        const text =
-          document.createElement(
-            "div"
-          );
-
-
-        text.className =
-          "memoText";
-
-
-        text.textContent =
-          note.text;
-
-
-        const deleteButton =
-          document.createElement(
-            "button"
-          );
-
-
-        deleteButton.className =
-          "memoDelete";
-
-
-        deleteButton.textContent =
-          "×";
-
-
-        deleteButton.title =
-          "메모 삭제";
-
-
-        deleteButton.onclick =
-          () =>
-            deleteMemo(
-              note.id
-            );
-
-
-        card.appendChild(
-          date
-        );
-
-
-        card.appendChild(
-          text
-        );
-
-
-        card.appendChild(
-          deleteButton
-        );
-
-
-        list.appendChild(
-          card
+        grid.appendChild(
+          createMemoCard(
+            note
+          )
         );
 
       }
     );
 
-
   } catch {
 
-    list.innerHTML =
+    grid.innerHTML =
       `<div class="memoEmpty">
         메모를 불러오지 못했습니다.
       </div>`;
 
   }
+}
+
+
+/* 메모 카드 */
+
+function createMemoCard(
+  note
+) {
+
+  const card =
+    document.createElement(
+      "div"
+    );
+
+  const color =
+    note.color || "yellow";
+
+  card.className =
+    `memoCard memo-${color}`;
+
+
+  if (
+    note.title
+  ) {
+
+    const title =
+      document.createElement(
+        "div"
+      );
+
+    title.className =
+      "memoCardTitle";
+
+    title.textContent =
+      note.title;
+
+    card.appendChild(
+      title
+    );
+
+  }
+
+
+  const text =
+    document.createElement(
+      "div"
+    );
+
+  text.className =
+    "memoCardText";
+
+  text.textContent =
+    note.text || "";
+
+  card.appendChild(
+    text
+  );
+
+
+  const date =
+    document.createElement(
+      "div"
+    );
+
+  date.className =
+    "memoDate";
+
+  date.textContent =
+    formatDate(
+      note.updatedAt ||
+      note.createdAt
+    );
+
+  card.appendChild(
+    date
+  );
+
+
+  const menuButton =
+    document.createElement(
+      "button"
+    );
+
+  menuButton.className =
+    "memoMenuButton";
+
+  menuButton.textContent =
+    "⋮";
+
+  card.appendChild(
+    menuButton
+  );
+
+
+  const menu =
+    document.createElement(
+      "div"
+    );
+
+  menu.className =
+    "memoMenu";
+
+
+  const editButton =
+    document.createElement(
+      "button"
+    );
+
+  editButton.textContent =
+    "수정";
+
+  editButton.onclick =
+    event => {
+
+      event.stopPropagation();
+
+      menu.style.display =
+        "none";
+
+      openMemoEdit(
+        card,
+        note
+      );
+
+    };
+
+
+  const deleteButton =
+    document.createElement(
+      "button"
+    );
+
+  deleteButton.textContent =
+    "삭제";
+
+  deleteButton.onclick =
+    event => {
+
+      event.stopPropagation();
+
+      menu.style.display =
+        "none";
+
+      deleteMemo(
+        note.id
+      );
+
+    };
+
+
+  menu.appendChild(
+    editButton
+  );
+
+  menu.appendChild(
+    deleteButton
+  );
+
+  card.appendChild(
+    menu
+  );
+
+
+  menuButton.onclick =
+    event => {
+
+      event.stopPropagation();
+
+      document
+        .querySelectorAll(
+          ".memoMenu"
+        )
+        .forEach(
+          item => {
+
+            if (
+              item !== menu
+            ) {
+
+              item.style.display =
+                "none";
+
+            }
+
+          }
+        );
+
+      menu.style.display =
+        menu.style.display ===
+        "block"
+          ? "none"
+          : "block";
+
+    };
+
+
+  card.addEventListener(
+    "click",
+    event => {
+
+      if (
+        event.target ===
+          menuButton ||
+        menu.contains(
+          event.target
+        )
+      ) {
+        return;
+      }
+
+      openMemoEdit(
+        card,
+        note
+      );
+
+    }
+  );
+
+
+  return card;
+}
+
+
+/* 메모 수정 */
+
+function openMemoEdit(
+  card,
+  note
+) {
+
+  if (
+    card.querySelector(
+      ".memoEdit"
+    )
+  ) {
+    return;
+  }
+
+
+  card.innerHTML = "";
+
+
+  const edit =
+    document.createElement(
+      "div"
+    );
+
+  edit.className =
+    "memoEdit";
+
+
+  const title =
+    document.createElement(
+      "input"
+    );
+
+  title.value =
+    note.title || "";
+
+  title.placeholder =
+    "제목";
+
+
+  const text =
+    document.createElement(
+      "textarea"
+    );
+
+  text.value =
+    note.text || "";
+
+  text.placeholder =
+    "메모 내용";
+
+
+  const bottom =
+    document.createElement(
+      "div"
+    );
+
+  bottom.className =
+    "memoEditBottom";
+
+
+  const colors =
+    document.createElement(
+      "div"
+    );
+
+  colors.className =
+    "memoColors";
+
+
+  const colorList = [
+    ["yellow", "#fff8b5"],
+    ["green", "#d7f8d7"],
+    ["blue", "#d9f0ff"],
+    ["purple", "#eadcff"],
+    ["pink", "#ffdce8"],
+    ["gray", "#eeeeee"]
+  ];
+
+
+  let selectedColor =
+    note.color || "yellow";
+
+
+  colorList.forEach(
+    ([color, background]) => {
+
+      const button =
+        document.createElement(
+          "button"
+        );
+
+      button.className =
+        "colorDot";
+
+      button.dataset.color =
+        color;
+
+      button.style.background =
+        background;
+
+      if (
+        color === selectedColor
+      ) {
+
+        button.classList.add(
+          "selected"
+        );
+
+      }
+
+      button.onclick =
+        event => {
+
+          event.stopPropagation();
+
+          selectedColor =
+            color;
+
+          colors
+            .querySelectorAll(
+              ".colorDot"
+            )
+            .forEach(
+              item =>
+                item.classList.toggle(
+                  "selected",
+                  item.dataset.color ===
+                    color
+                )
+            );
+
+        };
+
+      colors.appendChild(
+        button
+      );
+
+    }
+  );
+
+
+  const actions =
+    document.createElement(
+      "div"
+    );
+
+
+  const cancel =
+    document.createElement(
+      "button"
+    );
+
+  cancel.textContent =
+    "취소";
+
+
+  const save =
+    document.createElement(
+      "button"
+    );
+
+  save.textContent =
+    "저장";
+
+
+  cancel.onclick =
+    event => {
+
+      event.stopPropagation();
+
+      loadMemos();
+
+    };
+
+
+  save.onclick =
+    async event => {
+
+      event.stopPropagation();
+
+      await updateMemo(
+        note.id,
+        title.value,
+        text.value,
+        selectedColor
+      );
+
+    };
+
+
+  actions.appendChild(
+    cancel
+  );
+
+  actions.appendChild(
+    save
+  );
+
+
+  bottom.appendChild(
+    colors
+  );
+
+  bottom.appendChild(
+    actions
+  );
+
+
+  edit.appendChild(
+    title
+  );
+
+  edit.appendChild(
+    text
+  );
+
+  edit.appendChild(
+    bottom
+  );
+
+
+  card.appendChild(
+    edit
+  );
+
+
+  title.focus();
 
 }
 
 
-/* =========================
-   메모 추가
-========================= */
+/* 메모 수정 저장 */
 
-async function addMemo() {
+async function updateMemo(
+  id,
+  title,
+  text,
+  color
+) {
 
-  const input =
-    document.getElementById(
-      "memoInput"
+  title =
+    title.trim();
+
+  text =
+    text.trim();
+
+  if (
+    !title &&
+    !text
+  ) {
+
+    await deleteMemo(
+      id
     );
-
-
-  const text =
-    input.value.trim();
-
-
-  if (!text) {
-
-    alert(
-      "메모 내용을 입력해주세요."
-    );
-
-    input.focus();
 
     return;
-
   }
 
 
@@ -3078,16 +3254,17 @@ async function addMemo() {
 
           body:
             JSON.stringify({
-              text
+              id,
+              title,
+              text,
+              color
             })
 
         }
       );
 
-
     const data =
       await response.json();
-
 
     if (
       !response.ok
@@ -3095,35 +3272,25 @@ async function addMemo() {
 
       alert(
         data.error ||
-        "메모 저장에 실패했습니다."
+        "메모 수정에 실패했습니다."
       );
 
       return;
-
     }
 
-
-    input.value =
-      "";
-
-
     await loadMemos();
-
 
   } catch {
 
     alert(
-      "메모 저장 중 오류가 발생했습니다."
+      "메모 수정 중 오류가 발생했습니다."
     );
 
   }
-
 }
 
 
-/* =========================
-   메모 삭제
-========================= */
+/* 메모 삭제 */
 
 async function deleteMemo(
   id
@@ -3137,7 +3304,6 @@ async function deleteMemo(
     return;
   }
 
-
   try {
 
     const response =
@@ -3150,10 +3316,8 @@ async function deleteMemo(
         }
       );
 
-
     const data =
       await response.json();
-
 
     if (
       !response.ok
@@ -3165,12 +3329,9 @@ async function deleteMemo(
       );
 
       return;
-
     }
 
-
     await loadMemos();
-
 
   } catch {
 
@@ -3179,12 +3340,95 @@ async function deleteMemo(
     );
 
   }
-
 }
 
 
+/* 바깥 클릭 */
+
+document.addEventListener(
+  "click",
+  event => {
+
+    const composer =
+      document.getElementById(
+        "memoComposer"
+      );
+
+    if (
+      composer &&
+      !composer.contains(
+        event.target
+      )
+    ) {
+
+      const expanded =
+        document.getElementById(
+          "memoExpanded"
+        );
+
+      if (
+        expanded.style.display ===
+        "block"
+      ) {
+
+        const title =
+          document
+            .getElementById(
+              "memoTitle"
+            )
+            .value
+            .trim();
+
+        const text =
+          document
+            .getElementById(
+              "memoText"
+            )
+            .value
+            .trim();
+
+        if (
+          title ||
+          text
+        ) {
+
+          saveNewMemo();
+
+        } else {
+
+          closeMemoComposer();
+
+        }
+
+      }
+
+    }
+
+
+    if (
+      !event.target.closest(
+        ".memoMenuButton"
+      )
+    ) {
+
+      document
+        .querySelectorAll(
+          ".memoMenu"
+        )
+        .forEach(
+          menu =>
+            menu.style.display =
+              "none"
+        );
+
+    }
+
+  }
+);
+
+
 /* =========================
-   메모 날짜
+   날짜
 ========================= */
 
 function formatDate(
@@ -3194,17 +3438,13 @@ function formatDate(
   const date =
     new Date(value);
 
-
   if (
     Number.isNaN(
       date.getTime()
     )
   ) {
-
     return "";
-
   }
-
 
   return date.toLocaleString(
     "ko-KR",
@@ -3213,10 +3453,9 @@ function formatDate(
       month: "2-digit",
       day: "2-digit",
       hour: "2-digit",
-      minute: "2-digit",
+      minute: "2-digit"
     }
   );
-
 }
 
 
@@ -3232,7 +3471,6 @@ function formatSize(
     return "0 B";
   }
 
-
   const units = [
     "B",
     "KB",
@@ -3241,13 +3479,8 @@ function formatSize(
     "TB"
   ];
 
-
-  let size =
-    bytes;
-
-  let index =
-    0;
-
+  let size = bytes;
+  let index = 0;
 
   while (
     size >= 1024 &&
@@ -3255,13 +3488,10 @@ function formatSize(
       units.length - 1
   ) {
 
-    size /=
-      1024;
-
+    size /= 1024;
     index++;
 
   }
-
 
   return (
     size.toFixed(
@@ -3272,7 +3502,6 @@ function formatSize(
     " " +
     units[index]
   );
-
 }
 
 
@@ -3285,4 +3514,6 @@ checkLogin();
 </script>
 
 </body>
+
 </html>
+```
