@@ -158,9 +158,8 @@ main {
 .breadcrumb button {
   border: 0;
   background: transparent;
-  padding: 4px 6px;
+  padding: 4px 7px;
   border-radius: 6px;
-  transition: background .15s ease, color .15s ease;
 }
 
 .breadcrumb button.breadcrumbDropTarget {
@@ -1115,127 +1114,68 @@ function renderBreadcrumb() {
 
   box.innerHTML = "";
 
-  function setupDropTarget(button, targetPrefix) {
+  function makeDropTarget(button, targetPrefix) {
     button.dataset.dropPrefix = targetPrefix;
-    button.title = "여기로 파일을 드래그하면 이동합니다.";
+    button.addEventListener("dragover", function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.dataTransfer.dropEffect = "move";
+      button.classList.add("breadcrumbDropTarget");
+    });
 
-    button.addEventListener(
-      "dragover",
-      function(event) {
-        event.preventDefault();
-        event.stopPropagation();
-        event.dataTransfer.dropEffect = "move";
-        button.classList.add("breadcrumbDropTarget");
-      }
-    );
+    button.addEventListener("dragleave", function() {
+      button.classList.remove("breadcrumbDropTarget");
+    });
 
-    button.addEventListener(
-      "dragleave",
-      function(event) {
-        if (!button.contains(event.relatedTarget)) {
-          button.classList.remove("breadcrumbDropTarget");
-        }
-      }
-    );
+    button.addEventListener("drop", async function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      button.classList.remove("breadcrumbDropTarget");
 
-    button.addEventListener(
-      "drop",
-      async function(event) {
-        event.preventDefault();
-        event.stopPropagation();
-        button.classList.remove("breadcrumbDropTarget");
+      const key = event.dataTransfer.getData("text/plain");
+      const destination = button.dataset.dropPrefix || "";
 
-        const key =
-          event.dataTransfer.getData("text/plain");
+      if (!key) return;
 
-        if (!key) {
-          return;
-        }
+      // 현재 파일이 이미 이 폴더에 있으면 이동하지 않음
+      const slash = key.lastIndexOf("/");
+      const currentParent = slash >= 0 ? key.substring(0, slash + 1) : "";
+      if (currentParent === destination) return;
 
-        const destination = targetPrefix || "";
-
-        // 이미 해당 폴더에 있는 파일이면 이동하지 않음
-        const parentPath =
-          key.substring(0, key.lastIndexOf("/") + 1);
-
-        if (parentPath === destination) {
-          return;
-        }
-
-        await moveFile(key, destination);
-      }
-    );
+      await moveFile(key, destination);
+    });
   }
 
-  const root =
-    document.createElement(
-      "button"
-    );
+  const root = document.createElement("button");
+  root.textContent = "📁 파일";
+  root.onclick = function() {
+    currentPrefix = "";
+    loadFiles();
+  };
+  makeDropTarget(root, "");
+  box.appendChild(root);
 
-  root.textContent =
-    "📁 파일";
+  if (!currentPrefix) return;
 
-  root.onclick =
-    function() {
-      currentPrefix = "";
+  const parts = currentPrefix.split("/").filter(Boolean);
+  let prefix = "";
+
+  parts.forEach(function(part) {
+    prefix += part + "/";
+    box.appendChild(document.createTextNode(" / "));
+
+    const button = document.createElement("button");
+    button.textContent = part;
+    const target = prefix;
+
+    button.onclick = function() {
+      currentPrefix = target;
       loadFiles();
     };
 
-  setupDropTarget(root, "");
-  box.appendChild(root);
-
-  if (!currentPrefix) {
-    return;
-  }
-
-  const parts =
-    currentPrefix
-      .split("/")
-      .filter(Boolean);
-
-  let prefix = "";
-
-  parts.forEach(
-    function(part) {
-
-      prefix +=
-        part + "/";
-
-      const separator =
-        document.createTextNode(
-          " / "
-        );
-
-      box.appendChild(
-        separator
-      );
-
-      const button =
-        document.createElement(
-          "button"
-        );
-
-      button.textContent =
-        part;
-
-      const target =
-        prefix;
-
-      button.onclick =
-        function() {
-          currentPrefix =
-            target;
-
-          loadFiles();
-        };
-
-      setupDropTarget(button, target);
-
-      box.appendChild(
-        button
-      );
-    }
-  );
+    makeDropTarget(button, target);
+    box.appendChild(button);
+  });
 }
 
 function renderFiles() {
