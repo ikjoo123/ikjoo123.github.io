@@ -79,7 +79,7 @@ async function createToken(username, secret) {
   const payload = base64urlEncode(
     JSON.stringify({
       user: username,
-      exp,
+      exp: exp
     })
   );
 
@@ -88,7 +88,7 @@ async function createToken(username, secret) {
     secret
   );
 
-  return `${payload}.${signature}`;
+  return payload + "." + signature;
 }
 
 async function verifyToken(request, env) {
