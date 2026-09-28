@@ -158,7 +158,16 @@ main {
 .breadcrumb button {
   border: 0;
   background: transparent;
-  padding: 2px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: background .15s ease, color .15s ease;
+}
+
+.breadcrumb button.breadcrumbDropTarget {
+  background: #e8f0fe;
+  color: #1967d2;
+  outline: 2px dashed #8ab4f8;
+  outline-offset: 1px;
 }
 
 .dropzone {
@@ -1106,6 +1115,58 @@ function renderBreadcrumb() {
 
   box.innerHTML = "";
 
+  function setupDropTarget(button, targetPrefix) {
+    button.dataset.dropPrefix = targetPrefix;
+    button.title = "여기로 파일을 드래그하면 이동합니다.";
+
+    button.addEventListener(
+      "dragover",
+      function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.dataTransfer.dropEffect = "move";
+        button.classList.add("breadcrumbDropTarget");
+      }
+    );
+
+    button.addEventListener(
+      "dragleave",
+      function(event) {
+        if (!button.contains(event.relatedTarget)) {
+          button.classList.remove("breadcrumbDropTarget");
+        }
+      }
+    );
+
+    button.addEventListener(
+      "drop",
+      async function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        button.classList.remove("breadcrumbDropTarget");
+
+        const key =
+          event.dataTransfer.getData("text/plain");
+
+        if (!key) {
+          return;
+        }
+
+        const destination = targetPrefix || "";
+
+        // 이미 해당 폴더에 있는 파일이면 이동하지 않음
+        const parentPath =
+          key.substring(0, key.lastIndexOf("/") + 1);
+
+        if (parentPath === destination) {
+          return;
+        }
+
+        await moveFile(key, destination);
+      }
+    );
+  }
+
   const root =
     document.createElement(
       "button"
@@ -1120,6 +1181,7 @@ function renderBreadcrumb() {
       loadFiles();
     };
 
+  setupDropTarget(root, "");
   box.appendChild(root);
 
   if (!currentPrefix) {
@@ -1166,6 +1228,8 @@ function renderBreadcrumb() {
 
           loadFiles();
         };
+
+      setupDropTarget(button, target);
 
       box.appendChild(
         button
