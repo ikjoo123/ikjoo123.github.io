@@ -476,78 +476,106 @@ export default {
     }
 
     /*
-     * 파일 삭제
-     */
-    if (
-      url.pathname === "/api/file" &&
-      request.method === "DELETE"
-    ) {
-      const key =
-        url.searchParams.get("key");
+     /*
+ * 파일 삭제
+ */
+if (
+  url.pathname === "/api/file" &&
+  request.method === "DELETE"
+) {
+  const key =
+    url.searchParams.get("key");
 
-      if (!key) {
-        return errorResponse(
-          "파일 키가 없습니다."
-        );
-      }
+  const deletePassword =
+    url.searchParams.get("password") || "";
 
-      await env.FILES.delete(key);
+  if (!key) {
+    return errorResponse(
+      "파일 키가 없습니다."
+    );
+  }
 
-      return jsonResponse({
-        ok: true,
-      });
+  if (
+    deletePassword !== env.AUTH_PASSWORD
+  ) {
+    return errorResponse(
+      "DELETE_PASSWORD_INVALID",
+      403
+    );
+  }
+
+  await env.FILES.delete(key);
+
+  return jsonResponse({
+    ok: true,
+  });
+}
     }
 
     /*
-     * 폴더 삭제
-     */
-    if (
-      url.pathname === "/api/folder" &&
-      request.method === "DELETE"
-    ) {
-      const prefix =
-        url.searchParams.get("prefix");
+     /*
+ * 폴더 삭제
+ */
+if (
+  url.pathname === "/api/folder" &&
+  request.method === "DELETE"
+) {
+  const prefix =
+    url.searchParams.get("prefix");
 
-      if (!prefix) {
-        return errorResponse(
-          "폴더 경로가 없습니다."
-        );
-      }
+  const deletePassword =
+    url.searchParams.get("password") || "";
 
-      let cursor;
+  if (!prefix) {
+    return errorResponse(
+      "폴더 경로가 없습니다."
+    );
+  }
 
-      do {
-        const options = {
-          prefix,
-          limit: 1000,
-        };
+  if (
+    deletePassword !== env.AUTH_PASSWORD
+  ) {
+    return errorResponse(
+      "DELETE_PASSWORD_INVALID",
+      403
+    );
+  }
 
-        if (cursor) {
-          options.cursor = cursor;
-        }
+  let cursor;
 
-        const result =
-          await env.FILES.list(options);
+  do {
+    const options = {
+      prefix,
+      limit: 1000,
+    };
 
-        if (
-          result.objects.length > 0
-        ) {
-          await env.FILES.delete(
-            result.objects.map(
-              (object) => object.key
-            )
-          );
-        }
-
-        cursor = result.truncated
-          ? result.cursor
-          : undefined;
-      } while (cursor);
-
-      return jsonResponse({
-        ok: true,
-      });
+    if (cursor) {
+      options.cursor = cursor;
     }
+
+    const result =
+      await env.FILES.list(options);
+
+    if (
+      result.objects.length > 0
+    ) {
+      await env.FILES.delete(
+        result.objects.map(
+          (object) => object.key
+        )
+      );
+    }
+
+    cursor = result.truncated
+      ? result.cursor
+      : undefined;
+
+  } while (cursor);
+
+  return jsonResponse({
+    ok: true,
+  });
+}
 
     /*
      * 파일 다운로드
