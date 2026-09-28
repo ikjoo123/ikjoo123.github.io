@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -7,7 +8,7 @@
     content="width=device-width, initial-scale=1.0"
   >
 
-  <title>JU Files</title>
+  <title>익주</title>
 
   <style>
     * {
@@ -277,7 +278,7 @@
   <!-- 로그인 -->
   <div id="loginScreen">
     <div class="loginBox">
-      <h1>JU Files</h1>
+      <h1>익주</h1>
 
       <input
         id="username"
@@ -307,7 +308,7 @@
 
     <div class="header">
       <div class="headerTitle">
-        JU Files
+        익주
       </div>
 
       <div class="headerRight">
@@ -516,6 +517,13 @@ async function login() {
       data.token
     );
 
+    document
+      .getElementById(
+        "usernameDisplay"
+      )
+      .textContent =
+        data.username;
+
     showApp();
 
     await loadFiles();
@@ -606,9 +614,11 @@ async function checkLogin() {
         "usernameDisplay"
       )
       .textContent =
-        data.username;
+        data.user;
 
     showApp();
+
+    await loadFiles();
 
     return true;
 
@@ -729,7 +739,7 @@ function renderBreadcrumb() {
   let path = "";
 
   parts.forEach(
-    (part, index) => {
+    (part) => {
 
       const separator =
         document.createTextNode(
@@ -849,7 +859,7 @@ function renderFiles() {
           event.stopPropagation();
 
           deleteFolder(
-            folder.key
+            folder.prefix
           );
 
         };
@@ -867,7 +877,7 @@ function renderFiles() {
 
       row.onclick =
         () => openFolder(
-          folder.key
+          folder.prefix
         );
 
 
@@ -1213,7 +1223,6 @@ async function deleteFile(
   }
 
 
-  // 삭제 비밀번호
   const password =
     prompt(
       "삭제하려면 비밀번호를 입력하세요."
@@ -1430,7 +1439,7 @@ async function createFolder() {
           },
 
           body: JSON.stringify({
-            folder:
+            parent:
               currentFolder,
             name:
               name.trim()
@@ -1781,3 +1790,4 @@ checkLogin();
 
 </body>
 </html>
+```
