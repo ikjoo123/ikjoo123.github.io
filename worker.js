@@ -505,6 +505,19 @@ export default {
         const folder =
           formData.get("folder") || "";
 
+        // 폴더 드롭 시 하위 경로를 유지합니다.
+        // 클라이언트가 전달한 상대 경로에서 위험한 경로 요소는 제거합니다.
+        const relativePath = String(formData.get("relativePath") || "");
+        const safeRelativeParts = relativePath
+          .replace(/\\/g, "/")
+          .split("/")
+          .filter(function(part) {
+            return part && part !== "." && part !== "..";
+          });
+        const relativeFolder = safeRelativeParts
+          .slice(0, -1)
+          .join("/");
+
         const confirmedLarge =
           formData.get(
             "confirmedLarge"
@@ -542,12 +555,27 @@ export default {
 
         const safeFolder =
           cleanFolder(folder);
+        const safeRelativeFolder =
+          relativeFolder
+            .split("/")
+            .filter(function(part) {
+              return part && part !== "." && part !== "..";
+            })
+            .join("/");
+
+        let targetFolder = safeFolder;
+
+        if (safeRelativeFolder) {
+          targetFolder = targetFolder
+            ? targetFolder + "/" + safeRelativeFolder
+            : safeRelativeFolder;
+        }
 
         let key;
 
-        if (safeFolder) {
+        if (targetFolder) {
           key =
-            safeFolder +
+            targetFolder +
             "/" +
             Date.now() +
             "-" +
