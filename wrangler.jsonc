@@ -6,6 +6,9 @@
   "assets": {
     "directory": "."
   },
+  "ai": {
+    "binding": "AI"
+  },
   "r2_buckets": [
     {
       "binding": "FILES",
