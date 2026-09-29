@@ -189,6 +189,25 @@ button:hover {
 </div>
 
 <script>
+const INACTIVITY_LIMIT=30*60*1000;
+const INACTIVITY_TOKEN_KEY="ju_files_token";
+let inactivityTimer=null;
+function inactivityLogout(){
+  localStorage.removeItem(INACTIVITY_TOKEN_KEY);
+  if(inactivityTimer) clearTimeout(inactivityTimer);
+  location.href="index.html";
+}
+function resetInactivityTimer(){
+  if(!localStorage.getItem(INACTIVITY_TOKEN_KEY)) return;
+  if(inactivityTimer) clearTimeout(inactivityTimer);
+  inactivityTimer=setTimeout(inactivityLogout,INACTIVITY_LIMIT);
+}
+["click","keydown","touchstart","mousemove","scroll"].forEach(function(type){
+  document.addEventListener(type,resetInactivityTimer,{passive:true});
+});
+resetInactivityTimer();
+
+
 
 const TOKEN_KEY = "ju_files_token";
 
