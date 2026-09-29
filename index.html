@@ -32,7 +32,8 @@ body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:c
     <div id="loginError" class="loginError hidden"></div>
     <input id="username" placeholder="아이디" autocomplete="username">
     <input id="password" type="password" placeholder="비밀번호" autocomplete="current-password">
-    <button id="loginButton">로그인</button>
+    <button id="loginButton">관리자 로그인</button>
+    <button id="guestButton" style="margin-top:10px;background:#fff;color:#333;border:1px solid #ddd">게스트로 보기</button>
   </div>
 
   <div id="app" class="hidden">
@@ -54,6 +55,7 @@ body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:c
 const API="https://ikjoo123-github-io.zjaghkf0000.workers.dev";
 const TOKEN_KEY="ju_files_token";
 const INACTIVITY_LIMIT=30*60*1000;
+const ROLE_KEY="ju_files_role";
 let inactivityTimer=null;
 
 function showLogin(){
@@ -67,6 +69,7 @@ function showApp(){
 }
 function logout(){
   localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(ROLE_KEY);
   if(inactivityTimer) clearTimeout(inactivityTimer);
   showLogin();
 }
@@ -106,6 +109,7 @@ document.getElementById("loginButton").onclick=async function(){
     const data=await response.json();
     if(!response.ok) throw new Error(data.error||"로그인 실패");
     localStorage.setItem(TOKEN_KEY,data.token);
+    localStorage.setItem(ROLE_KEY,data.role || "admin");
     showApp();
   }catch(error){
     errorBox.textContent=error.message||"로그인에 실패했습니다.";
@@ -114,6 +118,23 @@ document.getElementById("loginButton").onclick=async function(){
 };
 document.getElementById("password").addEventListener("keydown",function(e){if(e.key==="Enter")document.getElementById("loginButton").click()});
 document.getElementById("logoutButton").onclick=logout;
+document.getElementById("guestButton").onclick=async function(){
+  const button=this;
+  const errorBox=document.getElementById("loginError");
+  errorBox.classList.add("hidden");
+  button.disabled=true;
+  try{
+    const response=await fetch(API+"/api/guest",{method:"POST"});
+    const data=await response.json();
+    if(!response.ok) throw new Error(data.error||"게스트 로그인 실패");
+    localStorage.setItem(TOKEN_KEY,data.token);
+    localStorage.setItem(ROLE_KEY,"guest");
+    showApp();
+  }catch(error){
+    errorBox.textContent=error.message||"게스트 로그인에 실패했습니다.";
+    errorBox.classList.remove("hidden");
+  }finally{button.disabled=false}
+};
 checkLogin();
 </script>
 </body>
