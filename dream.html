@@ -408,6 +408,7 @@ body {
     <!-- 꿈 기록하기 -->
 
     <button
+        id="addDreamButton"
         class="addButton"
         onclick="showDreamForm()"
     >
@@ -495,6 +496,8 @@ body {
 <script>
 const INACTIVITY_LIMIT=30*60*1000;
 const INACTIVITY_TOKEN_KEY="ju_files_token";
+const ROLE_KEY="ju_files_role";
+let isAdmin=localStorage.getItem(ROLE_KEY)!=="guest";
 let inactivityTimer=null;
 function inactivityLogout(){
   localStorage.removeItem(INACTIVITY_TOKEN_KEY);
@@ -585,6 +588,11 @@ async function loadDreams() {
         });
     });
 
+    if (!isAdmin) {
+        renderDreams();
+        return;
+    }
+
     for (let i = 0; i < missingInitialDreams.length; i++) {
         const initialDream = missingInitialDreams[i];
 
@@ -647,6 +655,7 @@ function renderDreams() {
 }
 
 function showDreamForm() {
+    if (!isAdmin) return;
     const form = document.getElementById("dreamForm");
 
     if (form.style.display === "none" || form.style.display === "") {
@@ -657,6 +666,7 @@ function showDreamForm() {
 }
 
 async function saveDream() {
+    if (!isAdmin) return;
     const date = document.getElementById("dreamDate").value;
     const title = document.getElementById("dreamTitle").value.trim();
     const content = document.getElementById("dreamContent").value.trim();
