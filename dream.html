@@ -498,10 +498,43 @@ body {
    꿈 기록 데이터
 ========================= */
 
-let dreams =
+const savedDreams =
     JSON.parse(
         localStorage.getItem("dreamRecords") || "[]"
     );
+
+const initialDreams = [
+    {
+        date: "2026.09.27",
+        title: "영혼을 잃은 고대의 새",
+        content: "의인화된 새들이 사는 세계였다. 새들은 각자 직장에 다니며 평범하게 살아가고 있었고, 큰 새와 작은 새가 섞여 있었다. 처음에는 땅이 약간 깃털 같은 모습으로 보였는데, 알고 보니 그 땅 자체가 영혼을 잃은 엄청나게 큰 고대의 새였다. 멀리서 보면 그 고대의 새가 하염없이 빙글빙글 돌고 있었고, 그 위에 새들이 모여 살아가고 있었다.",
+        image: ""
+    },
+    {
+        date: "2026.09.28",
+        title: "거대한 파도와 수영장의 돌고래",
+        content: "정승제 강사에게 수학을 배워 수능을 봤다. 수능을 마치고 돌아오는 길에 버스를 타고 평야를 지나가는데 멀리서 거대한 파도가 다가왔다. 튜브를 타고 파도를 향해 바로 가서 매우 높은 파도를 타고 수영장으로 들어갔다. 그 수영장에는 사람들이 키우는 돌고래들이 살고 있었고, 가끔 외부의 멍청하고 통제되지 않는 야생 돌고래가 들어오면 경비가 쫓아냈다.",
+        image: ""
+    }
+];
+
+let dreams = savedDreams;
+
+initialDreams.forEach(function(initialDream) {
+    const exists = dreams.some(function(dream) {
+        return dream.date === initialDream.date &&
+               dream.title === initialDream.title;
+    });
+
+    if (!exists) {
+        dreams.push(initialDream);
+    }
+});
+
+localStorage.setItem(
+    "dreamRecords",
+    JSON.stringify(dreams)
+);
 
 
 /* =========================
