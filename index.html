@@ -817,6 +817,11 @@ main {
     <button id="calendarNext">▶</button>
   </div>
 
+  <div
+    id="calendarStatus"
+    style="min-height:20px; margin:4px 0 10px; font-size:13px; color:#666;"
+  ></div>
+
   <div class="calendarForm hidden" id="calendarForm">
     <div class="calendarFormRow">
       <input id="eventDate" type="date">
@@ -1544,15 +1549,15 @@ function renderFiles() {
           const data =
             event.dataTransfer.getData("text/plain");
 
-          if (
-            data &&
-            data.startsWith("FOLDER:")
-          ) {
-            event.preventDefault();
-            event.stopPropagation();
-            event.dataTransfer.dropEffect = "move";
-            row.style.background = "#e8f0fe";
+          if (!data) {
+            return;
           }
+
+          // 파일과 폴더 모두 하위 폴더로 드롭 가능
+          event.preventDefault();
+          event.stopPropagation();
+          event.dataTransfer.dropEffect = "move";
+          row.style.background = "#e8f0fe";
         }
       );
 
@@ -1573,18 +1578,25 @@ function renderFiles() {
           const data =
             event.dataTransfer.getData("text/plain");
 
-          if (
-            !data ||
-            !data.startsWith("FOLDER:")
-          ) {
+          if (!data) {
             return;
           }
 
-          const source =
-            data.substring("FOLDER:".length);
+          if (data.startsWith("FOLDER:")) {
+            const source =
+              data.substring("FOLDER:".length);
 
-          await moveFolder(
-            source,
+            await moveFolder(
+              source,
+              folder.prefix
+            );
+
+            return;
+          }
+
+          // FOLDER:가 아니면 파일 키로 처리
+          await moveFile(
+            data,
             folder.prefix
           );
         }
@@ -3035,14 +3047,61 @@ function formatCalendarDate(dateString) {
 }
 
 async function loadCalendarEvents() {
+  const status =
+    document.getElementById("calendarStatus");
+
   try {
-    const response = await apiFetch("/api/events");
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "일정 불러오기 실패");
-    calendarEvents = data.events || [];
+    if (status) {
+      status.textContent = "일정을 불러오는 중...";
+      status.style.color = "#666";
+    }
+
+    const response =
+      await apiFetch("/api/events");
+
+    const data =
+      await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ||
+        "일정 불러오기 실패 (" +
+        response.status +
+        ")"
+      );
+    }
+
+    calendarEvents =
+      Array.isArray(data.events)
+        ? data.events
+        : [];
+
+    if (status) {
+      status.textContent =
+        calendarEvents.length +
+        "개의 일정이 저장되어 있습니다.";
+      status.style.color = "#666";
+    }
+
+    return true;
+
   } catch (error) {
-    console.error(error);
+
+    console.error(
+      "calendar load error:",
+      error
+    );
+
     calendarEvents = [];
+
+    if (status) {
+      status.textContent =
+        "일정을 불러오지 못했습니다: " +
+        (error.message || error);
+      status.style.color = "#d93025";
+    }
+
+    return false;
   }
 }
 
@@ -3222,42 +3281,97 @@ document.querySelectorAll(".calendarColor").forEach(function(dot) {
 document.getElementById("eventCancel").onclick = closeEventForm;
 
 document.getElementById("eventSave").onclick = async function() {
-  const date = document.getElementById("eventDate").value;
-  const title = document.getElementById("eventTitle").value.trim();
-  const time = document.getElementById("eventTime").value;
-  const text = document.getElementById("eventText").value.trim();
+  const saveButton =
+    document.getElementById("eventSave");
+
+  const date =
+    document.getElementById("eventDate").value;
+
+  const title =
+    document.getElementById("eventTitle").value.trim();
+
+  const time =
+    document.getElementById("eventTime").value;
+
+  const text =
+    document.getElementById("eventText").value.trim();
 
   if (!date) {
     alert("날짜를 선택하세요.");
     return;
   }
+
   if (!title) {
     alert("일정 제목을 입력하세요.");
     return;
   }
 
-  const response = await apiFetch("/api/events", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      id: editingEventId,
-      date: date,
-      time: time,
-      title: title,
-      text: text,
-      color: selectedEventColor
-    })
-  });
+  try {
+    saveButton.disabled = true;
+    saveButton.textContent = "저장 중...";
 
-  const data = await response.json();
-  if (!response.ok) {
-    alert(data.error || "일정 저장 실패");
-    return;
+    const response =
+      await apiFetch("/api/events", {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
+        body: JSON.stringify({
+          id:
+            editingEventId,
+          date:
+            date,
+          time:
+            time,
+          title:
+            title,
+          text:
+            text,
+          color:
+            selectedEventColor
+        })
+      });
+
+    const data =
+      await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ||
+        "일정 저장 실패 (" +
+        response.status +
+        ")"
+      );
+    }
+
+    closeEventForm();
+
+    const loaded =
+      await loadCalendarEvents();
+
+    if (loaded) {
+      renderCalendar();
+    }
+
+    alert("일정이 저장되었습니다.");
+
+  } catch (error) {
+
+    console.error(
+      "calendar save error:",
+      error
+    );
+
+    alert(
+      "일정 저장 실패\n" +
+      (error.message || error)
+    );
+
+  } finally {
+    saveButton.disabled = false;
+    saveButton.textContent = "저장";
   }
-
-  closeEventForm();
-  await loadCalendarEvents();
-  renderCalendar();
 };
 
 document.getElementById("eventDelete").onclick = async function() {
