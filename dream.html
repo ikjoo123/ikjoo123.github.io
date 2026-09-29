@@ -321,6 +321,16 @@ body {
     text-align: right;
 }
 
+.editButton {
+    border: 0;
+    background: #eef5ff;
+    color: #2563eb;
+    padding: 9px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-right: 6px;
+}
+
 .deleteButton {
     border: 0;
     background: #fff0f0;
@@ -423,6 +433,7 @@ body {
         class="dreamForm"
     >
 
+        <input type="hidden" id="editingDreamId" value="">
         <input
             id="dreamDate"
             class="dreamInput"
@@ -448,6 +459,13 @@ body {
 
         <div class="imageLabel">
             🖼️ 꿈 사진
+        </div>
+        <div id="currentDreamImageBox" style="display:none;margin:8px 0;font-size:13px;color:#777">
+            현재 사진이 있습니다.
+            <label style="margin-left:10px">
+                <input id="removeDreamImage" type="checkbox">
+                사진 삭제
+            </label>
         </div>
 
 
@@ -669,10 +687,16 @@ function showDreamForm() {
 
 async function saveDream() {
     if (!isAdmin) return;
+
     const date = document.getElementById("dreamDate").value;
     const title = document.getElementById("dreamTitle").value.trim();
     const content = document.getElementById("dreamContent").value.trim();
     const imageInput = document.getElementById("dreamImage");
+    const editingId = document.getElementById("editingDreamId").value;
+    const removeImage = document.getElementById("removeDreamImage").checked;
+    const existingDream = editingId
+        ? dreams.find(function(d) { return d.id === editingId; })
+        : null;
 
     if (!date) {
         alert("날짜를 입력해주세요.");
@@ -691,19 +715,19 @@ async function saveDream() {
 
     if (imageInput.files && imageInput.files[0]) {
         compressImage(imageInput.files[0], function(imageData) {
-            saveDreamToR2(date, title, content, imageData);
+            saveDreamToR2(date, title, content, imageData, editingId);
         });
     } else {
         saveDreamToR2(
             date,
             title,
             content,
-            ""
+            removeImage ? "" : (existingDream ? existingDream.image || "" : ""),
+            editingId
         );
     }
 }
-
-async function saveDreamToR2(date, title, content, image) {
+async function saveDreamToR2(date, title, content, image, editingId) {
     try {
         const response = await apiFetch("/api/dreams", {
             method: "POST",
@@ -711,6 +735,7 @@ async function saveDreamToR2(date, title, content, image) {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
+                id: editingId || "",
                 date: date.replaceAll("-", "."),
                 title: title,
                 content: content,
@@ -726,12 +751,19 @@ async function saveDreamToR2(date, title, content, image) {
         const data = await response.json();
 
         if (data.dream) {
-            dreams.unshift(data.dream);
+            const existingIndex = dreams.findIndex(function(d) {
+                return d.id === data.dream.id;
+            });
+            if (existingIndex >= 0) {
+                dreams[existingIndex] = data.dream;
+            } else {
+                dreams.unshift(data.dream);
+            }
         }
 
         renderDreams();
         resetDreamForm();
-        alert("꿈 기록이 R2에 저장되었습니다 🌙");
+        alert(editingId ? "꿈 기록이 수정되었습니다 🌙" : "꿈 기록이 R2에 저장되었습니다 🌙");
     } catch (error) {
         alert(error.message || "꿈 기록 저장에 실패했습니다.");
     }
@@ -770,11 +802,36 @@ function compressImage(file, callback) {
 }
 
 function resetDreamForm() {
+    document.getElementById("editingDreamId").value = "";
     document.getElementById("dreamDate").value = "";
     document.getElementById("dreamTitle").value = "";
     document.getElementById("dreamContent").value = "";
     document.getElementById("dreamImage").value = "";
+    document.getElementById("removeDreamImage").checked = false;
+    document.getElementById("currentDreamImageBox").style.display = "none";
+    document.querySelector("#dreamForm .saveButton").textContent = "저장";
     document.getElementById("dreamForm").style.display = "none";
+}
+
+function editDream(index) {
+    if (!isAdmin) return;
+
+    const dream = dreams[index];
+    if (!dream) return;
+
+    document.getElementById("editingDreamId").value = dream.id || "";
+    document.getElementById("dreamDate").value = String(dream.date || "").replaceAll(".", "-");
+    document.getElementById("dreamTitle").value = dream.title || "";
+    document.getElementById("dreamContent").value = dream.content || "";
+    document.getElementById("dreamImage").value = "";
+    document.getElementById("removeDreamImage").checked = false;
+
+    const imageBox = document.getElementById("currentDreamImageBox");
+    imageBox.style.display = dream.image ? "block" : "none";
+
+    document.querySelector("#dreamForm .saveButton").textContent = "수정 저장";
+    document.getElementById("dreamForm").style.display = "block";
+    document.getElementById("dreamForm").scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 function openDream(index) {
@@ -798,6 +855,7 @@ function openDream(index) {
         imageHTML +
         '<div class="modalContent">' + escapeHTML(dream.content) + '</div>' +
         '<div class="modalButtons">' +
+        (isAdmin ? '<button class="editButton" onclick="closeDream(); editDream(' + index + ')">수정</button>' : '') +
         (isAdmin ? '<button class="deleteButton" onclick="deleteDream(' + index + ')">삭제</button>' : '') +
         '<button class="closeButton" onclick="closeDream()">닫기</button>' +
         '</div>' +
