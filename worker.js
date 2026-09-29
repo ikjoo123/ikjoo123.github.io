@@ -383,6 +383,15 @@ export default {
             limit: 1000
           });
 
+        // 내부 전용 저장 영역은 업무 파일 목록에 노출하지 않습니다.
+        if (!prefix) {
+          result.delimitedPrefixes = result.delimitedPrefixes.filter(function(folder) {
+            return folder !== DREAMS_PREFIX &&
+                   folder !== NOTES_PREFIX &&
+                   folder !== EVENTS_PREFIX;
+          });
+        }
+
         const folders = [];
 
         for (
