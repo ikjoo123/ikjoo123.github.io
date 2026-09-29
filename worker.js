@@ -2,7 +2,8 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
-  "Access-Control-Max-Age": "86400"
+  "Access-Control-Max-Age": "86400",
+  "Access-Control-Expose-Headers": "Content-Disposition, X-Download-Filename"
 };
 
 const MAX_STORAGE = 9 * 1024 * 1024 * 1024;
@@ -685,6 +686,317 @@ export default {
       }
 
       /*
+       * MOVE FOLDER
+       */
+      if (
+        url.pathname === "/api/move-folder" &&
+        request.method === "POST"
+      ) {
+        const body =
+          await request.json();
+
+        const source =
+          cleanFolder(body.source);
+
+        const destination =
+          cleanFolder(
+            body.destinationFolder
+          );
+
+        if (!source) {
+          return errorResponse(
+            "이동할 폴더가 없습니다.",
+            400
+          );
+        }
+
+        const sourcePrefix =
+          source + "/";
+
+        const destinationPrefix =
+          destination
+            ? destination + "/" + source.split("/").pop() + "/"
+            : source.split("/").pop() + "/";
+
+        if (
+          destinationPrefix ===
+          sourcePrefix
+        ) {
+          return errorResponse(
+            "같은 위치로 이동할 수 없습니다.",
+            400
+          );
+        }
+
+        if (
+          destinationPrefix.startsWith(
+            sourcePrefix
+          )
+        ) {
+          return errorResponse(
+            "폴더를 자기 자신 또는 하위 폴더로 이동할 수 없습니다.",
+            400
+          );
+        }
+
+        let cursor = undefined;
+        let objects = [];
+
+        do {
+          const options = {
+            prefix: sourcePrefix,
+            limit: 1000
+          };
+
+          if (cursor) {
+            options.cursor = cursor;
+          }
+
+          const result =
+            await env.FILES.list(
+              options
+            );
+
+          objects =
+            objects.concat(
+              result.objects
+            );
+
+          cursor =
+            result.truncated
+              ? result.cursor
+              : undefined;
+
+        } while (cursor);
+
+        if (!objects.length) {
+          return errorResponse(
+            "폴더를 찾을 수 없습니다.",
+            404
+          );
+        }
+
+        for (
+          let i = 0;
+          i < objects.length;
+          i++
+        ) {
+          const object =
+            objects[i];
+
+          const relativeKey =
+            object.key.slice(
+              sourcePrefix.length
+            );
+
+          const newKey =
+            destinationPrefix +
+            relativeKey;
+
+          const sourceObject =
+            await env.FILES.get(
+              object.key
+            );
+
+          if (!sourceObject) {
+            continue;
+          }
+
+          await env.FILES.put(
+            newKey,
+            sourceObject.body,
+            {
+              httpMetadata:
+                sourceObject.httpMetadata,
+              customMetadata:
+                sourceObject.customMetadata
+            }
+          );
+        }
+
+        for (
+          let i = 0;
+          i < objects.length;
+          i++
+        ) {
+          await env.FILES.delete(
+            objects[i].key
+          );
+        }
+
+        return jsonResponse({
+          ok: true,
+          source: sourcePrefix,
+          destination:
+            destinationPrefix
+        });
+      }
+
+      /*
+       * RENAME FOLDER
+       */
+      if (
+        url.pathname === "/api/rename-folder" &&
+        request.method === "POST"
+      ) {
+        const body =
+          await request.json();
+
+        const source =
+          cleanFolder(body.source);
+
+        const newName =
+          String(body.newName || "")
+            .trim();
+
+        if (!source) {
+          return errorResponse(
+            "이름을 변경할 폴더가 없습니다.",
+            400
+          );
+        }
+
+        if (!newName) {
+          return errorResponse(
+            "새 폴더 이름을 입력하세요.",
+            400
+          );
+        }
+
+        if (
+          newName.includes("/") ||
+          newName.includes("\\") ||
+          newName === "." ||
+          newName === ".."
+        ) {
+          return errorResponse(
+            "사용할 수 없는 폴더 이름입니다.",
+            400
+          );
+        }
+
+        const sourcePrefix =
+          source + "/";
+
+        const parts =
+          source.split("/");
+
+        parts.pop();
+
+        const parent =
+          parts.length
+            ? parts.join("/") + "/"
+            : "";
+
+        const destinationPrefix =
+          parent +
+          newName +
+          "/";
+
+        if (
+          destinationPrefix ===
+          sourcePrefix
+        ) {
+          return errorResponse(
+            "기존 폴더 이름과 같습니다.",
+            400
+          );
+        }
+
+        let cursor = undefined;
+        let objects = [];
+
+        do {
+          const options = {
+            prefix: sourcePrefix,
+            limit: 1000
+          };
+
+          if (cursor) {
+            options.cursor = cursor;
+          }
+
+          const result =
+            await env.FILES.list(
+              options
+            );
+
+          objects =
+            objects.concat(
+              result.objects
+            );
+
+          cursor =
+            result.truncated
+              ? result.cursor
+              : undefined;
+
+        } while (cursor);
+
+        if (!objects.length) {
+          return errorResponse(
+            "폴더를 찾을 수 없습니다.",
+            404
+          );
+        }
+
+        for (
+          let i = 0;
+          i < objects.length;
+          i++
+        ) {
+          const object =
+            objects[i];
+
+          const relativeKey =
+            object.key.slice(
+              sourcePrefix.length
+            );
+
+          const newKey =
+            destinationPrefix +
+            relativeKey;
+
+          const sourceObject =
+            await env.FILES.get(
+              object.key
+            );
+
+          if (!sourceObject) {
+            continue;
+          }
+
+          await env.FILES.put(
+            newKey,
+            sourceObject.body,
+            {
+              httpMetadata:
+                sourceObject.httpMetadata,
+              customMetadata:
+                sourceObject.customMetadata
+            }
+          );
+        }
+
+        for (
+          let i = 0;
+          i < objects.length;
+          i++
+        ) {
+          await env.FILES.delete(
+            objects[i].key
+          );
+        }
+
+        return jsonResponse({
+          ok: true,
+          source: sourcePrefix,
+          destination:
+            destinationPrefix
+        });
+      }
+
+      /*
        * DOWNLOAD
        */
       if (
@@ -737,6 +1049,10 @@ export default {
                 "attachment; filename*=UTF-8''" +
                 encodeURIComponent(
                   filename
+                ),
+              "X-Download-Filename":
+                encodeURIComponent(
+                  filename
                 )
             }
           }
@@ -775,7 +1091,9 @@ export default {
           );
         }
 
-        await env.FILES.delete(key);
+        await env.FILES.delete(
+          key
+        );
 
         return jsonResponse({
           ok: true
@@ -907,6 +1225,7 @@ export default {
             }
 
             notes.push(note);
+
           } catch (error) {
           }
         }
@@ -981,6 +1300,7 @@ export default {
         }
 
         let noteId = id;
+
         let createdAt =
           new Date().toISOString();
 
@@ -1009,9 +1329,11 @@ export default {
               createdAt =
                 oldNote.createdAt ||
                 createdAt;
+
             } catch (error) {
             }
           }
+
         } else {
           noteId =
             Date.now() +
