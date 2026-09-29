@@ -1181,6 +1181,9 @@ let currentFolders = [];
 let currentFiles = [];
 let currentPage = 1;
 
+let selectedFileKeys = new Set();
+let selectMode = false;
+  
 const PAGE_SIZE = 30;
 
 function formatSize(size) {
@@ -1693,6 +1696,31 @@ function renderFiles() {
         "<div class='fileSize'></div>" +
         "<div class='fileActions'></div>";
 
+const checkbox =
+  row.querySelector(".fileSelect");
+
+checkbox.checked =
+  selectedFileKeys.has(file.key);
+
+checkbox.addEventListener(
+  "click",
+  function(event) {
+    event.stopPropagation();
+  }
+);
+
+checkbox.addEventListener(
+  "change",
+  function() {
+    if (checkbox.checked) {
+      selectedFileKeys.add(file.key);
+    } else {
+      selectedFileKeys.delete(file.key);
+    }
+  }
+);
+
+      
       row.querySelector(
         ".fileName"
       ).textContent =
@@ -3443,6 +3471,106 @@ document.getElementById("eventDelete").onclick = async function() {
   renderCalendar();
 };
 
+/*
+ * MULTI DELETE FILES
+ */
+
+document.getElementById(
+  "selectDeleteButton"
+).onclick =
+  async function() {
+
+    const keys =
+      Array.from(
+        selectedFileKeys
+      );
+
+    if (keys.length === 0) {
+      alert(
+        "삭제할 파일을 선택하세요."
+      );
+      return;
+    }
+
+    const password =
+      prompt(
+        "선택한 " +
+        keys.length +
+        "개 파일을 삭제합니다.\n삭제하려면 비밀번호를 입력하세요."
+      );
+
+    if (password === null) {
+      return;
+    }
+
+    if (
+      !confirm(
+        "선택한 " +
+        keys.length +
+        "개 파일을 정말 삭제하시겠습니까?"
+      )
+    ) {
+      return;
+    }
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (
+      const key of keys
+    ) {
+
+      try {
+
+        const response =
+          await apiFetch(
+            "/api/file?key=" +
+            encodeURIComponent(key) +
+            "&password=" +
+            encodeURIComponent(password),
+            {
+              method: "DELETE"
+            }
+          );
+
+        if (response.ok) {
+          successCount++;
+        } else {
+          failCount++;
+        }
+
+      } catch (error) {
+
+        console.error(error);
+        failCount++;
+
+      }
+    }
+
+    selectedFileKeys.clear();
+
+    await loadFiles();
+    await loadStorage();
+
+    if (failCount === 0) {
+
+      alert(
+        successCount +
+        "개 파일을 삭제했습니다."
+      );
+
+    } else {
+
+      alert(
+        successCount +
+        "개 삭제 완료\n" +
+        failCount +
+        "개 삭제 실패"
+      );
+
+    }
+  };
+  
 /*
  * ============================
  * INITIAL
