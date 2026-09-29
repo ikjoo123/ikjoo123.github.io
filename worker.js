@@ -8,35 +8,35 @@ const corsHeaders = {
 
 const MAX_STORAGE = 9 * 1024 * 1024 * 1024;
 const LARGE_FILE_SIZE = 100 * 1024 * 1024;
-
 const NOTES_PREFIX = "__notes__/";
 const EVENTS_PREFIX = "__calendar__/";
 
+function jsonResponse(data, status) {
+  if (status === undefined) {
+    status = 200;
+  }
 
-function jsonResponse(data, status = 200) {
-  return new Response(
-    JSON.stringify(data),
-    {
-      status: status,
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "application/json; charset=utf-8"
-      }
+  return new Response(JSON.stringify(data), {
+    status: status,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      ...corsHeaders
     }
-  );
+  });
 }
 
+function errorResponse(message, status) {
+  if (status === undefined) {
+    status = 400;
+  }
 
-function errorResponse(message, status = 400) {
   return jsonResponse(
     {
-      ok: false,
       error: message
     },
     status
   );
 }
-
 
 function base64urlEncode(data) {
   let result = btoa(data);
@@ -48,27 +48,23 @@ function base64urlEncode(data) {
   return result;
 }
 
-
 function base64urlDecode(data) {
   let value = data;
 
   value = value.replace(/-/g, "+");
   value = value.replace(/_/g, "/");
 
-  while (value.length % 4) {
+  while (value.length % 4 !== 0) {
     value += "=";
   }
 
   return atob(value);
 }
 
-
 async function makeSignature(payload, secret) {
-  const encoder = new TextEncoder();
-
   const key = await crypto.subtle.importKey(
     "raw",
-    encoder.encode(secret),
+    new TextEncoder().encode(secret),
     {
       name: "HMAC",
       hash: "SHA-256"
@@ -77,189 +73,118 @@ async function makeSignature(payload, secret) {
     ["sign"]
   );
 
-  const signature =
-    await crypto.subtle.sign(
-      "HMAC",
-      key,
-      encoder.encode(payload)
-    );
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(payload)
+  );
 
+  const bytes = new Uint8Array(signature);
   let binary = "";
 
-  const bytes =
-    new Uint8Array(signature);
-
-  for (
-    let i = 0;
-    i < bytes.length;
-    i++
-  ) {
+  for (let i = 0; i < bytes.length; i++) {
     binary += String.fromCharCode(bytes[i]);
   }
 
   return base64urlEncode(binary);
 }
 
+async function createToken(username, password) {
+  const payloadObject = {
+    user: username,
+    exp: Math.floor(Date.now() / 1000) + 604800
+  };
 
-async function createToken(username, secret) {
-  const payload = JSON.stringify({
-    sub: username,
-    exp:
-      Date.now() +
-      1000 * 60 * 60 * 24 * 7
-  });
-
-  const encoded =
-    base64urlEncode(payload);
-
-  const signature =
-    await makeSignature(
-      encoded,
-      secret
-    );
-
-  return (
-    encoded +
-    "." +
-    signature
+  const payload = base64urlEncode(
+    JSON.stringify(payloadObject)
   );
+
+  const signature = await makeSignature(
+    payload,
+    password
+  );
+
+  return payload + "." + signature;
 }
 
-
-async function verifyToken(token, secret) {
+async function verifyToken(request, env) {
   try {
-    if (!token) {
-      return null;
+    const authorization =
+      request.headers.get("Authorization") || "";
+
+    if (!authorization.startsWith("Bearer ")) {
+      return false;
     }
 
-    const parts =
-      token.split(".");
+    const token =
+      authorization.substring(7).trim();
+
+    const parts = token.split(".");
 
     if (parts.length !== 2) {
-      return null;
+      return false;
     }
 
-    const payload =
-      parts[0];
-
-    const signature =
-      parts[1];
+    const payload = parts[0];
+    const signature = parts[1];
 
     const expected =
       await makeSignature(
         payload,
-        secret
+        env.AUTH_PASSWORD
       );
 
     if (signature !== expected) {
-      return null;
+      return false;
     }
 
-    const decoded =
+    const data =
       JSON.parse(
         base64urlDecode(payload)
       );
 
-    if (
-      !decoded.exp ||
-      Date.now() > decoded.exp
-    ) {
-      return null;
+    if (!data.exp) {
+      return false;
     }
 
-    return decoded;
+    if (
+      data.exp <
+      Math.floor(Date.now() / 1000)
+    ) {
+      return false;
+    }
+
+    return data.user === env.AUTH_USER;
   } catch (error) {
-    return null;
+    return false;
   }
 }
-
-
-function getTokenFromRequest(request) {
-  const header =
-    request.headers.get(
-      "Authorization"
-    );
-
-  if (!header) {
-    return null;
-  }
-
-  if (
-    !header.startsWith("Bearer ")
-  ) {
-    return null;
-  }
-
-  return header.slice(7);
-}
-
-
-async function requireAuth(
-  request,
-  env
-) {
-  const token =
-    getTokenFromRequest(request);
-
-  if (!token) {
-    return null;
-  }
-
-  return await verifyToken(
-    token,
-    env.AUTH_PASSWORD
-  );
-}
-
 
 function cleanFolder(folder) {
-  let value =
-    String(folder || "");
+  let value = String(folder || "");
 
-  value =
-    value.replace(
-      /^\/+/g,
-      ""
-    );
-
-  value =
-    value.replace(
-      /\/+$/g,
-      ""
-    );
+  value = value.replace(/^\/+/g, "");
+  value = value.replace(/\/+$/g, "");
 
   return value;
 }
-
 
 function getOriginalName(object) {
   if (
     object.customMetadata &&
     object.customMetadata.originalName
   ) {
-    return (
-      object.customMetadata
-        .originalName
-    );
+    return object.customMetadata.originalName;
   }
 
-  const parts =
-    object.key.split("/");
+  const parts = object.key.split("/");
+  const name = parts[parts.length - 1];
 
-  const name =
-    parts[parts.length - 1];
-
-  return name.replace(
-    /^\d+-/,
-    ""
-  );
+  return name.replace(/^\d+-/, "");
 }
 
-
 async function getStorageUsage(env) {
-  let cursor =
-    undefined;
-
+  let cursor = undefined;
   let total = 0;
 
   do {
@@ -268,14 +193,11 @@ async function getStorageUsage(env) {
     };
 
     if (cursor) {
-      options.cursor =
-        cursor;
+      options.cursor = cursor;
     }
 
     const result =
-      await env.FILES.list(
-        options
-      );
+      await env.FILES.list(options);
 
     for (
       let i = 0;
@@ -293,8 +215,7 @@ async function getStorageUsage(env) {
           EVENTS_PREFIX
         )
       ) {
-        total +=
-          object.size || 0;
+        total += object.size || 0;
       }
     }
 
@@ -308,7 +229,6 @@ async function getStorageUsage(env) {
   return total;
 }
 
-
 function validNoteId(id) {
   return (
     id &&
@@ -318,61 +238,40 @@ function validNoteId(id) {
   );
 }
 
-
-function cleanText(
-  value,
-  maxLength
-) {
+function cleanText(value, maxLength) {
   return String(value || "")
     .trim()
     .slice(0, maxLength);
 }
 
-
 export default {
-
   async fetch(request, env) {
 
     /*
-     * CORS PREFLIGHT
+     * CORS preflight
      */
-    if (
-      request.method ===
-      "OPTIONS"
-    ) {
-      return new Response(
-        null,
-        {
-          status: 204,
-          headers: corsHeaders
-        }
-      );
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: corsHeaders
+      });
     }
 
-
     try {
-
       const url =
-        new URL(
-          request.url
-        );
-
+        new URL(request.url);
 
       /*
        * LOGIN
        */
       if (
-        url.pathname ===
-          "/api/login" &&
-        request.method ===
-          "POST"
+        url.pathname === "/api/login" &&
+        request.method === "POST"
       ) {
-
         let body;
 
         try {
-          body =
-            await request.json();
+          body = await request.json();
         } catch (error) {
           return errorResponse(
             "잘못된 로그인 요청입니다.",
@@ -400,275 +299,201 @@ export default {
 
         return jsonResponse({
           ok: true,
-          token: token
+          token: token,
+          username: env.AUTH_USER
         });
       }
-
-
-      /*
-       * AUTHENTICATION
-       */
-      const auth =
-        await requireAuth(
-          request,
-          env
-        );
-
-      if (!auth) {
-        return errorResponse(
-          "로그인이 필요합니다.",
-          401
-        );
-      }
-
 
       /*
        * ME
        */
       if (
-        url.pathname ===
-          "/api/me" &&
-        request.method ===
-          "GET"
+        url.pathname === "/api/me" &&
+        request.method === "GET"
       ) {
+        const ok =
+          await verifyToken(
+            request,
+            env
+          );
+
+        if (!ok) {
+          return errorResponse(
+            "로그인이 필요합니다.",
+            401
+          );
+        }
+
         return jsonResponse({
-          ok: true,
-          username: auth.sub
+          authenticated: true,
+          user: env.AUTH_USER
         });
       }
-
 
       /*
        * LOGOUT
        */
       if (
-        url.pathname ===
-          "/api/logout" &&
-        request.method ===
-          "POST"
+        url.pathname === "/api/logout" &&
+        request.method === "POST"
       ) {
         return jsonResponse({
           ok: true
         });
       }
 
+      /*
+       * 인증 확인
+       */
+      const authenticated =
+        await verifyToken(
+          request,
+          env
+        );
+
+      if (!authenticated) {
+        return errorResponse(
+          "로그인이 필요합니다.",
+          401
+        );
+      }
 
       /*
        * FILE LIST
        */
       if (
-        url.pathname ===
-          "/api/files" &&
-        request.method ===
-          "GET"
+        url.pathname === "/api/files" &&
+        request.method === "GET"
       ) {
-
         const prefix =
-          cleanFolder(
-            url.searchParams.get(
-              "prefix"
-            )
-          );
-
-        const normalizedPrefix =
-          prefix
-            ? prefix + "/"
-            : "";
-
-        const page =
-          parseInt(
-            url.searchParams.get(
-              "page"
-            ) || "1",
-            10
-          );
-
-        const limit = 30;
-
-        let cursor =
-          url.searchParams.get(
-            "cursor"
-          ) || undefined;
+          url.searchParams.get("prefix") || "";
 
         const result =
           await env.FILES.list({
-            prefix:
-              normalizedPrefix,
+            prefix: prefix,
             delimiter: "/",
-            limit: 1000,
-            cursor:
-              cursor
+            limit: 1000
           });
 
-        const rawFolders =
-  result.delimitedPrefixes || [];
+        const folders = [];
 
-const folders =
-  rawFolders.map(function(prefix) {
-    const cleanPrefix =
-      prefix.replace(/\/+$/, "");
+        for (
+          let i = 0;
+          i < result.delimitedPrefixes.length;
+          i++
+        ) {
+          const folder =
+            result.delimitedPrefixes[i];
 
-    const parts =
-      cleanPrefix
-        .split("/")
-        .filter(Boolean);
-
-    return {
-      name:
-        parts[parts.length - 1] || "",
-      prefix:
-        prefix
-    };
-  });
-
-        const objects =
-          result.objects || [];
-
-        const files =
-          objects.filter(
-            function(object) {
-              return (
-                !object.key.startsWith(
-                  NOTES_PREFIX
-                ) &&
-                !object.key.startsWith(
-                  EVENTS_PREFIX
-                )
-              );
-            }
-          );
-
-        files.sort(
-          function(a, b) {
-            return (
-              b.uploaded -
-              a.uploaded
-            );
+          if (
+            folder.startsWith(NOTES_PREFIX) ||
+            folder.startsWith(EVENTS_PREFIX)
+          ) {
+            continue;
           }
-        );
 
-        const start =
-          (page - 1) *
-          limit;
+          folders.push({
+            type: "folder",
+            name:
+              folder
+                .slice(prefix.length)
+                .replace(/\/$/, ""),
+            prefix: folder
+          });
+        }
 
-        const pageFiles =
-          files.slice(
-            start,
-            start + limit
-          );
+        const files = [];
+
+        for (
+          let i = 0;
+          i < result.objects.length;
+          i++
+        ) {
+          const object =
+            result.objects[i];
+
+          if (
+            object.key === prefix ||
+            object.key.startsWith(NOTES_PREFIX) ||
+            object.key.startsWith(EVENTS_PREFIX)
+          ) {
+            continue;
+          }
+
+          files.push({
+            type: "file",
+            key: object.key,
+            name: getOriginalName(object),
+            size: object.size || 0,
+            uploaded: object.uploaded
+          });
+        }
 
         return jsonResponse({
-          ok: true,
-          prefix:
-            normalizedPrefix,
-          folders:
-            folders,
-          files:
-            pageFiles,
-          page:
-            page,
-          totalFiles:
-            files.length,
-          hasMore:
-            start + limit <
-            files.length,
-          cursor:
-            result.truncated
-              ? result.cursor
-              : null
+          folders: folders,
+          files: files
         });
       }
-
 
       /*
-       * STORAGE USAGE
+       * STORAGE
        */
       if (
-        url.pathname ===
-          "/api/usage" &&
-        request.method ===
-          "GET"
+        url.pathname === "/api/usage" &&
+        request.method === "GET"
       ) {
-
-        const usage =
-          await getStorageUsage(
-            env
-          );
+        const used =
+          await getStorageUsage(env);
 
         return jsonResponse({
-          ok: true,
-          used: usage,
-          max:
-            MAX_STORAGE
+          used: used,
+          max: MAX_STORAGE
         });
       }
-
 
       /*
        * UPLOAD
        */
       if (
-        url.pathname ===
-          "/api/upload" &&
-        request.method ===
-          "POST"
+        url.pathname === "/api/upload" &&
+        request.method === "POST"
       ) {
+        const formData =
+          await request.formData();
 
-        const filename =
-          url.searchParams.get(
-            "filename"
-          );
+        const file =
+          formData.get("file");
 
         const folder =
-          cleanFolder(
-            url.searchParams.get(
-              "folder"
-            )
-          );
+          formData.get("folder") || "";
 
-        if (!filename) {
+        const confirmedLarge =
+          formData.get(
+            "confirmedLarge"
+          ) === "true";
+
+        if (!(file instanceof File)) {
           return errorResponse(
-            "파일명이 없습니다.",
+            "파일이 없습니다.",
             400
           );
         }
 
-        const contentLength =
-          parseInt(
-            request.headers.get(
-              "Content-Length"
-            ) || "0",
-            10
-          );
-
         if (
-          contentLength >
-          LARGE_FILE_SIZE
+          file.size >= LARGE_FILE_SIZE &&
+          !confirmedLarge
         ) {
-
-          const confirmed =
-            url.searchParams.get(
-              "confirmed"
-            );
-
-          if (
-            confirmed !== "1"
-          ) {
-            return errorResponse(
-              "100MB 이상 파일은 확인이 필요합니다.",
-              413
-            );
-          }
+          return errorResponse(
+            "100MB 이상 파일은 업로드 확인이 필요합니다.",
+            413
+          );
         }
 
-        const usage =
-          await getStorageUsage(
-            env
-          );
+        const currentUsage =
+          await getStorageUsage(env);
 
         if (
-          usage +
-            contentLength >
+          currentUsage + file.size >
           MAX_STORAGE
         ) {
           return errorResponse(
@@ -677,37 +502,36 @@ const folders =
           );
         }
 
-        const safeFilename =
-          filename
-            .replace(
-              /[\\\/]/g,
-              "_"
-            );
+        const safeFolder =
+          cleanFolder(folder);
 
-        const key =
-          (
-            folder
-              ? folder + "/"
-              : ""
-          ) +
-          Date.now() +
-          "-" +
-          safeFilename;
+        let key;
+
+        if (safeFolder) {
+          key =
+            safeFolder +
+            "/" +
+            Date.now() +
+            "-" +
+            file.name;
+        } else {
+          key =
+            Date.now() +
+            "-" +
+            file.name;
+        }
 
         await env.FILES.put(
           key,
-          request.body,
+          file.stream(),
           {
             httpMetadata: {
               contentType:
-                request.headers.get(
-                  "Content-Type"
-                ) ||
+                file.type ||
                 "application/octet-stream"
             },
             customMetadata: {
-              originalName:
-                filename
+              originalName: file.name
             }
           }
         );
@@ -715,37 +539,36 @@ const folders =
         return jsonResponse({
           ok: true,
           key: key,
-          filename:
-            filename
+          name: file.name,
+          size: file.size
         });
       }
-
 
       /*
        * CREATE FOLDER
        */
       if (
-        url.pathname ===
-          "/api/folder" &&
-        request.method ===
-          "POST"
+        url.pathname === "/api/folder" &&
+        request.method === "POST"
       ) {
-
         const body =
           await request.json();
 
-        const name =
-          String(
-            body.name || ""
-          ).trim();
-
         const parent =
-          cleanFolder(
-            body.parent
+          cleanFolder(body.parent);
+
+        const name =
+          String(body.name || "")
+            .trim();
+
+        if (!name) {
+          return errorResponse(
+            "폴더 이름을 입력하세요.",
+            400
           );
+        }
 
         if (
-          !name ||
           name.includes("/") ||
           name.includes("\\") ||
           name === "." ||
@@ -776,37 +599,29 @@ const folders =
           new Uint8Array(0),
           {
             customMetadata: {
-              folder:
-                "true"
+              folder: "true"
             }
           }
         );
 
         return jsonResponse({
           ok: true,
-          prefix:
-            prefix
+          prefix: prefix
         });
       }
-
 
       /*
        * MOVE FILE
        */
       if (
-        url.pathname ===
-          "/api/move" &&
-        request.method ===
-          "POST"
+        url.pathname === "/api/move" &&
+        request.method === "POST"
       ) {
-
         const body =
           await request.json();
 
         const oldKey =
-          String(
-            body.key || ""
-          );
+          String(body.key || "");
 
         const destination =
           cleanFolder(
@@ -821,9 +636,7 @@ const folders =
         }
 
         const object =
-          await env.FILES.get(
-            oldKey
-          );
+          await env.FILES.get(oldKey);
 
         if (!object) {
           return errorResponse(
@@ -833,9 +646,7 @@ const folders =
         }
 
         const filename =
-          getOriginalName(
-            object
-          );
+          getOriginalName(object);
 
         let newKey;
 
@@ -870,36 +681,25 @@ const folders =
 
         return jsonResponse({
           ok: true,
-          oldKey:
-            oldKey,
-          newKey:
-            newKey
+          oldKey: oldKey,
+          newKey: newKey
         });
       }
-
 
       /*
        * MOVE FOLDER
        */
       if (
-        url.pathname ===
-          "/api/move-folder" &&
-        request.method ===
-          "POST"
+        url.pathname === "/api/move-folder" &&
+        request.method === "POST"
       ) {
-
-        const body =
-          await request.json();
+        const body = await request.json();
 
         const source =
-          cleanFolder(
-            body.sourceFolder
-          );
+          cleanFolder(body.sourceFolder);
 
         const destination =
-          cleanFolder(
-            body.destinationFolder
-          );
+          cleanFolder(body.destinationFolder);
 
         if (!source) {
           return errorResponse(
@@ -926,8 +726,7 @@ const folders =
             : folderName + "/";
 
         if (
-          destinationPrefix ===
-            sourcePrefix ||
+          destinationPrefix === sourcePrefix ||
           destinationPrefix.startsWith(
             sourcePrefix
           )
@@ -940,8 +739,7 @@ const folders =
 
         const result =
           await env.FILES.list({
-            prefix:
-              sourcePrefix
+            prefix: sourcePrefix
           });
 
         for (
@@ -949,7 +747,6 @@ const folders =
           i < result.objects.length;
           i++
         ) {
-
           const object =
             result.objects[i];
 
@@ -989,22 +786,17 @@ const folders =
             : undefined;
 
         while (cursor) {
-
           const nextResult =
             await env.FILES.list({
-              prefix:
-                sourcePrefix,
-              cursor:
-                cursor
+              prefix: sourcePrefix,
+              cursor: cursor
             });
 
           for (
             let i = 0;
-            i <
-              nextResult.objects.length;
+            i < nextResult.objects.length;
             i++
           ) {
-
             const object =
               nextResult.objects[i];
 
@@ -1046,17 +838,14 @@ const folders =
 
         const deleteResult =
           await env.FILES.list({
-            prefix:
-              sourcePrefix
+            prefix: sourcePrefix
           });
 
         for (
           let i = 0;
-          i <
-            deleteResult.objects.length;
+          i < deleteResult.objects.length;
           i++
         ) {
-
           await env.FILES.delete(
             deleteResult.objects[i].key
           );
@@ -1068,22 +857,17 @@ const folders =
             : undefined;
 
         while (deleteCursor) {
-
           const nextDelete =
             await env.FILES.list({
-              prefix:
-                sourcePrefix,
-              cursor:
-                deleteCursor
+              prefix: sourcePrefix,
+              cursor: deleteCursor
             });
 
           for (
             let i = 0;
-            i <
-              nextDelete.objects.length;
+            i < nextDelete.objects.length;
             i++
           ) {
-
             await env.FILES.delete(
               nextDelete.objects[i].key
             );
@@ -1097,36 +881,27 @@ const folders =
 
         return jsonResponse({
           ok: true,
-          sourceFolder:
-            source,
-          destinationFolder:
-            destination
+          sourceFolder: source,
+          destinationFolder: destination
         });
       }
-
 
       /*
        * RENAME FOLDER
        */
       if (
-        url.pathname ===
-          "/api/rename-folder" &&
-        request.method ===
-          "POST"
+        url.pathname === "/api/rename-folder" &&
+        request.method === "POST"
       ) {
-
         const body =
           await request.json();
 
         const source =
-          cleanFolder(
-            body.sourceFolder
-          );
+          cleanFolder(body.sourceFolder);
 
         const newName =
-          String(
-            body.newName || ""
-          ).trim();
+          String(body.newName || "")
+            .trim();
 
         if (!source) {
           return errorResponse(
@@ -1157,13 +932,11 @@ const folders =
 
         const parent =
           parts.length
-            ? parts.join("/") +
-              "/"
+            ? parts.join("/") + "/"
             : "";
 
         const destination =
-          parent +
-          newName;
+          parent + newName;
 
         const sourcePrefix =
           source + "/";
@@ -1172,8 +945,7 @@ const folders =
           destination + "/";
 
         if (
-          sourcePrefix ===
-            destinationPrefix ||
+          sourcePrefix === destinationPrefix ||
           destinationPrefix.startsWith(
             sourcePrefix
           )
@@ -1186,17 +958,14 @@ const folders =
 
         const result =
           await env.FILES.list({
-            prefix:
-              sourcePrefix
+            prefix: sourcePrefix
           });
 
         for (
           let i = 0;
-          i <
-            result.objects.length;
+          i < result.objects.length;
           i++
         ) {
-
           const object =
             result.objects[i];
 
@@ -1236,22 +1005,17 @@ const folders =
             : undefined;
 
         while (cursor) {
-
           const nextResult =
             await env.FILES.list({
-              prefix:
-                sourcePrefix,
-              cursor:
-                cursor
+              prefix: sourcePrefix,
+              cursor: cursor
             });
 
           for (
             let i = 0;
-            i <
-              nextResult.objects.length;
+            i < nextResult.objects.length;
             i++
           ) {
-
             const object =
               nextResult.objects[i];
 
@@ -1293,17 +1057,14 @@ const folders =
 
         const deleteResult =
           await env.FILES.list({
-            prefix:
-              sourcePrefix
+            prefix: sourcePrefix
           });
 
         for (
           let i = 0;
-          i <
-            deleteResult.objects.length;
+          i < deleteResult.objects.length;
           i++
         ) {
-
           await env.FILES.delete(
             deleteResult.objects[i].key
           );
@@ -1315,22 +1076,17 @@ const folders =
             : undefined;
 
         while (deleteCursor) {
-
           const nextDelete =
             await env.FILES.list({
-              prefix:
-                sourcePrefix,
-              cursor:
-                deleteCursor
+              prefix: sourcePrefix,
+              cursor: deleteCursor
             });
 
           for (
             let i = 0;
-            i <
-              nextDelete.objects.length;
+            i < nextDelete.objects.length;
             i++
           ) {
-
             await env.FILES.delete(
               nextDelete.objects[i].key
             );
@@ -1347,36 +1103,27 @@ const folders =
           new Uint8Array(0),
           {
             customMetadata: {
-              folder:
-                "true"
+              folder: "true"
             }
           }
         );
 
         return jsonResponse({
           ok: true,
-          sourceFolder:
-            source,
-          destinationFolder:
-            destination
+          sourceFolder: source,
+          destinationFolder: destination
         });
       }
-
 
       /*
        * DOWNLOAD
        */
       if (
-        url.pathname ===
-          "/api/download" &&
-        request.method ===
-          "GET"
+        url.pathname === "/api/download" &&
+        request.method === "GET"
       ) {
-
         const key =
-          url.searchParams.get(
-            "key"
-          );
+          url.searchParams.get("key");
 
         if (!key) {
           return errorResponse(
@@ -1386,9 +1133,7 @@ const folders =
         }
 
         const object =
-          await env.FILES.get(
-            key
-          );
+          await env.FILES.get(key);
 
         if (!object) {
           return errorResponse(
@@ -1398,21 +1143,17 @@ const folders =
         }
 
         const filename =
-          getOriginalName(
-            object
-          );
+          getOriginalName(object);
 
         let contentType =
           "application/octet-stream";
 
         if (
           object.httpMetadata &&
-          object.httpMetadata
-            .contentType
+          object.httpMetadata.contentType
         ) {
           contentType =
-            object.httpMetadata
-              .contentType;
+            object.httpMetadata.contentType;
         }
 
         return new Response(
@@ -1440,36 +1181,20 @@ const folders =
         );
       }
 
-
       /*
        * DELETE FILE
        */
       if (
-        url.pathname ===
-          "/api/file" &&
-        request.method ===
-          "DELETE"
+        url.pathname === "/api/file" &&
+        request.method === "DELETE"
       ) {
-
         const key =
-          url.searchParams.get(
-            "key"
-          );
+          url.searchParams.get("key");
 
         const password =
           url.searchParams.get(
             "password"
-          );
-
-        if (
-          password !==
-          env.AUTH_PASSWORD
-        ) {
-          return errorResponse(
-            "비밀번호가 틀렸습니다.",
-            401
-          );
-        }
+          ) || "";
 
         if (!key) {
           return errorResponse(
@@ -1478,72 +1203,67 @@ const folders =
           );
         }
 
-        await env.FILES.delete(
-          key
-        );
+        if (
+          password !==
+          env.AUTH_PASSWORD
+        ) {
+          return errorResponse(
+            "DELETE_PASSWORD_INVALID",
+            403
+          );
+        }
+
+        await env.FILES.delete(key);
 
         return jsonResponse({
           ok: true
         });
       }
 
-
       /*
        * DELETE FOLDER
        */
       if (
-        url.pathname ===
-          "/api/folder" &&
-        request.method ===
-          "DELETE"
+        url.pathname === "/api/folder" &&
+        request.method === "DELETE"
       ) {
-
         const prefix =
-          cleanFolder(
-            url.searchParams.get(
-              "prefix"
-            )
+          url.searchParams.get(
+            "prefix"
           );
 
         const password =
           url.searchParams.get(
             "password"
+          ) || "";
+
+        if (!prefix) {
+          return errorResponse(
+            "폴더 경로가 없습니다.",
+            400
           );
+        }
 
         if (
           password !==
           env.AUTH_PASSWORD
         ) {
           return errorResponse(
-            "비밀번호가 틀렸습니다.",
-            401
+            "DELETE_PASSWORD_INVALID",
+            403
           );
         }
 
-        if (!prefix) {
-          return errorResponse(
-            "폴더가 없습니다.",
-            400
-          );
-        }
-
-        const folderPrefix =
-          prefix + "/";
-
-        let cursor =
-          undefined;
+        let cursor = undefined;
 
         do {
-
           const options = {
-            prefix:
-              folderPrefix,
+            prefix: prefix,
             limit: 1000
           };
 
           if (cursor) {
-            options.cursor =
-              cursor;
+            options.cursor = cursor;
           }
 
           const result =
@@ -1551,15 +1271,18 @@ const folders =
               options
             );
 
-          for (
-            let i = 0;
-            i <
-              result.objects.length;
-            i++
+          if (
+            result.objects.length > 0
           ) {
+            const keys =
+              result.objects.map(
+                function(object) {
+                  return object.key;
+                }
+              );
 
             await env.FILES.delete(
-              result.objects[i].key
+              keys
             );
           }
 
@@ -1575,21 +1298,16 @@ const folders =
         });
       }
 
-
       /*
        * CALENDAR EVENTS LIST
        */
       if (
-        url.pathname ===
-          "/api/events" &&
-        request.method ===
-          "GET"
+        url.pathname === "/api/events" &&
+        request.method === "GET"
       ) {
-
         const result =
           await env.FILES.list({
-            prefix:
-              EVENTS_PREFIX,
+            prefix: EVENTS_PREFIX,
             limit: 1000
           });
 
@@ -1597,16 +1315,13 @@ const folders =
 
         for (
           let i = 0;
-          i <
-            result.objects.length;
+          i < result.objects.length;
           i++
         ) {
-
           const object =
             result.objects[i];
 
           try {
-
             const eventObject =
               await env.FILES.get(
                 object.key
@@ -1622,73 +1337,45 @@ const folders =
               );
 
             events.push(event);
-
           } catch (error) {
           }
         }
 
         events.sort(
           function(a, b) {
-
-            const aValue =
-              String(
-                a.date || ""
-              ) +
-              " " +
-              String(
-                a.time || ""
-              );
-
-            const bValue =
-              String(
-                b.date || ""
-              ) +
-              " " +
-              String(
-                b.time || ""
-              );
-
-            return aValue.localeCompare(
-              bValue
+            return (
+              String(a.date || "") +
+              String(a.time || "")
+            ).localeCompare(
+              String(b.date || "") +
+              String(b.time || "")
             );
           }
         );
 
         return jsonResponse({
-          ok: true,
-          events:
-            events
+          events: events
         });
       }
-
 
       /*
        * SAVE CALENDAR EVENT
        */
       if (
-        url.pathname ===
-          "/api/events" &&
-        request.method ===
-          "POST"
+        url.pathname === "/api/events" &&
+        request.method === "POST"
       ) {
-
         const body =
           await request.json();
 
         const id =
-          String(
-            body.id || ""
-          ).trim();
+          String(body.id || "").trim();
 
         const date =
-          String(
-            body.date || ""
-          ).trim();
+          String(body.date || "").trim();
 
         const time =
-          String(
-            body.time || ""
-          ).trim();
+          String(body.time || "").trim();
 
         const title =
           cleanText(
@@ -1699,7 +1386,7 @@ const folders =
         const text =
           cleanText(
             body.text,
-            20000
+            5000
           );
 
         const colors = [
@@ -1716,11 +1403,27 @@ const folders =
             body.color
           )
             ? body.color
-            : "blue";
+            : "yellow";
 
-        if (!date) {
+        if (
+          !/^\d{4}-\d{2}-\d{2}$/.test(
+            date
+          )
+        ) {
           return errorResponse(
-            "일정 날짜를 입력하세요.",
+            "잘못된 날짜입니다.",
+            400
+          );
+        }
+
+        if (
+          time &&
+          !/^\d{2}:\d{2}$/.test(
+            time
+          )
+        ) {
+          return errorResponse(
+            "잘못된 시간입니다.",
             400
           );
         }
@@ -1732,17 +1435,13 @@ const folders =
           );
         }
 
-        let eventId =
-          id;
+        let eventId = id;
 
         let createdAt =
           new Date().toISOString();
 
         if (id) {
-
-          if (
-            !validNoteId(id)
-          ) {
+          if (!validNoteId(id)) {
             return errorResponse(
               "잘못된 일정 ID입니다.",
               400
@@ -1752,14 +1451,12 @@ const folders =
           const oldObject =
             await env.FILES.get(
               EVENTS_PREFIX +
-                id +
-                ".json"
+              id +
+              ".json"
             );
 
           if (oldObject) {
-
             try {
-
               const oldEvent =
                 JSON.parse(
                   await oldObject.text()
@@ -1768,48 +1465,32 @@ const folders =
               createdAt =
                 oldEvent.createdAt ||
                 createdAt;
-
             } catch (error) {
             }
           }
-
         } else {
-
           eventId =
+            Date.now() +
+            "-" +
             crypto.randomUUID();
-
         }
 
         const event = {
-          id:
-            eventId,
-
-          date:
-            date,
-
-          time:
-            time,
-
-          title:
-            title,
-
-          text:
-            text,
-
-          color:
-            color,
-
-          createdAt:
-            createdAt,
-
+          id: eventId,
+          date: date,
+          time: time,
+          title: title,
+          text: text,
+          color: color,
+          createdAt: createdAt,
           updatedAt:
             new Date().toISOString()
         };
 
         await env.FILES.put(
           EVENTS_PREFIX +
-            eventId +
-            ".json",
+          eventId +
+          ".json",
 
           JSON.stringify(
             event
@@ -1825,30 +1506,23 @@ const folders =
 
         return jsonResponse({
           ok: true,
-          event:
-            event
+          event: event
         });
       }
-
 
       /*
        * DELETE CALENDAR EVENT
        */
       if (
-        url.pathname ===
-          "/api/events" &&
-        request.method ===
-          "DELETE"
+        url.pathname === "/api/events" &&
+        request.method === "DELETE"
       ) {
-
         const id =
           url.searchParams.get(
             "id"
           );
 
-        if (
-          !validNoteId(id)
-        ) {
+        if (!validNoteId(id)) {
           return errorResponse(
             "잘못된 일정 ID입니다.",
             400
@@ -1857,8 +1531,8 @@ const folders =
 
         await env.FILES.delete(
           EVENTS_PREFIX +
-            id +
-            ".json"
+          id +
+          ".json"
         );
 
         return jsonResponse({
@@ -1866,21 +1540,16 @@ const folders =
         });
       }
 
-
       /*
        * NOTES LIST
        */
       if (
-        url.pathname ===
-          "/api/notes" &&
-        request.method ===
-          "GET"
+        url.pathname === "/api/notes" &&
+        request.method === "GET"
       ) {
-
         const result =
           await env.FILES.list({
-            prefix:
-              NOTES_PREFIX,
+            prefix: NOTES_PREFIX,
             limit: 1000
           });
 
@@ -1888,16 +1557,13 @@ const folders =
 
         for (
           let i = 0;
-          i <
-            result.objects.length;
+          i < result.objects.length;
           i++
         ) {
-
           const object =
             result.objects[i];
 
           try {
-
             const noteObject =
               await env.FILES.get(
                 object.key
@@ -1913,26 +1579,20 @@ const folders =
               );
 
             if (!note.color) {
-              note.color =
-                "yellow";
+              note.color = "yellow";
             }
 
             if (!note.title) {
-              note.title =
-                "";
+              note.title = "";
             }
 
-            notes.push(
-              note
-            );
-
+            notes.push(note);
           } catch (error) {
           }
         }
 
         notes.sort(
           function(a, b) {
-
             return (
               new Date(
                 b.updatedAt ||
@@ -1943,27 +1603,21 @@ const folders =
                 a.createdAt
               )
             );
-
           }
         );
 
         return jsonResponse({
-          notes:
-            notes
+          notes: notes
         });
       }
-
 
       /*
        * SAVE NOTE
        */
       if (
-        url.pathname ===
-          "/api/notes" &&
-        request.method ===
-          "POST"
+        url.pathname === "/api/notes" &&
+        request.method === "POST"
       ) {
-
         const body =
           await request.json();
 
@@ -2000,27 +1654,20 @@ const folders =
             ? body.color
             : "yellow";
 
-        if (
-          !title &&
-          !text
-        ) {
+        if (!title && !text) {
           return errorResponse(
             "메모 내용을 입력하세요.",
             400
           );
         }
 
-        let noteId =
-          id;
+        let noteId = id;
 
         let createdAt =
           new Date().toISOString();
 
         if (id) {
-
-          if (
-            !validNoteId(id)
-          ) {
+          if (!validNoteId(id)) {
             return errorResponse(
               "잘못된 메모 ID입니다.",
               400
@@ -2030,14 +1677,12 @@ const folders =
           const oldObject =
             await env.FILES.get(
               NOTES_PREFIX +
-                id +
-                ".json"
+              id +
+              ".json"
             );
 
           if (oldObject) {
-
             try {
-
               const oldNote =
                 JSON.parse(
                   await oldObject.text()
@@ -2046,44 +1691,30 @@ const folders =
               createdAt =
                 oldNote.createdAt ||
                 createdAt;
-
             } catch (error) {
             }
           }
-
         } else {
-
           noteId =
+            Date.now() +
+            "-" +
             crypto.randomUUID();
-
         }
 
         const note = {
-
-          id:
-            noteId,
-
-          title:
-            title,
-
-          text:
-            text,
-
-          color:
-            color,
-
-          createdAt:
-            createdAt,
-
+          id: noteId,
+          title: title,
+          text: text,
+          color: color,
+          createdAt: createdAt,
           updatedAt:
             new Date().toISOString()
-
         };
 
         await env.FILES.put(
           NOTES_PREFIX +
-            noteId +
-            ".json",
+          noteId +
+          ".json",
 
           JSON.stringify(
             note
@@ -2099,30 +1730,23 @@ const folders =
 
         return jsonResponse({
           ok: true,
-          note:
-            note
+          note: note
         });
       }
-
 
       /*
        * DELETE NOTE
        */
       if (
-        url.pathname ===
-          "/api/notes" &&
-        request.method ===
-          "DELETE"
+        url.pathname === "/api/notes" &&
+        request.method === "DELETE"
       ) {
-
         const id =
           url.searchParams.get(
             "id"
           );
 
-        if (
-          !validNoteId(id)
-        ) {
+        if (!validNoteId(id)) {
           return errorResponse(
             "잘못된 메모 ID입니다.",
             400
@@ -2131,8 +1755,8 @@ const folders =
 
         await env.FILES.delete(
           NOTES_PREFIX +
-            id +
-            ".json"
+          id +
+          ".json"
         );
 
         return jsonResponse({
@@ -2140,27 +1764,19 @@ const folders =
         });
       }
 
-
-      return errorResponse(
-        "요청한 API를 찾을 수 없습니다.",
-        404
-      );
-
+      return jsonResponse({
+        ok: true,
+        message: "API OK"
+      });
 
     } catch (error) {
-
       console.error(
+        "WORKER ERROR:",
         error
       );
 
       return errorResponse(
-        "서버 오류: " +
-          String(
-            error &&
-            error.message
-              ? error.message
-              : error
-          ),
+        "Worker 내부 오류가 발생했습니다.",
         500
       );
     }
