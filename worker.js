@@ -108,6 +108,27 @@ async function createToken(username, password) {
   return payload + "." + signature;
 }
 
+async function getAuthRole(request, env) {
+  try {
+    const authorization = request.headers.get("Authorization") || "";
+    if (!authorization.startsWith("Bearer ")) return null;
+    const token = authorization.substring(7).trim();
+    const parts = token.split(".");
+    if (parts.length !== 2) return null;
+    const payload = parts[0];
+    const signature = parts[1];
+    const expected = await makeSignature(payload, env.AUTH_PASSWORD);
+    if (signature !== expected) return null;
+    const data = JSON.parse(base64urlDecode(payload));
+    if (!data.exp || data.exp < Math.floor(Date.now() / 1000)) return null;
+    if (data.user === env.AUTH_USER) return "admin";
+    if (data.role === "guest") return "guest";
+    return null;
+  } catch (error) {
+    return null;
+  }
+}
+
 async function verifyToken(request, env) {
   try {
     const authorization =
@@ -308,7 +329,29 @@ export default {
         return jsonResponse({
           ok: true,
           token: token,
-          username: env.AUTH_USER
+          username: env.AUTH_USER,
+          role: "admin"
+        });
+      }
+
+      /*
+       * GUEST LOGIN
+       */
+      if (
+        url.pathname === "/api/guest" &&
+        request.method === "POST"
+      ) {
+        const token = await createToken("guest", env.AUTH_PASSWORD);
+        const payloadParts = token.split(".");
+        const guestPayload = JSON.parse(base64urlDecode(payloadParts[0]));
+        guestPayload.role = "guest";
+        const payload = base64urlEncode(JSON.stringify(guestPayload));
+        const signature = await makeSignature(payload, env.AUTH_PASSWORD);
+        return jsonResponse({
+          ok: true,
+          token: payload + "." + signature,
+          username: "guest",
+          role: "guest"
         });
       }
 
@@ -319,13 +362,8 @@ export default {
         url.pathname === "/api/me" &&
         request.method === "GET"
       ) {
-        const ok =
-          await verifyToken(
-            request,
-            env
-          );
-
-        if (!ok) {
+        const role = await getAuthRole(request, env);
+        if (!role) {
           return errorResponse(
             "로그인이 필요합니다.",
             401
@@ -334,7 +372,8 @@ export default {
 
         return jsonResponse({
           authenticated: true,
-          user: env.AUTH_USER
+          user: role === "admin" ? env.AUTH_USER : "guest",
+          role: role
         });
       }
 
@@ -353,18 +392,21 @@ export default {
       /*
        * 인증 확인
        */
-      const authenticated =
-        await verifyToken(
-          request,
-          env
-        );
+      const authRole = await getAuthRole(request, env);
 
-      if (!authenticated) {
+      if (!authRole) {
         return errorResponse(
           "로그인이 필요합니다.",
           401
         );
       }
+
+      const requireAdmin = function() {
+        if (authRole !== "admin") {
+          return errorResponse("관리자 권한이 필요합니다.", 403);
+        }
+        return null;
+      };
 
       /*
        * FILE LIST
@@ -617,6 +659,8 @@ export default {
         url.pathname === "/api/folder" &&
         request.method === "POST"
       ) {
+        const adminError = requireAdmin();
+        if (adminError) return adminError;
         const body =
           await request.json();
 
@@ -683,6 +727,8 @@ export default {
         url.pathname === "/api/move" &&
         request.method === "POST"
       ) {
+        const adminError = requireAdmin();
+        if (adminError) return adminError;
         const body =
           await request.json();
 
@@ -1155,6 +1201,8 @@ export default {
         url.pathname === "/api/file" &&
         request.method === "DELETE"
       ) {
+        const adminError = requireAdmin();
+        if (adminError) return adminError;
         const key =
           url.searchParams.get("key");
 
@@ -1194,6 +1242,8 @@ export default {
         url.pathname === "/api/folder" &&
         request.method === "DELETE"
       ) {
+        const adminError = requireAdmin();
+        if (adminError) return adminError;
         const prefix =
           url.searchParams.get(
             "prefix"
@@ -1308,6 +1358,8 @@ export default {
         url.pathname === "/api/dreams" &&
         request.method === "POST"
       ) {
+        const adminError = requireAdmin();
+        if (adminError) return adminError;
         const body = await request.json();
 
         const id = String(body.id || "").trim();
@@ -1388,6 +1440,8 @@ export default {
         url.pathname === "/api/dreams" &&
         request.method === "DELETE"
       ) {
+        const adminError = requireAdmin();
+        if (adminError) return adminError;
         const id = url.searchParams.get("id");
 
         if (!validNoteId(id)) {
@@ -1466,6 +1520,8 @@ export default {
         url.pathname === "/api/events" &&
         request.method === "POST"
       ) {
+        const adminError = requireAdmin();
+        if (adminError) return adminError;
         const body =
           await request.json();
 
@@ -1592,6 +1648,8 @@ export default {
         url.pathname === "/api/events" &&
         request.method === "DELETE"
       ) {
+        const adminError = requireAdmin();
+        if (adminError) return adminError;
         const id =
           url.searchParams.get("id");
 
@@ -1689,6 +1747,8 @@ export default {
         url.pathname === "/api/notes" &&
         request.method === "POST"
       ) {
+        const adminError = requireAdmin();
+        if (adminError) return adminError;
         const body =
           await request.json();
 
@@ -1806,6 +1866,8 @@ export default {
         url.pathname === "/api/notes" &&
         request.method === "DELETE"
       ) {
+        const adminError = requireAdmin();
+        if (adminError) return adminError;
         const id =
           url.searchParams.get("id");
 
