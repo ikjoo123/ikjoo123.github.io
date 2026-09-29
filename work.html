@@ -225,8 +225,35 @@ main {
 
 .fileIcon {
   width: 28px;
+  min-width: 28px;
   text-align: center;
 }
+
+.fileTypeIcon {
+  width: 27px;
+  height: 27px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: white;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.5px;
+}
+
+.fileType-hwp { background: #2b78c5; }
+.fileType-excel { background: #16884a; }
+.fileType-ppt { background: #d24726; }
+.fileType-pdf { background: #d32f2f; }
+.fileType-word { background: #2b579a; }
+.fileType-image { background: #7b61b1; }
+.fileType-video { background: #6b7280; }
+.fileType-audio { background: #9b59b6; }
+.fileType-zip { background: #a56b2a; }
+.fileType-text { background: #64748b; }
+.fileType-default { background: #8a8a8a; }
 
 .fileName {
   flex: 1;
@@ -1414,6 +1441,44 @@ function renderBreadcrumb() {
   );
 }
 
+function getFileIconHtml(filename) {
+  const name = String(filename || "").toLowerCase();
+  const ext = name.includes(".") ? name.split(".").pop() : "";
+
+  if (["hwp", "hwpx"].includes(ext)) {
+    return "<span class='fileTypeIcon fileType-hwp'>한글</span>";
+  }
+  if (["xlsx", "xls", "xlsm", "csv"].includes(ext)) {
+    return "<span class='fileTypeIcon fileType-excel'>XLS</span>";
+  }
+  if (["pptx", "ppt", "ppsx", "pps"].includes(ext)) {
+    return "<span class='fileTypeIcon fileType-ppt'>PPT</span>";
+  }
+  if (ext === "pdf") {
+    return "<span class='fileTypeIcon fileType-pdf'>PDF</span>";
+  }
+  if (["docx", "doc"].includes(ext)) {
+    return "<span class='fileTypeIcon fileType-word'>W</span>";
+  }
+  if (["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "heic"].includes(ext)) {
+    return "<span class='fileTypeIcon fileType-image'>IMG</span>";
+  }
+  if (["mp4", "mov", "avi", "mkv", "webm"].includes(ext)) {
+    return "<span class='fileTypeIcon fileType-video'>VID</span>";
+  }
+  if (["mp3", "wav", "m4a", "flac", "aac"].includes(ext)) {
+    return "<span class='fileTypeIcon fileType-audio'>♪</span>";
+  }
+  if (["zip", "7z", "rar", "tar", "gz"].includes(ext)) {
+    return "<span class='fileTypeIcon fileType-zip'>ZIP</span>";
+  }
+  if (["txt", "md", "rtf"].includes(ext)) {
+    return "<span class='fileTypeIcon fileType-text'>TXT</span>";
+  }
+
+  return "<span class='fileTypeIcon fileType-default'>DOC</span>";
+}
+
 function renderFiles() {
 
   const list =
@@ -1745,6 +1810,8 @@ checkbox.addEventListener(
         ".fileName"
       ).textContent =
         file.name;
+
+      row.querySelector(".fileIcon").innerHTML = getFileIconHtml(file.name);
 
       row.querySelector(
         ".fileSize"
