@@ -625,6 +625,63 @@ async function loadDreams() {
     }
 
     renderDreams();
+
+    // 기존 꿈 중 이미지가 없는 기록은 한 번씩 AI 이미지로 채웁니다.
+    await applyAIDreamImages();
+}
+
+async function applyAIDreamImages() {
+    const targets = dreams.filter(function(dream) {
+        return dream && dream.id && !dream.image;
+    });
+
+    for (let i = 0; i < targets.length; i++) {
+        const dream = targets[i];
+
+        try {
+            const response = await apiFetch("/api/dream-image", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    title: dream.title,
+                    content: dream.content
+                })
+            });
+
+            const data = await response.json().catch(function() { return {}; });
+
+            if (!response.ok || !data.image) {
+                console.error("AI 이미지 생성 실패:", data.error);
+                continue;
+            }
+
+            const saveResponse = await apiFetch("/api/dreams", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id: dream.id,
+                    date: dream.date,
+                    title: dream.title,
+                    content: dream.content,
+                    image: data.image
+                })
+            });
+
+            if (saveResponse.ok) {
+                const saved = await saveResponse.json();
+                const index = dreams.findIndex(function(item) {
+                    return item.id === dream.id;
+                });
+
+                if (index !== -1 && saved.dream) {
+                    dreams[index] = saved.dream;
+                    renderDreams();
+                }
+            }
+        } catch (error) {
+            console.error("기존 꿈 AI 이미지 처리 실패:", error);
+        }
+    }
 }
 
 function renderDreams() {
