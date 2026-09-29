@@ -1279,7 +1279,7 @@ export default {
         const content = cleanText(body.content, 30000);
         const image = String(body.image || "");
 
-        if (!/^\\d{4}\\.\\d{2}\\.\\d{2}$/.test(date)) {
+        if (!/^\d{4}\.\d{2}\.\d{2}$/.test(date)) {
           return errorResponse("잘못된 날짜입니다.", 400);
         }
 
