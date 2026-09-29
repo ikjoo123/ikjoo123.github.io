@@ -1238,68 +1238,6 @@ export default {
       }
 
       /*
-       * AI DREAM IMAGE
-       */
-      if (
-        url.pathname === "/api/dream-image" &&
-        request.method === "POST"
-      ) {
-        if (!env.AI) {
-          return errorResponse("Workers AI가 연결되지 않았습니다.", 503);
-        }
-
-        let body;
-        try {
-          body = await request.json();
-        } catch (error) {
-          return errorResponse("잘못된 이미지 생성 요청입니다.", 400);
-        }
-
-        const title = cleanText(body.title, 200);
-        const content = cleanText(body.content, 12000);
-
-        if (!title && !content) {
-          return errorResponse("꿈 제목이나 내용을 입력해주세요.", 400);
-        }
-
-        const prompt =
-          ("A dreamlike cinematic illustration for a personal dream journal. " +
-          "Soft Japanese-inspired watercolor and poster illustration, gentle brushwork, " +
-          "airy natural light, poetic surreal atmosphere, beautiful composition, " +
-          "subtle details, emotionally calm but imaginative, clean anatomy, " +
-          "no text, no letters, no watermark. Create one coherent scene. " +
-          "Dream title: " + title + ". Dream content: " + content).slice(0, 2000);
-
-        try {
-          const result = await env.AI.run(
-            "@cf/black-forest-labs/flux-1-schnell",
-            {
-              prompt: prompt,
-              steps: 4
-            }
-          );
-
-          if (!result || !result.image) {
-            return errorResponse("이미지 생성 결과가 없습니다.", 502);
-          }
-
-          return jsonResponse({
-            ok: true,
-            image: "data:image/jpeg;base64," + result.image
-          });
-        } catch (error) {
-          console.error("AI DREAM IMAGE ERROR:", error);
-          const detail = error && error.message
-            ? String(error.message).slice(0, 300)
-            : "알 수 없는 오류";
-          return errorResponse(
-            "AI 이미지 생성에 실패했습니다: " + detail,
-            500
-          );
-        }
-      }
-
-      /*
        * DREAM RECORDS LIST
        */
       if (
