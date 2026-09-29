@@ -1248,10 +1248,49 @@ async function loadFiles() {
       await response.json();
 
     currentFolders =
-      data.folders || [];
+      (Array.isArray(data.folders) ? data.folders : [])
+        .map(function(folder) {
+          if (typeof folder === "string") {
+            const prefix = folder;
+            const parts = prefix.split("/").filter(Boolean);
+            return {
+              type: "folder",
+              name: parts.length ? parts[parts.length - 1] : prefix,
+              prefix: prefix
+            };
+          }
+
+          const prefix = String(folder.prefix || folder.name || "");
+          const parts = prefix.split("/").filter(Boolean);
+
+          return {
+            type: "folder",
+            name: folder.name || (parts.length ? parts[parts.length - 1] : ""),
+            prefix: prefix.endsWith("/") ? prefix : prefix + "/"
+          };
+        })
+        .filter(function(folder) {
+          return folder.name && folder.prefix;
+        });
 
     currentFiles =
-      data.files || [];
+      (Array.isArray(data.files) ? data.files : [])
+        .map(function(file) {
+          const key = String(file.key || "");
+          const keyParts = key.split("/").filter(Boolean);
+          const fallbackName = keyParts.length ? keyParts[keyParts.length - 1].replace(/^\d+-/, "") : "";
+
+          return {
+            type: "file",
+            key: key,
+            name: file.name || fallbackName,
+            size: Number(file.size || 0),
+            uploaded: file.uploaded || null
+          };
+        })
+        .filter(function(file) {
+          return file.key;
+        });
 
     currentPage = 1;
 
