@@ -1275,8 +1275,7 @@ export default {
             "@cf/black-forest-labs/flux-1-schnell",
             {
               prompt: prompt,
-              steps: 4,
-              seed: Math.floor(Math.random() * 2147483647)
+              steps: 4
             }
           );
 
