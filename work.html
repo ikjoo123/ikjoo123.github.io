@@ -2075,8 +2075,14 @@ async function uploadFiles(
 ) {
 
   for (
-    const file of files
+    const item of files
   ) {
+
+    const file = item.file || item;
+    const relativePath =
+      item.relativePath ||
+      file.webkitRelativePath ||
+      file.name;
 
     let confirmedLarge =
       false;
@@ -2088,7 +2094,7 @@ async function uploadFiles(
       confirmedLarge =
         confirm(
           file.name +
-          "\n\n100MB 이상 파일입니다. 업로드할까요?"
+          "\\n\\n100MB 이상 파일입니다. 업로드할까요?"
         );
 
       if (!confirmedLarge) {
@@ -2107,6 +2113,11 @@ async function uploadFiles(
     form.append(
       "folder",
       currentPrefix
+    );
+
+    form.append(
+      "relativePath",
+      relativePath
     );
 
     form.append(
@@ -2150,6 +2161,153 @@ async function uploadFiles(
   await loadFiles();
   await loadStorage();
 }
+
+/*
+ * 드래그한 폴더를 재귀적으로 읽어
+ * 파일과 원래의 상대 경로를 함께 수집합니다.
+ */
+function readDirectoryEntries(directoryEntry) {
+  return new Promise(function(resolve, reject) {
+    const reader = directoryEntry.createReader();
+    const entries = [];
+
+    function readBatch() {
+      reader.readEntries(
+        function(batch) {
+          if (!batch.length) {
+            resolve(entries);
+            return;
+          }
+
+          entries.push.apply(entries, batch);
+          readBatch();
+        },
+        reject
+      );
+    }
+
+    readBatch();
+  });
+}
+
+function readFileEntry(fileEntry) {
+  return new Promise(function(resolve, reject) {
+    fileEntry.file(resolve, reject);
+  });
+}
+
+async function collectDroppedEntry(entry, parentPath, output) {
+  const currentPath =
+    parentPath
+      ? parentPath + "/" + entry.name
+      : entry.name;
+
+  if (entry.isFile) {
+    const file = await readFileEntry(entry);
+
+    output.push({
+      file: file,
+      relativePath: currentPath
+    });
+
+    return;
+  }
+
+  if (entry.isDirectory) {
+    const children =
+      await readDirectoryEntries(entry);
+
+    for (const child of children) {
+      await collectDroppedEntry(
+        child,
+        currentPath,
+        output
+      );
+    }
+  }
+}
+
+/*
+ * DROPZONE
+ */
+
+const dropzone =
+  document.getElementById(
+    "dropzone"
+  );
+
+dropzone.addEventListener(
+  "dragover",
+  function(event) {
+    event.preventDefault();
+
+    dropzone.classList.add(
+      "dragover"
+    );
+  }
+);
+
+dropzone.addEventListener(
+  "dragleave",
+  function() {
+    dropzone.classList.remove(
+      "dragover"
+    );
+  }
+);
+
+dropzone.addEventListener(
+  "drop",
+  async function(event) {
+
+    event.preventDefault();
+
+    dropzone.classList.remove(
+      "dragover"
+    );
+
+    const items =
+      Array.from(
+        event.dataTransfer.items || []
+      );
+
+    const droppedFiles = [];
+
+    for (const item of items) {
+      if (item.kind !== "file") {
+        continue;
+      }
+
+      const getEntry =
+        item.webkitGetAsEntry ||
+        item.getAsEntry;
+
+      if (getEntry) {
+        const entry = getEntry.call(item);
+
+        if (entry) {
+          await collectDroppedEntry(
+            entry,
+            "",
+            droppedFiles
+          );
+          continue;
+        }
+      }
+
+      const file = item.getAsFile();
+
+      if (file) {
+        droppedFiles.push({
+          file: file,
+          relativePath: file.name
+        });
+      }
+    }
+
+    await uploadFiles(droppedFiles);
+  }
+);
 
 /*
  * DROPZONE
