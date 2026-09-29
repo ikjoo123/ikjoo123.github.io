@@ -145,35 +145,6 @@ body {
     margin-bottom: 15px;
 }
 
-.aiButton {
-    border: 0;
-    background: #f1ecff;
-    color: #5b3fa3;
-    padding: 10px 16px;
-    border-radius: 8px;
-    cursor: pointer;
-}
-.aiButton:hover { background: #e7ddff; }
-.aiButton:disabled { opacity: 0.6; cursor: wait; }
-.aiPreview {
-    display: none;
-    margin: 10px 0 15px;
-    border-radius: 12px;
-    overflow: hidden;
-    background: #f1f3f5;
-}
-.aiPreview img {
-    display: block;
-    width: 100%;
-    max-height: 420px;
-    object-fit: contain;
-}
-.aiStatus {
-    display: none;
-    margin: 8px 0 12px;
-    color: #777;
-    font-size: 13px;
-}
 .formButtons {
     display: flex;
     gap: 6px;
@@ -486,18 +457,6 @@ body {
             accept="image/*"
         >
 
-        <div class="formButtons" style="margin-bottom: 8px;">
-            <button id="aiButton" class="aiButton" type="button" onclick="generateDreamImage()">
-                ✨ AI 이미지 만들기
-            </button>
-        </div>
-        <div id="aiStatus" class="aiStatus">
-            꿈 내용을 바탕으로 이미지를 만들고 있습니다...
-        </div>
-        <div id="aiPreview" class="aiPreview">
-            <img id="aiPreviewImage" alt="AI로 생성된 꿈 이미지">
-        </div>
-
 
         <div class="formButtons">
 
@@ -644,63 +603,6 @@ async function loadDreams() {
     }
 
     renderDreams();
-
-    // 기존 꿈 중 이미지가 없는 기록은 한 번씩 AI 이미지로 채웁니다.
-    await applyAIDreamImages();
-}
-
-async function applyAIDreamImages() {
-    const targets = dreams.filter(function(dream) {
-        return dream && dream.id && !dream.image;
-    });
-
-    for (let i = 0; i < targets.length; i++) {
-        const dream = targets[i];
-
-        try {
-            const response = await apiFetch("/api/dream-image", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    title: dream.title,
-                    content: dream.content
-                })
-            });
-
-            const data = await response.json().catch(function() { return {}; });
-
-            if (!response.ok || !data.image) {
-                console.error("AI 이미지 생성 실패:", data.error);
-                continue;
-            }
-
-            const saveResponse = await apiFetch("/api/dreams", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    id: dream.id,
-                    date: dream.date,
-                    title: dream.title,
-                    content: dream.content,
-                    image: data.image
-                })
-            });
-
-            if (saveResponse.ok) {
-                const saved = await saveResponse.json();
-                const index = dreams.findIndex(function(item) {
-                    return item.id === dream.id;
-                });
-
-                if (index !== -1 && saved.dream) {
-                    dreams[index] = saved.dream;
-                    renderDreams();
-                }
-            }
-        } catch (error) {
-            console.error("기존 꿈 AI 이미지 처리 실패:", error);
-        }
-    }
 }
 
 function renderDreams() {
@@ -754,49 +656,6 @@ function showDreamForm() {
     }
 }
 
-async function generateDreamImage() {
-    const title = document.getElementById("dreamTitle").value.trim();
-    const content = document.getElementById("dreamContent").value.trim();
-    const button = document.getElementById("aiButton");
-    const status = document.getElementById("aiStatus");
-    const preview = document.getElementById("aiPreview");
-    const previewImage = document.getElementById("aiPreviewImage");
-
-    if (!title && !content) {
-        alert("꿈 제목이나 내용을 먼저 입력해주세요.");
-        return;
-    }
-
-    button.disabled = true;
-    button.textContent = "✨ 생성 중...";
-    status.style.display = "block";
-    preview.style.display = "none";
-
-    try {
-        const response = await apiFetch("/api/dream-image", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ title: title, content: content })
-        });
-
-        const data = await response.json().catch(function() { return {}; });
-
-        if (!response.ok) {
-            throw new Error(data.error || "AI 이미지 생성에 실패했습니다.");
-        }
-
-        previewImage.src = data.image;
-        preview.style.display = "block";
-        window.generatedDreamImage = data.image;
-    } catch (error) {
-        alert(error.message || "AI 이미지 생성에 실패했습니다.");
-    } finally {
-        button.disabled = false;
-        button.textContent = "✨ AI 이미지 만들기";
-        status.style.display = "none";
-    }
-}
-
 async function saveDream() {
     const date = document.getElementById("dreamDate").value;
     const title = document.getElementById("dreamTitle").value.trim();
@@ -827,7 +686,7 @@ async function saveDream() {
             date,
             title,
             content,
-            window.generatedDreamImage || ""
+            ""
         );
     }
 }
@@ -903,9 +762,6 @@ function resetDreamForm() {
     document.getElementById("dreamTitle").value = "";
     document.getElementById("dreamContent").value = "";
     document.getElementById("dreamImage").value = "";
-    window.generatedDreamImage = "";
-    document.getElementById("aiPreview").style.display = "none";
-    document.getElementById("aiPreviewImage").src = "";
     document.getElementById("dreamForm").style.display = "none";
 }
 
