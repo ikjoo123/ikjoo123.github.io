@@ -170,17 +170,26 @@ function cleanFolder(folder) {
 }
 
 function getOriginalName(object) {
-  if (
-    object.customMetadata &&
-    object.customMetadata.originalName
-  ) {
-    return object.customMetadata.originalName;
+  const metadata = object && object.customMetadata;
+
+  if (metadata && metadata.originalName) {
+    return String(metadata.originalName);
   }
 
-  const parts = object.key.split("/");
-  const name = parts[parts.length - 1];
+  const key = String((object && object.key) || "");
+  const parts = key.split("/").filter(Boolean);
+  let name = parts.length ? parts[parts.length - 1] : "";
 
-  return name.replace(/^\d+-/, "");
+  // 예전 업로드 방식의 타임스탬프 접두사를 제거합니다.
+  name = name.replace(/^\d+-/, "");
+
+  try {
+    name = decodeURIComponent(name);
+  } catch (error) {
+    // 이미 일반 문자열이면 그대로 사용합니다.
+  }
+
+  return name || "이름 없는 파일";
 }
 
 async function getStorageUsage(env) {
@@ -210,9 +219,6 @@ async function getStorageUsage(env) {
       if (
         !object.key.startsWith(
           NOTES_PREFIX
-        ) &&
-        !object.key.startsWith(
-          EVENTS_PREFIX
         )
       ) {
         total += object.size || 0;
@@ -249,6 +255,7 @@ export default {
 
     /*
      * CORS preflight
+     * 반드시 가장 먼저 처리
      */
     if (request.method === "OPTIONS") {
       return new Response(null, {
@@ -385,19 +392,30 @@ export default {
           const folder =
             result.delimitedPrefixes[i];
 
+          const folderName =
+            folder
+              .slice(prefix.length)
+              .replace(/\/$/, "");
+
+          const hiddenFolderNames = [
+            "__notes__",
+            "__calendar__",
+            "notes",
+            "note",
+            "calendar"
+          ];
+
           if (
             folder.startsWith(NOTES_PREFIX) ||
-            folder.startsWith(EVENTS_PREFIX)
+            folder.startsWith(EVENTS_PREFIX) ||
+            hiddenFolderNames.indexOf(folderName.toLowerCase()) !== -1
           ) {
             continue;
           }
 
           folders.push({
             type: "folder",
-            name:
-              folder
-                .slice(prefix.length)
-                .replace(/\/$/, ""),
+            name: folderName,
             prefix: folder
           });
         }
@@ -412,15 +430,25 @@ export default {
           const object =
             result.objects[i];
 
+          const relativeKey = object.key.slice(prefix.length);
+          const firstPart = relativeKey.split("/")[0].toLowerCase();
+          const hiddenFolderNames = [
+            "__notes__",
+            "__calendar__",
+            "notes",
+            "note",
+            "calendar"
+          ];
+
           if (
             object.key === prefix ||
             object.key.startsWith(NOTES_PREFIX) ||
-            object.key.startsWith(EVENTS_PREFIX)
+            object.key.startsWith(EVENTS_PREFIX) ||
+            hiddenFolderNames.indexOf(firstPart) !== -1
           ) {
             continue;
           }
-
-          files.push({
+                    files.push({
             type: "file",
             key: object.key,
             name: getOriginalName(object),
@@ -688,6 +716,7 @@ export default {
 
       /*
        * MOVE FOLDER
+       * 폴더 전체를 다른 폴더로 이동
        */
       if (
         url.pathname === "/api/move-folder" &&
@@ -695,11 +724,8 @@ export default {
       ) {
         const body = await request.json();
 
-        const source =
-          cleanFolder(body.sourceFolder);
-
-        const destination =
-          cleanFolder(body.destinationFolder);
+        const source = cleanFolder(body.sourceFolder);
+        const destination = cleanFolder(body.destinationFolder);
 
         if (!source) {
           return errorResponse(
@@ -708,28 +734,13 @@ export default {
           );
         }
 
-        const sourcePrefix =
-          source + "/";
-
-        const folderName =
-          source
-            .split("/")
-            .filter(Boolean)
-            .pop();
-
+        const sourcePrefix = source + "/";
         const destinationPrefix =
-          destination
-            ? destination +
-              "/" +
-              folderName +
-              "/"
-            : folderName + "/";
+          destination ? destination + "/" + source.split("/").pop() + "/" : source.split("/").pop() + "/";
 
         if (
           destinationPrefix === sourcePrefix ||
-          destinationPrefix.startsWith(
-            sourcePrefix
-          )
+          destinationPrefix.startsWith(sourcePrefix)
         ) {
           return errorResponse(
             "폴더를 자기 자신이나 하위 폴더로 이동할 수 없습니다.",
@@ -737,32 +748,21 @@ export default {
           );
         }
 
-        const result =
-          await env.FILES.list({
-            prefix: sourcePrefix
-          });
+        const result = await env.FILES.list({
+          prefix: sourcePrefix
+        });
 
-        for (
-          let i = 0;
-          i < result.objects.length;
-          i++
-        ) {
-          const object =
-            result.objects[i];
+        for (let i = 0; i < result.objects.length; i++) {
+          const object = result.objects[i];
 
           const relativeKey =
-            object.key.slice(
-              sourcePrefix.length
-            );
+            object.key.slice(sourcePrefix.length);
 
           const newKey =
-            destinationPrefix +
-            relativeKey;
+            destinationPrefix + relativeKey;
 
           const sourceObject =
-            await env.FILES.get(
-              object.key
-            );
+            await env.FILES.get(object.key);
 
           if (!sourceObject) {
             continue;
@@ -786,33 +786,22 @@ export default {
             : undefined;
 
         while (cursor) {
-          const nextResult =
-            await env.FILES.list({
-              prefix: sourcePrefix,
-              cursor: cursor
-            });
+          const nextResult = await env.FILES.list({
+            prefix: sourcePrefix,
+            cursor: cursor
+          });
 
-          for (
-            let i = 0;
-            i < nextResult.objects.length;
-            i++
-          ) {
-            const object =
-              nextResult.objects[i];
+          for (let i = 0; i < nextResult.objects.length; i++) {
+            const object = nextResult.objects[i];
 
             const relativeKey =
-              object.key.slice(
-                sourcePrefix.length
-              );
+              object.key.slice(sourcePrefix.length);
 
             const newKey =
-              destinationPrefix +
-              relativeKey;
+              destinationPrefix + relativeKey;
 
             const sourceObject =
-              await env.FILES.get(
-                object.key
-              );
+              await env.FILES.get(object.key);
 
             if (!sourceObject) {
               continue;
@@ -836,16 +825,11 @@ export default {
               : undefined;
         }
 
-        const deleteResult =
-          await env.FILES.list({
-            prefix: sourcePrefix
-          });
+        const deleteResult = await env.FILES.list({
+          prefix: sourcePrefix
+        });
 
-        for (
-          let i = 0;
-          i < deleteResult.objects.length;
-          i++
-        ) {
+        for (let i = 0; i < deleteResult.objects.length; i++) {
           await env.FILES.delete(
             deleteResult.objects[i].key
           );
@@ -857,17 +841,12 @@ export default {
             : undefined;
 
         while (deleteCursor) {
-          const nextDelete =
-            await env.FILES.list({
-              prefix: sourcePrefix,
-              cursor: deleteCursor
-            });
+          const nextDelete = await env.FILES.list({
+            prefix: sourcePrefix,
+            cursor: deleteCursor
+          });
 
-          for (
-            let i = 0;
-            i < nextDelete.objects.length;
-            i++
-          ) {
+          for (let i = 0; i < nextDelete.objects.length; i++) {
             await env.FILES.delete(
               nextDelete.objects[i].key
             );
@@ -885,23 +864,17 @@ export default {
           destinationFolder: destination
         });
       }
-
-      /*
+            /*
        * RENAME FOLDER
        */
       if (
         url.pathname === "/api/rename-folder" &&
         request.method === "POST"
       ) {
-        const body =
-          await request.json();
+        const body = await request.json();
 
-        const source =
-          cleanFolder(body.sourceFolder);
-
-        const newName =
-          String(body.newName || "")
-            .trim();
+        const source = cleanFolder(body.sourceFolder);
+        const newName = String(body.newName || "").trim();
 
         if (!source) {
           return errorResponse(
@@ -924,9 +897,7 @@ export default {
         }
 
         const parts =
-          source
-            .split("/")
-            .filter(Boolean);
+          source.split("/").filter(Boolean);
 
         parts.pop();
 
@@ -938,17 +909,12 @@ export default {
         const destination =
           parent + newName;
 
-        const sourcePrefix =
-          source + "/";
-
-        const destinationPrefix =
-          destination + "/";
+        const sourcePrefix = source + "/";
+        const destinationPrefix = destination + "/";
 
         if (
           sourcePrefix === destinationPrefix ||
-          destinationPrefix.startsWith(
-            sourcePrefix
-          )
+          destinationPrefix.startsWith(sourcePrefix)
         ) {
           return errorResponse(
             "잘못된 폴더 이름입니다.",
@@ -956,32 +922,21 @@ export default {
           );
         }
 
-        const result =
-          await env.FILES.list({
-            prefix: sourcePrefix
-          });
+        const result = await env.FILES.list({
+          prefix: sourcePrefix
+        });
 
-        for (
-          let i = 0;
-          i < result.objects.length;
-          i++
-        ) {
-          const object =
-            result.objects[i];
+        for (let i = 0; i < result.objects.length; i++) {
+          const object = result.objects[i];
 
           const relativeKey =
-            object.key.slice(
-              sourcePrefix.length
-            );
+            object.key.slice(sourcePrefix.length);
 
           const newKey =
-            destinationPrefix +
-            relativeKey;
+            destinationPrefix + relativeKey;
 
           const sourceObject =
-            await env.FILES.get(
-              object.key
-            );
+            await env.FILES.get(object.key);
 
           if (!sourceObject) {
             continue;
@@ -1005,33 +960,22 @@ export default {
             : undefined;
 
         while (cursor) {
-          const nextResult =
-            await env.FILES.list({
-              prefix: sourcePrefix,
-              cursor: cursor
-            });
+          const nextResult = await env.FILES.list({
+            prefix: sourcePrefix,
+            cursor: cursor
+          });
 
-          for (
-            let i = 0;
-            i < nextResult.objects.length;
-            i++
-          ) {
-            const object =
-              nextResult.objects[i];
+          for (let i = 0; i < nextResult.objects.length; i++) {
+            const object = nextResult.objects[i];
 
             const relativeKey =
-              object.key.slice(
-                sourcePrefix.length
-              );
+              object.key.slice(sourcePrefix.length);
 
             const newKey =
-              destinationPrefix +
-              relativeKey;
+              destinationPrefix + relativeKey;
 
             const sourceObject =
-              await env.FILES.get(
-                object.key
-              );
+              await env.FILES.get(object.key);
 
             if (!sourceObject) {
               continue;
@@ -1055,16 +999,11 @@ export default {
               : undefined;
         }
 
-        const deleteResult =
-          await env.FILES.list({
-            prefix: sourcePrefix
-          });
+        const deleteResult = await env.FILES.list({
+          prefix: sourcePrefix
+        });
 
-        for (
-          let i = 0;
-          i < deleteResult.objects.length;
-          i++
-        ) {
+        for (let i = 0; i < deleteResult.objects.length; i++) {
           await env.FILES.delete(
             deleteResult.objects[i].key
           );
@@ -1076,17 +1015,12 @@ export default {
             : undefined;
 
         while (deleteCursor) {
-          const nextDelete =
-            await env.FILES.list({
-              prefix: sourcePrefix,
-              cursor: deleteCursor
-            });
+          const nextDelete = await env.FILES.list({
+            prefix: sourcePrefix,
+            cursor: deleteCursor
+          });
 
-          for (
-            let i = 0;
-            i < nextDelete.objects.length;
-            i++
-          ) {
+          for (let i = 0; i < nextDelete.objects.length; i++) {
             await env.FILES.delete(
               nextDelete.objects[i].key
             );
@@ -1162,20 +1096,15 @@ export default {
             status: 200,
             headers: {
               ...corsHeaders,
-
               "Content-Type":
                 contentType,
-
               "Content-Disposition":
                 "attachment; filename*=UTF-8''" +
                 encodeURIComponent(
                   filename
                 ),
-
               "X-Download-Filename":
-                encodeURIComponent(
-                  filename
-                )
+                encodeURIComponent(filename)
             }
           }
         );
@@ -1323,9 +1252,7 @@ export default {
 
           try {
             const eventObject =
-              await env.FILES.get(
-                object.key
-              );
+              await env.FILES.get(object.key);
 
             if (!eventObject) {
               continue;
@@ -1344,11 +1271,9 @@ export default {
         events.sort(
           function(a, b) {
             return (
-              String(a.date || "") +
-              String(a.time || "")
+              String(a.date || "") + String(a.time || "")
             ).localeCompare(
-              String(b.date || "") +
-              String(b.time || "")
+              String(b.date || "") + String(b.time || "")
             );
           }
         );
@@ -1378,16 +1303,10 @@ export default {
           String(body.time || "").trim();
 
         const title =
-          cleanText(
-            body.title,
-            200
-          );
+          cleanText(body.title, 200);
 
         const text =
-          cleanText(
-            body.text,
-            5000
-          );
+          cleanText(body.text, 5000);
 
         const colors = [
           "yellow",
@@ -1399,29 +1318,18 @@ export default {
         ];
 
         const color =
-          colors.includes(
-            body.color
-          )
+          colors.includes(body.color)
             ? body.color
             : "yellow";
 
-        if (
-          !/^\d{4}-\d{2}-\d{2}$/.test(
-            date
-          )
-        ) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
           return errorResponse(
             "잘못된 날짜입니다.",
             400
           );
         }
 
-        if (
-          time &&
-          !/^\d{2}:\d{2}$/.test(
-            time
-          )
-        ) {
+        if (time && !/^\d{2}:\d{2}$/.test(time)) {
           return errorResponse(
             "잘못된 시간입니다.",
             400
@@ -1436,7 +1344,6 @@ export default {
         }
 
         let eventId = id;
-
         let createdAt =
           new Date().toISOString();
 
@@ -1450,9 +1357,7 @@ export default {
 
           const oldObject =
             await env.FILES.get(
-              EVENTS_PREFIX +
-              id +
-              ".json"
+              EVENTS_PREFIX + id + ".json"
             );
 
           if (oldObject) {
@@ -1488,14 +1393,8 @@ export default {
         };
 
         await env.FILES.put(
-          EVENTS_PREFIX +
-          eventId +
-          ".json",
-
-          JSON.stringify(
-            event
-          ),
-
+          EVENTS_PREFIX + eventId + ".json",
+          JSON.stringify(event),
           {
             httpMetadata: {
               contentType:
@@ -1510,7 +1409,7 @@ export default {
         });
       }
 
-      /*
+          /*
        * DELETE CALENDAR EVENT
        */
       if (
@@ -1518,9 +1417,7 @@ export default {
         request.method === "DELETE"
       ) {
         const id =
-          url.searchParams.get(
-            "id"
-          );
+          url.searchParams.get("id");
 
         if (!validNoteId(id)) {
           return errorResponse(
@@ -1530,9 +1427,7 @@ export default {
         }
 
         await env.FILES.delete(
-          EVENTS_PREFIX +
-          id +
-          ".json"
+          EVENTS_PREFIX + id + ".json"
         );
 
         return jsonResponse({
@@ -1622,9 +1517,8 @@ export default {
           await request.json();
 
         const id =
-          String(
-            body.id || ""
-          ).trim();
+          String(body.id || "")
+            .trim();
 
         const title =
           cleanText(
@@ -1662,7 +1556,6 @@ export default {
         }
 
         let noteId = id;
-
         let createdAt =
           new Date().toISOString();
 
@@ -1715,11 +1608,7 @@ export default {
           NOTES_PREFIX +
           noteId +
           ".json",
-
-          JSON.stringify(
-            note
-          ),
-
+          JSON.stringify(note),
           {
             httpMetadata: {
               contentType:
@@ -1742,9 +1631,7 @@ export default {
         request.method === "DELETE"
       ) {
         const id =
-          url.searchParams.get(
-            "id"
-          );
+          url.searchParams.get("id");
 
         if (!validNoteId(id)) {
           return errorResponse(
