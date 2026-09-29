@@ -1263,12 +1263,12 @@ export default {
         }
 
         const prompt =
-          "A dreamlike cinematic illustration for a personal dream journal. " +
+          ("A dreamlike cinematic illustration for a personal dream journal. " +
           "Soft Japanese-inspired watercolor and poster illustration, gentle brushwork, " +
           "airy natural light, poetic surreal atmosphere, beautiful composition, " +
           "subtle details, emotionally calm but imaginative, clean anatomy, " +
           "no text, no letters, no watermark. Create one coherent scene. " +
-          "Dream title: " + title + ". Dream content: " + content;
+          "Dream title: " + title + ". Dream content: " + content).slice(0, 2000);
 
         try {
           const result = await env.AI.run(
@@ -1290,8 +1290,11 @@ export default {
           });
         } catch (error) {
           console.error("AI DREAM IMAGE ERROR:", error);
+          const detail = error && error.message
+            ? String(error.message).slice(0, 300)
+            : "알 수 없는 오류";
           return errorResponse(
-            "AI 이미지 생성에 실패했습니다. 잠시 후 다시 시도해주세요.",
+            "AI 이미지 생성에 실패했습니다: " + detail,
             500
           );
         }
