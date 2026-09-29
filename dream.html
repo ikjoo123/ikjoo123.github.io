@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -20,7 +19,6 @@ body {
         BlinkMacSystemFont,
         "Segoe UI",
         sans-serif;
-
     background: #f5f6f8;
     color: #222;
 }
@@ -28,47 +26,30 @@ body {
 /* 상단 */
 
 .header {
-
     height: 64px;
-
     background: white;
-
-    border-bottom:
-        1px solid #e5e7eb;
-
+    border-bottom: 1px solid #e5e7eb;
     display: flex;
-
     align-items: center;
-
     justify-content: space-between;
-
     padding: 0 24px;
 }
 
 .logo {
-
     font-size: 21px;
-
     font-weight: 700;
-
     cursor: pointer;
 }
 
 .back {
-
     border: 0;
-
     background: #f1f3f5;
-
     padding: 9px 14px;
-
     border-radius: 8px;
-
     cursor: pointer;
 }
 
 .back:hover {
-
     background: #e5e7eb;
 }
 
@@ -76,68 +57,144 @@ body {
 /* 메인 */
 
 .container {
-
     max-width: 1000px;
-
     margin: 0 auto;
-
     padding: 32px 20px;
 }
 
 .title {
-
     font-size: 28px;
-
     font-weight: 700;
-
     margin-bottom: 8px;
 }
 
 .subtitle {
-
     color: #777;
-
     margin-bottom: 28px;
 }
 
 
-/* 꿈 기록 */
+/* 꿈 기록하기 버튼 */
+
+.addButton {
+    margin-bottom: 20px;
+    border: 0;
+    background: #222;
+    color: white;
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.addButton:hover {
+    background: #444;
+}
+
+
+/* 입력창 */
+
+.dreamForm {
+    display: none;
+    background: white;
+    border: 1px solid #eee;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.dreamInput {
+    width: 100%;
+    padding: 11px;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 14px;
+}
+
+.dreamInput:focus {
+    outline: none;
+    border-color: #aaa;
+}
+
+.dreamTextarea {
+    width: 100%;
+    padding: 11px;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    resize: vertical;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.dreamTextarea:focus {
+    outline: none;
+    border-color: #aaa;
+}
+
+.imageLabel {
+    font-size: 14px;
+    color: #666;
+    margin: 8px 0;
+}
+
+.imageInput {
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.formButtons {
+    display: flex;
+    gap: 6px;
+}
+
+.saveButton {
+    border: 0;
+    background: #222;
+    color: white;
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.cancelButton {
+    border: 0;
+    background: #f1f3f5;
+    color: #333;
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+
+/* 꿈 목록 */
 
 .dreamList {
-
     display: grid;
-
     grid-template-columns:
         repeat(
             auto-fit,
             minmax(280px, 1fr)
         );
-
     gap: 20px;
 }
 
 
+/* 꿈 카드 */
+
 .dreamCard {
-
     background: white;
-
-    border:
-        1px solid #eee;
-
+    border: 1px solid #eee;
     border-radius: 16px;
-
     overflow: hidden;
-
     cursor: pointer;
-
     transition: 0.2s;
 }
 
 .dreamCard:hover {
-
-    transform:
-        translateY(-3px);
-
+    transform: translateY(-3px);
     box-shadow:
         0 8px 25px
         rgba(0,0,0,0.08);
@@ -147,32 +204,20 @@ body {
 /* 이미지 */
 
 .dreamImage {
-
     width: 100%;
-
     height: 190px;
-
     background: #eef0f3;
-
     display: flex;
-
     align-items: center;
-
     justify-content: center;
-
     color: #999;
-
     font-size: 14px;
-
     overflow: hidden;
 }
 
 .dreamImage img {
-
     width: 100%;
-
     height: 100%;
-
     object-fit: cover;
 }
 
@@ -180,40 +225,28 @@ body {
 /* 내용 */
 
 .dreamContent {
-
     padding: 20px;
 }
 
 .dreamDate {
-
     font-size: 13px;
-
     color: #999;
-
     margin-bottom: 7px;
 }
 
 .dreamTitle {
-
     font-size: 19px;
-
     font-weight: 700;
-
     margin-bottom: 10px;
 }
 
 .dreamPreview {
-
     color: #666;
-
     font-size: 14px;
-
     line-height: 1.6;
 
     display: -webkit-box;
-
     -webkit-line-clamp: 3;
-
     -webkit-box-orient: vertical;
 
     overflow: hidden;
@@ -223,19 +256,111 @@ body {
 /* 기록 없음 */
 
 .empty {
-
     background: white;
-
-    border:
-        1px solid #eee;
-
+    border: 1px solid #eee;
     border-radius: 16px;
-
     padding: 60px 20px;
-
     text-align: center;
-
     color: #888;
+}
+
+
+/* 상세보기 */
+
+.dreamModal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 9999;
+}
+
+.dreamModalBox {
+    background: white;
+    border-radius: 18px;
+    max-width: 800px;
+    width: 100%;
+    max-height: 90vh;
+    overflow: auto;
+    padding: 25px;
+}
+
+.modalDate {
+    font-size: 13px;
+    color: #999;
+    margin-bottom: 8px;
+}
+
+.modalTitle {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+.modalImage {
+    width: 100%;
+    max-height: 500px;
+    object-fit: contain;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    background: #f1f3f5;
+}
+
+.modalContent {
+    font-size: 15px;
+    line-height: 1.8;
+    white-space: pre-wrap;
+    color: #444;
+    margin-bottom: 25px;
+}
+
+.modalButtons {
+    text-align: right;
+}
+
+.deleteButton {
+    border: 0;
+    background: #fff0f0;
+    color: #d33;
+    padding: 9px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-right: 6px;
+}
+
+.closeButton {
+    border: 0;
+    background: #222;
+    color: white;
+    padding: 9px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+
+/* 모바일 */
+
+@media (max-width: 600px) {
+
+    .header {
+        padding: 0 16px;
+    }
+
+    .container {
+        padding: 25px 15px;
+    }
+
+    .title {
+        font-size: 25px;
+    }
+
+    .dreamList {
+        grid-template-columns: 1fr;
+    }
+
 }
 
 </style>
@@ -279,99 +404,88 @@ body {
         기억하고 싶은 꿈을 기록하는 공간
     </div>
 
+
+    <!-- 꿈 기록하기 -->
+
     <button
+        class="addButton"
         onclick="showDreamForm()"
-        style="
-            margin-bottom:20px;
-            border:0;
-            background:#222;
-            color:white;
-            padding:10px 16px;
-            border-radius:8px;
-            cursor:pointer;
-        "
     >
         + 꿈 기록하기
     </button>
 
+
+    <!-- 입력창 -->
+
     <div
         id="dreamForm"
-        style="
-            display:none;
-            background:white;
-            border:1px solid #eee;
-            border-radius:16px;
-            padding:20px;
-            margin-bottom:20px;
-        "
+        class="dreamForm"
     >
 
         <input
             id="dreamDate"
+            class="dreamInput"
             type="date"
-            style="
-                width:100%;
-                padding:10px;
-                margin-bottom:10px;
-                border:1px solid #ddd;
-                border-radius:8px;
-            "
         >
+
 
         <input
             id="dreamTitle"
+            class="dreamInput"
             type="text"
             placeholder="꿈 제목"
-            style="
-                width:100%;
-                padding:10px;
-                margin-bottom:10px;
-                border:1px solid #ddd;
-                border-radius:8px;
-            "
         >
+
 
         <textarea
             id="dreamContent"
+            class="dreamTextarea"
             placeholder="꿈 내용을 적어주세요."
-            rows="6"
-            style="
-                width:100%;
-                padding:10px;
-                margin-bottom:10px;
-                border:1px solid #ddd;
-                border-radius:8px;
-                resize:vertical;
-            "
+            rows="8"
         ></textarea>
 
-        <button
-            onclick="saveDream()"
-            style="
-                border:0;
-                background:#222;
-                color:white;
-                padding:10px 16px;
-                border-radius:8px;
-                cursor:pointer;
-            "
+
+        <div class="imageLabel">
+            🖼️ 꿈 사진
+        </div>
+
+
+        <input
+            id="dreamImage"
+            class="imageInput"
+            type="file"
+            accept="image/*"
         >
-            저장
-        </button>
+
+
+        <div class="formButtons">
+
+            <button
+                class="saveButton"
+                onclick="saveDream()"
+            >
+                저장
+            </button>
+
+
+            <button
+                class="cancelButton"
+                onclick="showDreamForm()"
+            >
+                취소
+            </button>
+
+        </div>
 
     </div>
+
+
+    <!-- 꿈 목록 -->
 
     <div
         id="dreamList"
         class="dreamList"
-    >
-
-        <!--
-        꿈 기록은
-        나중에 여기에 자동으로 추가됩니다.
-        -->
-
-    </div>
+    ></div>
 
 
 </main>
@@ -380,152 +494,613 @@ body {
 
 <script>
 
-/*
- * 꿈 기록 데이터
- *
- * 나중에 내가 홈페이지에
- * 꿈을 올릴 때 사용하는 구조
- */
+/* =========================
+   꿈 기록 데이터
+========================= */
 
-const dreams = [
-
-    /*
-    예시:
-
-    {
-        date: "2026.09.28",
-
-        title:
-            "거대한 파도와 수영장",
-
-        content:
-            "정승제 강사에게 수학을 배우고 수능을 본 뒤 버스를 타고 평야를 지나가는데 거대한 파도가 다가왔다.",
-
-        image:
-            ""
-    }
-
-    */
-
-];
+let dreams =
+    JSON.parse(
+        localStorage.getItem("dreamRecords") || "[]"
+    );
 
 
+/* =========================
+   꿈 목록 표시
+========================= */
 
 function renderDreams() {
 
     const list =
-        document.getElementById(
-            "dreamList"
-        );
+        document.getElementById("dreamList");
 
 
     list.innerHTML = "";
 
 
-    if (
-        dreams.length === 0
-    ) {
+    if (dreams.length === 0) {
 
         list.innerHTML =
-
             '<div class="empty">' +
-
             '아직 기록된 꿈이 없습니다.<br><br>' +
-
             '기억하고 싶은 꿈이 생기면 기록해보세요 🌙' +
-
             '</div>';
 
         return;
     }
 
 
+    dreams.forEach(function(dream, index) {
 
-    dreams.forEach(
-        function(dream) {
+        const card =
+            document.createElement("div");
 
-            const card =
-                document.createElement(
-                    "div"
-                );
-
-
-            card.className =
-                "dreamCard";
+        card.className =
+            "dreamCard";
 
 
-            let imageHTML =
+        let imageHTML =
+            '<div class="dreamImage">' +
+            '🌙 꿈 이미지' +
+            '</div>';
 
+
+        if (dream.image) {
+
+            imageHTML =
                 '<div class="dreamImage">' +
-
-                '🌙 꿈 이미지' +
-
+                '<img src="' +
+                dream.image +
+                '" alt="꿈 이미지">' +
                 '</div>';
-
-
-            if (
-                dream.image
-            ) {
-
-                imageHTML =
-
-                    '<div class="dreamImage">' +
-
-                    '<img src="' +
-
-                    dream.image +
-
-                    '" alt="꿈 이미지">' +
-
-                    '</div>';
-            }
-
-
-
-            card.innerHTML =
-
-                imageHTML +
-
-                '<div class="dreamContent">' +
-
-                '<div class="dreamDate">' +
-
-                dream.date +
-
-                '</div>' +
-
-                '<div class="dreamTitle">' +
-
-                dream.title +
-
-                '</div>' +
-
-                '<div class="dreamPreview">' +
-
-                dream.content +
-
-                '</div>' +
-
-                '</div>';
-
-
-            list.appendChild(
-                card
-            );
 
         }
-    );
+
+
+        card.innerHTML =
+
+            imageHTML +
+
+            '<div class="dreamContent">' +
+
+            '<div class="dreamDate">' +
+            escapeHTML(dream.date) +
+            '</div>' +
+
+            '<div class="dreamTitle">' +
+            escapeHTML(dream.title) +
+            '</div>' +
+
+            '<div class="dreamPreview">' +
+            escapeHTML(dream.content) +
+            '</div>' +
+
+            '</div>';
+
+
+        card.onclick = function() {
+
+            openDream(index);
+
+        };
+
+
+        list.appendChild(card);
+
+    });
+
 }
+
+
+/* =========================
+   입력창 열기 / 닫기
+========================= */
 
 function showDreamForm() {
-    const form = document.getElementById("dreamForm");
 
-    if (form.style.display === "none") {
+    const form =
+        document.getElementById("dreamForm");
+
+
+    if (form.style.display === "none" ||
+        form.style.display === "") {
+
         form.style.display = "block";
+
     } else {
+
         form.style.display = "none";
+
     }
+
 }
+
+
+/* =========================
+   꿈 저장
+========================= */
+
+function saveDream() {
+
+    const date =
+        document.getElementById("dreamDate").value;
+
+
+    const title =
+        document.getElementById("dreamTitle").value.trim();
+
+
+    const content =
+        document.getElementById("dreamContent").value.trim();
+
+
+    const imageInput =
+        document.getElementById("dreamImage");
+
+
+    if (!date) {
+
+        alert("날짜를 입력해주세요.");
+
+        return;
+
+    }
+
+
+    if (!title) {
+
+        alert("꿈 제목을 입력해주세요.");
+
+        return;
+
+    }
+
+
+    if (!content) {
+
+        alert("꿈 내용을 입력해주세요.");
+
+        return;
+
+    }
+
+
+    /*
+     * 사진이 있으면
+     * 브라우저에서 이미지 데이터를 읽음
+     */
+
+    if (
+        imageInput.files &&
+        imageInput.files[0]
+    ) {
+
+        const file =
+            imageInput.files[0];
+
+
+        /*
+         * 너무 큰 이미지는
+         * 저장 전에 자동으로 줄임
+         */
+
+        compressImage(
+            file,
+            function(imageData) {
+
+                addDream(
+                    date,
+                    title,
+                    content,
+                    imageData
+                );
+
+            }
+        );
+
+
+    } else {
+
+        addDream(
+            date,
+            title,
+            content,
+            ""
+        );
+
+    }
+
+}
+
+
+/* =========================
+   이미지 압축
+========================= */
+
+function compressImage(
+    file,
+    callback
+) {
+
+    const reader =
+        new FileReader();
+
+
+    reader.onload =
+        function(event) {
+
+            const img =
+                new Image();
+
+
+            img.onload =
+                function() {
+
+                    const maxWidth =
+                        1200;
+
+
+                    let width =
+                        img.width;
+
+
+                    let height =
+                        img.height;
+
+
+                    if (
+                        width > maxWidth
+                    ) {
+
+                        height =
+                            height *
+                            maxWidth /
+                            width;
+
+                        width =
+                            maxWidth;
+
+                    }
+
+
+                    const canvas =
+                        document.createElement(
+                            "canvas"
+                        );
+
+
+                    canvas.width =
+                        width;
+
+                    canvas.height =
+                        height;
+
+
+                    const ctx =
+                        canvas.getContext(
+                            "2d"
+                        );
+
+
+                    ctx.drawImage(
+                        img,
+                        0,
+                        0,
+                        width,
+                        height
+                    );
+
+
+                    const compressed =
+                        canvas.toDataURL(
+                            "image/jpeg",
+                            0.8
+                        );
+
+
+                    callback(
+                        compressed
+                    );
+
+                };
+
+
+            img.src =
+                event.target.result;
+
+        };
+
+
+    reader.readAsDataURL(file);
+
+}
+
+
+/* =========================
+   실제 저장
+========================= */
+
+function addDream(
+    date,
+    title,
+    content,
+    image
+) {
+
+    const dream = {
+
+        date:
+            date.replaceAll(
+                "-",
+                "."
+            ),
+
+        title:
+            title,
+
+        content:
+            content,
+
+        image:
+            image
+
+    };
+
+
+    dreams.unshift(
+        dream
+    );
+
+
+    localStorage.setItem(
+        "dreamRecords",
+        JSON.stringify(
+            dreams
+        )
+    );
+
+
+    renderDreams();
+
+
+    /*
+     * 입력창 초기화
+     */
+
+    document.getElementById(
+        "dreamDate"
+    ).value = "";
+
+
+    document.getElementById(
+        "dreamTitle"
+    ).value = "";
+
+
+    document.getElementById(
+        "dreamContent"
+    ).value = "";
+
+
+    document.getElementById(
+        "dreamImage"
+    ).value = "";
+
+
+    /*
+     * 입력창 닫기
+     */
+
+    document.getElementById(
+        "dreamForm"
+    ).style.display = "none";
+
+
+    alert("꿈 기록이 저장되었습니다 🌙");
+
+}
+
+
+/* =========================
+   꿈 상세보기
+========================= */
+
+function openDream(index) {
+
+    const dream =
+        dreams[index];
+
+
+    const modal =
+        document.createElement(
+            "div"
+        );
+
+
+    modal.id =
+        "dreamModal";
+
+
+    modal.className =
+        "dreamModal";
+
+
+    let imageHTML =
+        "";
+
+
+    if (dream.image) {
+
+        imageHTML =
+
+            '<img ' +
+            'src="' +
+            dream.image +
+            '" ' +
+            'alt="꿈 이미지" ' +
+            'class="modalImage">' ;
+
+    }
+
+
+    modal.innerHTML =
+
+        '<div class="dreamModalBox">' +
+
+        '<div class="modalDate">' +
+        escapeHTML(dream.date) +
+        '</div>' +
+
+        '<div class="modalTitle">' +
+        escapeHTML(dream.title) +
+        '</div>' +
+
+        imageHTML +
+
+        '<div class="modalContent">' +
+        escapeHTML(dream.content) +
+        '</div>' +
+
+        '<div class="modalButtons">' +
+
+        '<button ' +
+        'class="deleteButton" ' +
+        'onclick="deleteDream(' +
+        index +
+        ')">' +
+        '삭제' +
+        '</button>' +
+
+        '<button ' +
+        'class="closeButton" ' +
+        'onclick="closeDream()">' +
+        '닫기' +
+        '</button>' +
+
+        '</div>' +
+
+        '</div>';
+
+
+    modal.onclick =
+        function(event) {
+
+            if (
+                event.target === modal
+            ) {
+
+                closeDream();
+
+            }
+
+        };
+
+
+    document.body.appendChild(
+        modal
+    );
+
+}
+
+
+/* =========================
+   상세보기 닫기
+========================= */
+
+function closeDream() {
+
+    const modal =
+        document.getElementById(
+            "dreamModal"
+        );
+
+
+    if (modal) {
+
+        modal.remove();
+
+    }
+
+}
+
+
+/* =========================
+   꿈 삭제
+========================= */
+
+function deleteDream(index) {
+
+    if (
+        !confirm(
+            "이 꿈 기록을 삭제할까요?"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    dreams.splice(
+        index,
+        1
+    );
+
+
+    localStorage.setItem(
+        "dreamRecords",
+        JSON.stringify(
+            dreams
+        )
+    );
+
+
+    closeDream();
+
+
+    renderDreams();
+
+}
+
+
+/* =========================
+   HTML 문자 처리
+========================= */
+
+function escapeHTML(text) {
+
+    return String(text)
+
+        .replaceAll(
+            "&",
+            "&amp;"
+        )
+
+        .replaceAll(
+            "<",
+            "&lt;"
+        )
+
+        .replaceAll(
+            ">",
+            "&gt;"
+        )
+
+        .replaceAll(
+            '"',
+            "&quot;"
+        )
+
+        .replaceAll(
+            "'",
+            "&#039;"
+        );
+
+}
+
+
+/* =========================
+   시작
+========================= */
 
 renderDreams();
 
