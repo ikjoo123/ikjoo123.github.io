@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>취미 - 익주</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #f5f6f8;
+    color: #222;
+}
+
+/* 상단 */
+.header {
+    height: 64px;
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    justify-content: space-between;
+}
+
+.logo {
+    font-size: 21px;
+    font-weight: 700;
+}
+
+.right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+button {
+    border: 0;
+    background: #f1f3f5;
+    padding: 9px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #e5e7eb;
+}
+
+/* 메인 */
+.container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 20px;
+}
+
+.title {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.subtitle {
+    color: #777;
+    margin-bottom: 28px;
+}
+
+/* 취미 메뉴 */
+.menu {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px;
+}
+
+.card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    min-height: 150px;
+    cursor: pointer;
+    border: 1px solid #eee;
+    transition: 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+}
+
+.icon {
+    font-size: 32px;
+    margin-bottom: 15px;
+}
+
+.card-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 7px;
+}
+
+.card-desc {
+    color: #777;
+    font-size: 14px;
+}
+
+/* 로그인 필요 화면 */
+#loginRequired {
+    display: none;
+    text-align: center;
+    padding: 100px 20px;
+}
+
+#app {
+    display: none;
+}
+</style>
+</head>
+
+<body>
+
+<!-- 로그인 필요 -->
+<div id="loginRequired">
+    <h2>로그인이 필요합니다.</h2>
+    <p>업무 페이지에서 먼저 로그인해주세요.</p>
+    <button onclick="goHome()">업무 페이지로 가기</button>
+</div>
+
+<!-- 취미 페이지 -->
+<div id="app">
+
+    <header class="header">
+        <div class="logo">익주 · 취미</div>
+
+        <div class="right">
+            <button onclick="goHome()">📁 업무</button>
+            <button onclick="logout()">로그아웃</button>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <div class="title">취미</div>
+        <div class="subtitle">내가 좋아하는 것들을 기록하는 공간</div>
+
+        <div class="menu">
+
+            <div class="card">
+                <div class="icon">🎵</div>
+                <div class="card-title">음악</div>
+                <div class="card-desc">
+                    좋아하는 음악과 플레이리스트
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="icon">✈️</div>
+                <div class="card-title">여행</div>
+                <div class="card-desc">
+                    여행 기록과 가고 싶은 곳
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="icon">📷</div>
+                <div class="card-title">사진</div>
+                <div class="card-desc">
+                    사진과 추억을 모아두는 공간
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="icon">🌙</div>
+                <div class="card-title">꿈 기록</div>
+                <div class="card-desc">
+                    기억하고 싶은 꿈을 기록
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+</div>
+
+<script>
+
+const TOKEN_KEY = "ju_files_token";
+
+function checkLogin() {
+
+    const token = localStorage.getItem(TOKEN_KEY);
+
+    if (token) {
+        document.getElementById("app").style.display = "block";
+        document.getElementById("loginRequired").style.display = "none";
+    } else {
+        document.getElementById("app").style.display = "none";
+        document.getElementById("loginRequired").style.display = "block";
+    }
+}
+
+function goHome() {
+    location.href = "index.html";
+}
+
+function logout() {
+    localStorage.removeItem(TOKEN_KEY);
+    goHome();
+}
+
+checkLogin();
+
+</script>
+
+</body>
+</html>
