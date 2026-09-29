@@ -10,6 +10,7 @@ const MAX_STORAGE = 9 * 1024 * 1024 * 1024;
 const LARGE_FILE_SIZE = 100 * 1024 * 1024;
 const NOTES_PREFIX = "__notes__/";
 const EVENTS_PREFIX = "__calendar__/";
+const DREAMS_PREFIX = "__dreams__/";
 
 function jsonResponse(data, status) {
   if (status === undefined) {
@@ -1221,6 +1222,144 @@ export default {
               : undefined;
 
         } while (cursor);
+
+        return jsonResponse({
+          ok: true
+        });
+      }
+
+      /*
+       * DREAM RECORDS LIST
+       */
+      if (
+        url.pathname === "/api/dreams" &&
+        request.method === "GET"
+      ) {
+        const result = await env.FILES.list({
+          prefix: DREAMS_PREFIX,
+          limit: 1000
+        });
+
+        const dreams = [];
+
+        for (let i = 0; i < result.objects.length; i++) {
+          const object = result.objects[i];
+
+          try {
+            const dreamObject = await env.FILES.get(object.key);
+            if (!dreamObject) continue;
+
+            const dream = JSON.parse(await dreamObject.text());
+            dreams.push(dream);
+          } catch (error) {
+          }
+        }
+
+        dreams.sort(function(a, b) {
+          return String(b.date || "").localeCompare(String(a.date || ""));
+        });
+
+        return jsonResponse({
+          dreams: dreams
+        });
+      }
+
+      /*
+       * SAVE DREAM RECORD
+       */
+      if (
+        url.pathname === "/api/dreams" &&
+        request.method === "POST"
+      ) {
+        const body = await request.json();
+
+        const id = String(body.id || "").trim();
+        const date = String(body.date || "").trim();
+        const title = cleanText(body.title, 200);
+        const content = cleanText(body.content, 30000);
+        const image = String(body.image || "");
+
+        if (!/^\\d{4}\\.\\d{2}\\.\\d{2}$/.test(date)) {
+          return errorResponse("잘못된 날짜입니다.", 400);
+        }
+
+        if (!title) {
+          return errorResponse("꿈 제목을 입력하세요.", 400);
+        }
+
+        if (!content) {
+          return errorResponse("꿈 내용을 입력하세요.", 400);
+        }
+
+        if (image.length > 6 * 1024 * 1024) {
+          return errorResponse("꿈 이미지가 너무 큽니다.", 413);
+        }
+
+        let dreamId = id;
+        let createdAt = new Date().toISOString();
+
+        if (id) {
+          if (!validNoteId(id)) {
+            return errorResponse("잘못된 꿈 기록 ID입니다.", 400);
+          }
+
+          const oldObject = await env.FILES.get(
+            DREAMS_PREFIX + id + ".json"
+          );
+
+          if (oldObject) {
+            try {
+              const oldDream = JSON.parse(await oldObject.text());
+              createdAt = oldDream.createdAt || createdAt;
+            } catch (error) {
+            }
+          }
+        } else {
+          dreamId = Date.now() + "-" + crypto.randomUUID();
+        }
+
+        const dream = {
+          id: dreamId,
+          date: date,
+          title: title,
+          content: content,
+          image: image,
+          createdAt: createdAt,
+          updatedAt: new Date().toISOString()
+        };
+
+        await env.FILES.put(
+          DREAMS_PREFIX + dreamId + ".json",
+          JSON.stringify(dream),
+          {
+            httpMetadata: {
+              contentType: "application/json; charset=utf-8"
+            }
+          }
+        );
+
+        return jsonResponse({
+          ok: true,
+          dream: dream
+        });
+      }
+
+      /*
+       * DELETE DREAM RECORD
+       */
+      if (
+        url.pathname === "/api/dreams" &&
+        request.method === "DELETE"
+      ) {
+        const id = url.searchParams.get("id");
+
+        if (!validNoteId(id)) {
+          return errorResponse("잘못된 꿈 기록 ID입니다.", 400);
+        }
+
+        await env.FILES.delete(
+          DREAMS_PREFIX + id + ".json"
+        );
 
         return jsonResponse({
           ok: true
