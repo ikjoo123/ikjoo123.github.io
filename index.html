@@ -1270,7 +1270,12 @@ async function loadFiles() {
           };
         })
         .filter(function(folder) {
-          return folder.name && folder.prefix;
+          const hidden = ["__notes__", "__calendar__", "notes", "note", "calendar"];
+          return (
+            folder.name &&
+            folder.prefix &&
+            hidden.indexOf(String(folder.name).toLowerCase()) === -1
+          );
         });
 
     currentFiles =
@@ -1283,7 +1288,7 @@ async function loadFiles() {
           return {
             type: "file",
             key: key,
-            name: file.name || fallbackName,
+            name: String(file.name || fallbackName || "이름 없는 파일"),
             size: Number(file.size || 0),
             uploaded: file.uploaded || null
           };
