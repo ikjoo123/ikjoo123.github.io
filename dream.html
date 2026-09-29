@@ -279,7 +279,87 @@ body {
         기억하고 싶은 꿈을 기록하는 공간
     </div>
 
+    <button
+        onclick="showDreamForm()"
+        style="
+            margin-bottom:20px;
+            border:0;
+            background:#222;
+            color:white;
+            padding:10px 16px;
+            border-radius:8px;
+            cursor:pointer;
+        "
+    >
+        + 꿈 기록하기
+    </button>
 
+    <div
+        id="dreamForm"
+        style="
+            display:none;
+            background:white;
+            border:1px solid #eee;
+            border-radius:16px;
+            padding:20px;
+            margin-bottom:20px;
+        "
+    >
+
+        <input
+            id="dreamDate"
+            type="date"
+            style="
+                width:100%;
+                padding:10px;
+                margin-bottom:10px;
+                border:1px solid #ddd;
+                border-radius:8px;
+            "
+        >
+
+        <input
+            id="dreamTitle"
+            type="text"
+            placeholder="꿈 제목"
+            style="
+                width:100%;
+                padding:10px;
+                margin-bottom:10px;
+                border:1px solid #ddd;
+                border-radius:8px;
+            "
+        >
+
+        <textarea
+            id="dreamContent"
+            placeholder="꿈 내용을 적어주세요."
+            rows="6"
+            style="
+                width:100%;
+                padding:10px;
+                margin-bottom:10px;
+                border:1px solid #ddd;
+                border-radius:8px;
+                resize:vertical;
+            "
+        ></textarea>
+
+        <button
+            onclick="saveDream()"
+            style="
+                border:0;
+                background:#222;
+                color:white;
+                padding:10px 16px;
+                border-radius:8px;
+                cursor:pointer;
+            "
+        >
+            저장
+        </button>
+
+    </div>
 
     <div
         id="dreamList"
