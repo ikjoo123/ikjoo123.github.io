@@ -1515,11 +1515,9 @@ function renderFiles() {
         "fileRow folderRow";
 
       row.innerHTML =
-  "<input type='checkbox' class='fileSelect'>" +
-  "<div class='fileIcon'>📄</div>" +
-  "<div class='fileName'></div>" +
-  "<div class='fileSize'></div>" +
-  "<div class='fileActions'></div>";
+  "<div class='fileIcon'>📁</div>" +
+        "<div class='fileName'></div>" +
+        "<div class='fileActions'></div>";
 
       row.querySelector(
         ".fileName"
@@ -1689,6 +1687,7 @@ function renderFiles() {
         true;
 
       row.innerHTML =
+        "<input type='checkbox' class='fileSelect'>" +
         "<div class='fileIcon'>📄</div>" +
         "<div class='fileName'></div>" +
         "<div class='fileSize'></div>" +
