@@ -538,6 +538,8 @@ export default {
         url.pathname === "/api/upload" &&
         request.method === "POST"
       ) {
+        const adminError = requireAdmin();
+        if (adminError) return adminError;
         const formData =
           await request.formData();
 
