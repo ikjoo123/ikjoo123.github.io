@@ -158,15 +158,7 @@ main {
 .breadcrumb button {
   border: 0;
   background: transparent;
-  padding: 4px 7px;
-  border-radius: 6px;
-}
-
-.breadcrumb button.breadcrumbDropTarget {
-  background: #e8f0fe;
-  color: #1967d2;
-  outline: 2px dashed #8ab4f8;
-  outline-offset: 1px;
+  padding: 2px;
 }
 
 .dropzone {
@@ -1114,68 +1106,72 @@ function renderBreadcrumb() {
 
   box.innerHTML = "";
 
-  function makeDropTarget(button, targetPrefix) {
-    button.dataset.dropPrefix = targetPrefix;
-    button.addEventListener("dragover", function(event) {
-      event.preventDefault();
-      event.stopPropagation();
-      event.dataTransfer.dropEffect = "move";
-      button.classList.add("breadcrumbDropTarget");
-    });
+  const root =
+    document.createElement(
+      "button"
+    );
 
-    button.addEventListener("dragleave", function() {
-      button.classList.remove("breadcrumbDropTarget");
-    });
+  root.textContent =
+    "📁 파일";
 
-    button.addEventListener("drop", async function(event) {
-      event.preventDefault();
-      event.stopPropagation();
-      button.classList.remove("breadcrumbDropTarget");
-
-      const key = event.dataTransfer.getData("text/plain");
-      const destination = button.dataset.dropPrefix || "";
-
-      if (!key) return;
-
-      // 현재 파일이 이미 이 폴더에 있으면 이동하지 않음
-      const slash = key.lastIndexOf("/");
-      const currentParent = slash >= 0 ? key.substring(0, slash + 1) : "";
-      if (currentParent === destination) return;
-
-      await moveFile(key, destination);
-    });
-  }
-
-  const root = document.createElement("button");
-  root.textContent = "📁 파일";
-  root.onclick = function() {
-    currentPrefix = "";
-    loadFiles();
-  };
-  makeDropTarget(root, "");
-  box.appendChild(root);
-
-  if (!currentPrefix) return;
-
-  const parts = currentPrefix.split("/").filter(Boolean);
-  let prefix = "";
-
-  parts.forEach(function(part) {
-    prefix += part + "/";
-    box.appendChild(document.createTextNode(" / "));
-
-    const button = document.createElement("button");
-    button.textContent = part;
-    const target = prefix;
-
-    button.onclick = function() {
-      currentPrefix = target;
+  root.onclick =
+    function() {
+      currentPrefix = "";
       loadFiles();
     };
 
-    makeDropTarget(button, target);
-    box.appendChild(button);
-  });
+  box.appendChild(root);
+
+  if (!currentPrefix) {
+    return;
+  }
+
+  const parts =
+    currentPrefix
+      .split("/")
+      .filter(Boolean);
+
+  let prefix = "";
+
+  parts.forEach(
+    function(part) {
+
+      prefix +=
+        part + "/";
+
+      const separator =
+        document.createTextNode(
+          " / "
+        );
+
+      box.appendChild(
+        separator
+      );
+
+      const button =
+        document.createElement(
+          "button"
+        );
+
+      button.textContent =
+        part;
+
+      const target =
+        prefix;
+
+      button.onclick =
+        function() {
+          currentPrefix =
+            target;
+
+          loadFiles();
+        };
+
+      box.appendChild(
+        button
+      );
+    }
+  );
 }
 
 function renderFiles() {
@@ -1189,6 +1185,79 @@ function renderFiles() {
 
   const folders =
     currentFolders;
+
+  // 현재 폴더 안에서는 항상 "상위 폴더"를 드롭 대상으로 표시
+  if (currentPrefix) {
+    const parentRow =
+      document.createElement("div");
+
+    parentRow.className =
+      "fileRow folderRow parentFolderRow";
+
+    parentRow.innerHTML =
+      "<div class='fileIcon'>⬆️</div>" +
+      "<div class='fileName'>상위 폴더</div>" +
+      "<div class='fileActions'></div>";
+
+    parentRow.addEventListener(
+      "dragover",
+      function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.dataTransfer.dropEffect = "move";
+        parentRow.style.background = "#e8f0fe";
+      }
+    );
+
+    parentRow.addEventListener(
+      "dragleave",
+      function() {
+        parentRow.style.background = "";
+      }
+    );
+
+    parentRow.addEventListener(
+      "drop",
+      async function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        parentRow.style.background = "";
+
+        const key =
+          event.dataTransfer.getData("text/plain");
+
+        if (!key) return;
+
+        const parts =
+          currentPrefix.split("/").filter(Boolean);
+
+        parts.pop();
+
+        const parentPrefix =
+          parts.length
+            ? parts.join("/") + "/"
+            : "";
+
+        await moveFile(key, parentPrefix);
+      }
+    );
+
+    parentRow.onclick = function() {
+      const parts =
+        currentPrefix.split("/").filter(Boolean);
+
+      parts.pop();
+
+      currentPrefix =
+        parts.length
+          ? parts.join("/") + "/"
+          : "";
+
+      loadFiles();
+    };
+
+    list.appendChild(parentRow);
+  }
 
   const totalPages =
     Math.max(
