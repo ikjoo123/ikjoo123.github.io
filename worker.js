@@ -500,9 +500,26 @@ export default {
               cursor
           });
 
-        const folders =
-          result.delimitedPrefixes ||
-          [];
+        const rawFolders =
+  result.delimitedPrefixes || [];
+
+const folders =
+  rawFolders.map(function(prefix) {
+    const cleanPrefix =
+      prefix.replace(/\/+$/, "");
+
+    const parts =
+      cleanPrefix
+        .split("/")
+        .filter(Boolean);
+
+    return {
+      name:
+        parts[parts.length - 1] || "",
+      prefix:
+        prefix
+    };
+  });
 
         const objects =
           result.objects || [];
