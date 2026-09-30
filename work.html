@@ -3834,32 +3834,10 @@ async function initialize() {
     return;
   }
 
-  try {
+  showApp();
 
-    const response =
-      await apiFetch(
-        "/api/me"
-      );
-
-    if (!response.ok) {
-      throw new Error(
-        "인증 실패"
-      );
-    }
-
-    showApp();
-
-    await loadFiles();
-    await loadStorage();
-
-  } catch (error) {
-
-    localStorage.removeItem(
-      TOKEN_KEY
-    );
-
-    showLogin();
-  }
+  await loadFiles();
+  await loadStorage();
 }
 
 initialize();
