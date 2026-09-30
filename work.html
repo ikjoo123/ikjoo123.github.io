@@ -1131,6 +1131,8 @@ loginButton.onclick =
         data.token
       );
 
+      localStorage.setItem("ju_files_role","admin");
+
       showApp();
 
       await loadFiles();
