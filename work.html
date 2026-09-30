@@ -622,7 +622,6 @@ main {
     grid-template-columns: 1fr;
   }
 }
- .guest .adminOnly{display:none!important}
 </style>
 </head>
 
@@ -920,8 +919,6 @@ const API =
 
 const TOKEN_KEY =
   "ju_files_token";
-const ROLE_KEY = "ju_files_role";
-let isAdmin = localStorage.getItem(ROLE_KEY) !== "guest";
 
 function getToken() {
   return localStorage.getItem(
@@ -981,7 +978,6 @@ async function apiFetch(
     localStorage.removeItem(
       TOKEN_KEY
     );
-    localStorage.removeItem(ROLE_KEY);
 
     showLogin();
 
@@ -1639,11 +1635,9 @@ function renderFiles() {
           );
         };
 
-      if (isAdmin) {
-        actions.appendChild(
-          deleteButton
-        );
-      }
+      actions.appendChild(
+        deleteButton
+      );
 
       const renameButton =
         document.createElement("button");
@@ -1658,14 +1652,12 @@ function renderFiles() {
           renameFolder(folder.prefix);
         };
 
-      if (isAdmin) {
-        actions.insertBefore(
-          renameButton,
-          deleteButton
-        );
-      }
+      actions.insertBefore(
+        renameButton,
+        deleteButton
+      );
 
-      row.draggable = isAdmin;
+      row.draggable = true;
 
       row.addEventListener(
         "dragstart",
@@ -1867,13 +1859,9 @@ checkbox.addEventListener(
           );
         };
 
-      if (isAdmin) {
-        actions.appendChild(
-          deleteButton
-        );
-      }
-
-      row.draggable = isAdmin;
+      actions.appendChild(
+        deleteButton
+      );
 
       row.addEventListener(
         "dragstart",
@@ -3221,15 +3209,13 @@ function renderNotes(
           );
         };
 
-      if (isAdmin) {
-        menuBox.appendChild(
-          edit
-        );
+      menuBox.appendChild(
+        edit
+      );
 
-        menuBox.appendChild(
-          remove
-        );
-      }
+      menuBox.appendChild(
+        remove
+      );
 
       menuButton.onclick =
         function(event) {
@@ -3263,7 +3249,7 @@ function renderNotes(
 
       card.onclick =
         function() {
-          if (isAdmin) editNote(note);
+          editNote(note);
         };
 
       grid.appendChild(card);
@@ -3836,23 +3822,6 @@ document.getElementById(
  * ============================
  */
 
-function applyRoleUI() {
-  document.body.classList.toggle("guest", !isAdmin);
-  const adminControls = [
-    "uploadButton","folderButton","selectDeleteButton","fileInput"
-  ];
-  adminControls.forEach(function(id) {
-    const el = document.getElementById(id);
-    if (el) el.classList.toggle("adminOnly", !isAdmin);
-  });
-  const dropzone = document.getElementById("dropzone");
-  if (dropzone) dropzone.classList.toggle("adminOnly", !isAdmin);
-  const notesComposer = document.getElementById("notesComposer");
-  if (notesComposer) notesComposer.classList.toggle("adminOnly", !isAdmin);
-  const calendarForm = document.getElementById("calendarForm");
-  if (calendarForm) calendarForm.classList.toggle("adminOnly", !isAdmin);
-}
-
 async function initialize() {
 
   const token =
@@ -3876,10 +3845,6 @@ async function initialize() {
       );
     }
 
-    const me = await response.json();
-    isAdmin = me.role !== "guest";
-    localStorage.setItem(ROLE_KEY, isAdmin ? "admin" : "guest");
-    applyRoleUI();
     showApp();
 
     await loadFiles();
