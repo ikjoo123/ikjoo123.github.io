@@ -2312,50 +2312,6 @@ dropzone.addEventListener(
 );
 
 /*
- * DROPZONE
- */
-
-
-dropzone.addEventListener(
-  "dragover",
-  function(event) {
-    event.preventDefault();
-
-    dropzone.classList.add(
-      "dragover"
-    );
-  }
-);
-
-dropzone.addEventListener(
-  "dragleave",
-  function() {
-    dropzone.classList.remove(
-      "dragover"
-    );
-  }
-);
-
-dropzone.addEventListener(
-  "drop",
-  async function(event) {
-
-    event.preventDefault();
-
-    dropzone.classList.remove(
-      "dragover"
-    );
-
-    const files =
-      Array.from(
-        event.dataTransfer.files
-      );
-
-    await uploadFiles(files);
-  }
-);
-
-/*
  * FOLDER
  */
 
