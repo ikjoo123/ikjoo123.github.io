@@ -515,7 +515,6 @@ body {
 const INACTIVITY_LIMIT=30*60*1000;
 const INACTIVITY_TOKEN_KEY="ju_files_token";
 const ROLE_KEY="ju_files_role";
-let isAdmin=localStorage.getItem(ROLE_KEY)!=="guest";
 let inactivityTimer=null;
 function inactivityLogout(){
   localStorage.removeItem(INACTIVITY_TOKEN_KEY);
