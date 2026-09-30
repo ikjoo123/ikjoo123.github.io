@@ -60,7 +60,7 @@ main{max-width:1050px;margin:0 auto;padding:28px 20px 50px}
         <button class="dot green" data-color="green" aria-label="초록"></button>
         <button class="dot blue" data-color="blue" aria-label="파랑"></button>
         <button class="dot purple" data-color="purple" aria-label="보라"></button>
-        <button class="dot pink" data-color="분홍"></button>
+        <button class="dot pink" data-color="pink" aria-label="분홍"></button>
         <button class="dot gray" data-color="gray" aria-label="회색"></button>
       </div>
       <div class="actions">
@@ -76,6 +76,8 @@ main{max-width:1050px;margin:0 auto;padding:28px 20px 50px}
   <div id="grid" class="grid"></div>
 </main>
 <script>
+const TOKEN_KEY="ju_files_token";
+if(!localStorage.getItem(TOKEN_KEY)){location.replace("index.html");}
 const KEY="ikjoo_memos_test_v1";
 let notes=[];
 let editingId=null;
