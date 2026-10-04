@@ -266,8 +266,6 @@ function validNoteId(id) {
   );
 }
 
-
-
 function cleanText(value, maxLength) {
   return String(value || "")
     .trim()
@@ -409,7 +407,6 @@ export default {
           }
         });
       }
-
 
       /*
        * 인증 확인
