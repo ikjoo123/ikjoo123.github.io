@@ -393,7 +393,7 @@ export default {
        * PUBLIC DUTY DATA
        * 근무표는 로그인 없이 조회할 수 있습니다.
        */
-      const dutyMatch = url.pathname.match(/^\\/api\\/duty\\/(\\d{4}-\\d{2})$/);
+      const dutyMatch = url.pathname.match(/^\/api\/duty\/(\d{4}-\d{2})$/);
       if (dutyMatch && request.method === "GET") {
         const month = dutyMatch[1];
         const object = await env.FILES.get("duty/" + month + ".json");
