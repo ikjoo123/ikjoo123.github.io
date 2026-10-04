@@ -390,6 +390,25 @@ export default {
       }
 
       /*
+       * PUBLIC DUTY DATA
+       * 근무표는 로그인 없이 조회할 수 있습니다.
+       */
+      const dutyMatch = url.pathname.match(/^\\/api\\/duty\\/(\\d{4}-\\d{2})$/);
+      if (dutyMatch && request.method === "GET") {
+        const month = dutyMatch[1];
+        const object = await env.FILES.get("duty/" + month + ".json");
+        if (!object) return errorResponse("근무 데이터를 찾을 수 없습니다.", 404);
+        return new Response(object.body, {
+          status: 200,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json; charset=utf-8",
+            "Cache-Control": "no-store"
+          }
+        });
+      }
+
+      /*
        * 인증 확인
        */
       const authRole = await getAuthRole(request, env);
