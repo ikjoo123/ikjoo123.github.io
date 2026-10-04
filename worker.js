@@ -459,8 +459,9 @@ export default {
           if (!/^\d{4}-\d{2}$/.test(targetMonth) || targetMonth !== expectedMonth) {
             return errorResponse("현재 기준 다음달 근무표만 업로드할 수 있습니다.", 400);
           }
+          // 이미 등록된 근무표가 있어도 수정본 업로드를 허용합니다.
+          // 단, AI 분석이 완전히 성공한 뒤에만 기존 데이터를 덮어씁니다.
           const existing = await env.FILES.get("duty/" + targetMonth + ".json");
-          if (existing) return errorResponse("이미 " + targetMonth + " 근무표가 등록되어 있습니다.", 409);
 
           const kind = body.kind === "image" ? "image" : "text";
           const data = String(body.data || "");
