@@ -286,7 +286,12 @@ function normalizeDutyImport(value, month) {
   const cleanCodes = c => Array.isArray(c) ? c.slice(0, days).map(v => String(v ?? "").trim().toUpperCase()) : [];
   const normalized = staff.map(x => [String(x[0] || "n").toLowerCase() === "a" ? "a" : "n", String(x[1]).trim(), cleanCodes(x[2])]);
   for (const x of normalized) while (x[2].length < days) x[2].push("");
-  return { staff: normalized, doctorData: value.doctorData && typeof value.doctorData === "object" ? value.doctorData : {} };
+  const sourceDoctors = value.doctorData && typeof value.doctorData === "object" ? value.doctorData : {};
+  const doctorData = {};
+  for (const key of ["specialist", "resident", "intern"]) {
+    doctorData[key] = Array.from({ length: days }, (_, i) => Array.isArray(sourceDoctors[key]?.[i]) ? sourceDoctors[key][i].map(v => String(v ?? "").trim()) : []);
+  }
+  return { staff: normalized, doctorData };
 }
 function extractJsonObject(text) {
   const s = String(text || "");
@@ -451,7 +456,7 @@ export default {
           const body = await request.json();
           const targetMonth = String(body.month || "");
           const expectedMonth = getSeoulNextMonthKey();
-          if (!/^\\d{4}-\\d{2}$/.test(targetMonth) || targetMonth !== expectedMonth) {
+          if (!/^\d{4}-\d{2}$/.test(targetMonth) || targetMonth !== expectedMonth) {
             return errorResponse("현재 기준 다음달 근무표만 업로드할 수 있습니다.", 400);
           }
           const existing = await env.FILES.get("duty/" + targetMonth + ".json");
