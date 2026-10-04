@@ -266,6 +266,35 @@ function validNoteId(id) {
   );
 }
 
+
+// 다음달 근무표 AI 가져오기
+function getSeoulNextMonthKey() {
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Seoul", year: "numeric", month: "2-digit"
+  }).formatToParts(now);
+  const y = Number(parts.find(p => p.type === "year").value);
+  const m = Number(parts.find(p => p.type === "month").value);
+  const next = m === 12 ? { y: y + 1, m: 1 } : { y, m: m + 1 };
+  return next.y + "-" + String(next.m).padStart(2, "0");
+}
+function normalizeDutyImport(value, month) {
+  if (!value || !Array.isArray(value.staff)) throw new Error("AI가 근무자 표를 인식하지 못했습니다.");
+  const days = new Date(Number(month.slice(0,4)), Number(month.slice(5,7)), 0).getDate();
+  const staff = value.staff.filter(x => Array.isArray(x) && x.length >= 3 && String(x[1] || "").trim());
+  if (!staff.length) throw new Error("근무자 이름을 찾지 못했습니다.");
+  const cleanCodes = c => Array.isArray(c) ? c.slice(0, days).map(v => String(v ?? "").trim().toUpperCase()) : [];
+  const normalized = staff.map(x => [String(x[0] || "n").toLowerCase() === "a" ? "a" : "n", String(x[1]).trim(), cleanCodes(x[2])]);
+  for (const x of normalized) while (x[2].length < days) x[2].push("");
+  return { staff: normalized, doctorData: value.doctorData && typeof value.doctorData === "object" ? value.doctorData : {} };
+}
+function extractJsonObject(text) {
+  const s = String(text || "");
+  const start = s.indexOf("{"), end = s.lastIndexOf("}");
+  if (start < 0 || end <= start) throw new Error("AI 응답에서 JSON을 찾지 못했습니다.");
+  return JSON.parse(s.slice(start, end + 1));
+}
+
 function cleanText(value, maxLength) {
   return String(value || "")
     .trim()
@@ -406,6 +435,77 @@ export default {
             "Cache-Control": "no-store"
           }
         });
+      }
+
+      /*
+       * PUBLIC NEXT-MONTH DUTY IMPORT
+       * 로그인 없이 누구나 다음달 근무표를 올릴 수 있습니다.
+       * 이미 해당 월 데이터가 있으면 AI를 호출하지 않습니다.
+       */
+      if (url.pathname === "/api/duty/import" && request.method === "POST") {
+        try {
+          if (!env.AI) return errorResponse("근무표 AI 기능이 아직 연결되지 않았습니다.", 503);
+          if (Number(request.headers.get("Content-Length") || 0) > 8 * 1024 * 1024) {
+            return errorResponse("파일이 너무 큽니다. 8MB 이하로 올려주세요.", 413);
+          }
+          const body = await request.json();
+          const targetMonth = String(body.month || "");
+          const expectedMonth = getSeoulNextMonthKey();
+          if (!/^\\d{4}-\\d{2}$/.test(targetMonth) || targetMonth !== expectedMonth) {
+            return errorResponse("현재 기준 다음달 근무표만 업로드할 수 있습니다.", 400);
+          }
+          const existing = await env.FILES.get("duty/" + targetMonth + ".json");
+          if (existing) return errorResponse("이미 " + targetMonth + " 근무표가 등록되어 있습니다.", 409);
+
+          const kind = body.kind === "image" ? "image" : "text";
+          const data = String(body.data || "");
+          if (!data || data.length > 180000) return errorResponse("업로드 내용이 없거나 너무 큽니다.", 413);
+
+          const schema = `{
+            "staff":[["n","간호사이름",["D","E","N","O"]],["a","보조원이름",["D","E","N","O"]]],
+            "doctorData":{"specialist":[["07:00근무자"],["15:00근무자"]],"resident":[],"intern":[]}
+          }`;
+          const prompt = `너는 병원 간호사 근무표를 구조화하는 정확한 OCR/표 분석기다. 대상 월은 ${targetMonth}이다.
+근무표에서 사람별 날짜 1일부터 말일까지 근무 코드를 읽어라.
+간호사는 role "n", 보조원은 "a"로 넣는다. 근무 코드는 DAY=D, EVE=E, NIGHT=N, OFF/OFF근무없음=O로 통일한다. 애매한 칸은 추측하지 말고 빈 문자열로 둔다.
+반드시 아래 JSON 하나만 출력한다. 설명, markdown, 코드블록을 출력하지 마라.
+${schema}
+staff의 각 사람은 [role,name,codes]이며 codes 길이는 해당 월 일수와 정확히 같아야 한다. 의사 정보가 확실하지 않으면 doctorData는 빈 객체로 둔다.`;
+          let result;
+          if (kind === "image") {
+            result = await env.AI.run("@cf/meta/llama-3.2-11b-vision-instruct", {
+              messages: [
+                { role: "system", content: "You extract hospital duty rosters into exact JSON." },
+                { role: "user", content: prompt }
+              ],
+              image: data,
+              max_tokens: 7000
+            });
+          } else {
+            result = await env.AI.run("@cf/meta/llama-3.2-3b-instruct", {
+              messages: [
+                { role: "system", content: "You extract hospital duty rosters into exact JSON." },
+                { role: "user", content: prompt + "\n\n엑셀에서 추출한 표:\n" + data }
+              ],
+              max_tokens: 7000
+            });
+          }
+          const raw = result && (result.response || result.result || result.text || "");
+          const parsed = extractJsonObject(raw);
+          const duty = normalizeDutyImport(parsed, targetMonth);
+          await env.FILES.put("duty/" + targetMonth + ".json", JSON.stringify(duty), {
+            httpMetadata: { contentType: "application/json; charset=utf-8" },
+            customMetadata: { source: "ai-duty-import", importedAt: new Date().toISOString() }
+          });
+          return jsonResponse({ ok: true, month: targetMonth, duty });
+        } catch (error) {
+          console.error("duty import error", error);
+          const message = String(error && error.message || error);
+          if (message.includes("5016") || message.includes("agreement")) {
+            return errorResponse("Cloudflare AI의 Llama 이용약관 동의가 필요합니다. Cloudflare Workers AI에서 한 번 동의한 뒤 다시 올려주세요.", 503);
+          }
+          return errorResponse("근무표 분석에 실패했습니다: " + message.slice(0, 180), 422);
+        }
       }
 
       /*
