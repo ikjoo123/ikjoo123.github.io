@@ -428,6 +428,45 @@ export default {
       };
 
       /*
+       * DREAM IMAGE
+       * 예전 GitHub raw 이미지가 남아 있어도 실제 이미지는 R2에서 제공합니다.
+       */
+      const dreamImageMatch = url.pathname.match(/^\/api\/dream-image\/([^/]+)$/);
+      if (dreamImageMatch && request.method === "GET") {
+        const dreamId = decodeURIComponent(dreamImageMatch[1]);
+
+        if (!validNoteId(dreamId)) {
+          return errorResponse("잘못된 꿈 이미지 ID입니다.", 400);
+        }
+
+        const imagePrefix = "__dream-images__/";
+        let imageObject = await env.FILES.get(
+          imagePrefix + dreamId + ".jpg"
+        );
+        let contentType = "image/jpeg";
+
+        if (!imageObject) {
+          imageObject = await env.FILES.get(
+            imagePrefix + dreamId + ".webp"
+          );
+          contentType = "image/webp";
+        }
+
+        if (!imageObject) {
+          return errorResponse("꿈 이미지를 찾을 수 없습니다.", 404);
+        }
+
+        return new Response(imageObject.body, {
+          status: 200,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": contentType,
+            "Cache-Control": "private, max-age=3600"
+          }
+        });
+      }
+
+      /*
        * FILE LIST
        */
       if (
@@ -1358,6 +1397,18 @@ export default {
             if (!dreamObject) continue;
 
             const dream = JSON.parse(await dreamObject.text());
+
+            if (
+              typeof dream.image === "string" &&
+              dream.image.indexOf(
+                "https://raw.githubusercontent.com/ikjoo123/ikjoo123.github.io/main/dream-"
+              ) === 0
+            ) {
+              dream.image =
+                "/api/dream-image/" +
+                encodeURIComponent(dream.id);
+            }
+
             dreams.push(dream);
           } catch (error) {
           }
