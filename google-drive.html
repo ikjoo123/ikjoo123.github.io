@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>익주 · Google Drive</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f5f6f8;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#222}
+.container{max-width:900px;margin:0 auto;padding:28px 18px 50px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}
+h1{font-size:26px;margin:0}
+.back{border:1px solid #ddd;background:#fff;border-radius:10px;padding:9px 13px;text-decoration:none;color:#333}
+.panel{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:20px;box-shadow:0 5px 20px rgba(0,0,0,.04)}
+.status{padding:12px 14px;border-radius:10px;background:#f3f4f6;margin-bottom:16px;font-size:14px}
+.status.ok{background:#eef8f0}
+.status.error{background:#fff0f0;color:#b42318}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+button{border:0;border-radius:10px;padding:10px 14px;background:#202124;color:#fff;font:inherit;cursor:pointer}
+button.secondary{background:#fff;color:#333;border:1px solid #ddd}
+button:disabled{opacity:.5;cursor:not-allowed}
+.file{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 4px;border-bottom:1px solid #eee}
+.file:last-child{border-bottom:0}
+.name{display:flex;align-items:center;gap:10px;min-width:0}
+.name span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meta{color:#888;font-size:12px}
+.empty{text-align:center;color:#888;padding:30px 10px}
+#fileInput{display:none}
+.note{font-size:12px;color:#777;margin-top:16px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="top">
+    <h1>☁️ Google Drive</h1>
+    <a class="back" href="index.html">← 익주 홈</a>
+  </div>
+
+  <div class="panel">
+    <div id="status" class="status">Google Drive 연결 준비 중...</div>
+
+    <div class="actions">
+      <button id="connectButton" onclick="connectDrive()">Google Drive 연결</button>
+      <button id="refreshButton" class="secondary" onclick="loadFiles()" disabled>새로고침</button>
+      <button id="uploadButton" class="secondary" onclick="document.getElementById('fileInput').click()" disabled>파일 업로드</button>
+      <input id="fileInput" type="file" multiple>
+    </div>
+
+    <div id="files"><div class="empty">Google Drive를 연결하면 테스트 폴더의 파일이 표시됩니다.</div></div>
+
+    <div class="note">
+      연결 범위는 테스트 폴더의 파일 확인·다운로드·업로드 용도입니다.<br>
+      이 페이지에서는 삭제·이동·이름변경 기능을 제공하지 않습니다.
+    </div>
+  </div>
+</div>
+
+<script>
+const CLIENT_ID="604546742702-db6d9cndlp4bi1d0s0jfe0n7gj2i3ppp.apps.googleusercontent.com";
+const FOLDER_ID="1pWIMm2D1OOYXJF3GpF9BHlv6zTIHl5ZP";
+const DRIVE_SCOPE="https://www.googleapis.com/auth/drive";
+let tokenClient=null;
+let accessToken=null;
+let tokenExpiresAt=0;
+
+function setStatus(message,type){
+  const el=document.getElementById("status");
+  el.textContent=message;
+  el.className="status"+(type?" "+type:"");
+}
+
+function formatSize(bytes){
+  if(!bytes)return "0 B";
+  const units=["B","KB","MB","GB"];
+  let n=bytes,i=0;
+  while(n>=1024&&i<units.length-1){n/=1024;i++}
+  return n.toFixed(i?1:0)+" "+units[i];
+}
+
+function initGoogle(){
+  if(!window.google || !google.accounts || !google.accounts.oauth2){
+    setStatus("Google 인증 모듈을 불러오는 중입니다. 잠시 후 다시 시도해주세요.","error");
+    return;
+  }
+  tokenClient=google.accounts.oauth2.initTokenClient({
+    client_id:CLIENT_ID,
+    scope:DRIVE_SCOPE,
+    callback:function(response){
+      if(response.error){
+        setStatus("Google Drive 연결에 실패했습니다: "+response.error,"error");
+        return;
+      }
+      accessToken=response.access_token;
+      tokenExpiresAt=Date.now()+(Number(response.expires_in||3600)*1000);
+      setStatus("Google Drive 연결 완료","ok");
+      document.getElementById("refreshButton").disabled=false;
+      document.getElementById("uploadButton").disabled=false;
+      loadFiles();
+    }
+  });
+}
+
+function connectDrive(){
+  if(!tokenClient){
+    initGoogle();
+    setTimeout(connectDrive,500);
+    return;
+  }
+  tokenClient.requestAccessToken({prompt:accessToken?"":"consent"});
+}
+
+function ensureToken(){
+  if(!accessToken || Date.now()>tokenExpiresAt-60000){
+    if(tokenClient){
+      tokenClient.requestAccessToken({prompt:""});
+      return false;
+    }
+    return false;
+  }
+  return true;
+}
+
+async function driveFetch(url,options={}){
+  if(!accessToken) throw new Error("Google Drive 연결이 필요합니다.");
+  const headers=Object.assign({},options.headers||{},{Authorization:"Bearer "+accessToken});
+  const response=await fetch(url,Object.assign({},options,{headers}));
+  if(response.status===401){
+    accessToken=null;
+    setStatus("Google Drive 인증이 만료되었습니다. 다시 연결해주세요.","error");
+    throw new Error("인증 만료");
+  }
+  if(!response.ok){
+    let message="";
+    try{const data=await response.json();message=data.error?.message||""}catch(e){}
+    throw new Error(message||("Google Drive 오류 ("+response.status+")"));
+  }
+  return response;
+}
+
+async function loadFiles(){
+  if(!ensureToken()) return;
+  const filesEl=document.getElementById("files");
+  filesEl.innerHTML='<div class="empty">불러오는 중...</div>';
+  try{
+    const q=encodeURIComponent("'" + FOLDER_ID + "' in parents and trashed = false");
+    const fields=encodeURIComponent("files(id,name,mimeType,size,modifiedTime,webContentLink,webViewLink)");
+    const url="https://www.googleapis.com/drive/v3/files?q="+q+"&fields="+fields+"&orderBy=name";
+    const response=await driveFetch(url);
+    const data=await response.json();
+    renderFiles(data.files||[]);
+    setStatus("테스트 폴더 연결됨 · "+((data.files||[]).length)+"개 파일","ok");
+  }catch(error){
+    filesEl.innerHTML='<div class="empty">파일을 불러오지 못했습니다.</div>';
+    setStatus(error.message,"error");
+  }
+}
+
+function renderFiles(files){
+  const filesEl=document.getElementById("files");
+  if(!files.length){
+    filesEl.innerHTML='<div class="empty">테스트 폴더가 비어 있습니다.</div>';
+    return;
+  }
+  filesEl.innerHTML="";
+  files.forEach(function(file){
+    const row=document.createElement("div");
+    row.className="file";
+
+    const name=document.createElement("div");
+    name.className="name";
+    const icon=document.createElement("span");
+    icon.textContent=file.mimeType==="application/vnd.google-apps.folder"?"📁":"📄";
+    const title=document.createElement("span");
+    title.textContent=file.name;
+    name.appendChild(icon);
+    name.appendChild(title);
+
+    const right=document.createElement("div");
+    right.style.display="flex";
+    right.style.alignItems="center";
+    right.style.gap="8px";
+
+    const meta=document.createElement("span");
+    meta.className="meta";
+    meta.textContent=file.size?formatSize(Number(file.size)):"Google 문서";
+
+    const button=document.createElement("button");
+    button.className="secondary";
+    button.textContent="다운로드";
+    button.onclick=function(){downloadFile(file)};
+
+    right.appendChild(meta);
+    right.appendChild(button);
+    row.appendChild(name);
+    row.appendChild(right);
+    filesEl.appendChild(row);
+  });
+}
+
+async function downloadFile(file){
+  if(!ensureToken()) return;
+  try{
+    if(file.mimeType && file.mimeType.startsWith("application/vnd.google-apps.")){
+      if(file.webViewLink) window.open(file.webViewLink,"_blank");
+      return;
+    }
+    const response=await driveFetch("https://www.googleapis.com/drive/v3/files/"+encodeURIComponent(file.id)+"?alt=media");
+    const blob=await response.blob();
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;
+    a.download=file.name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function(){URL.revokeObjectURL(url)},1000);
+  }catch(error){
+    setStatus("다운로드 실패: "+error.message,"error");
+  }
+}
+
+document.getElementById("fileInput").addEventListener("change",async function(e){
+  const files=Array.from(e.target.files||[]);
+  e.target.value="";
+  if(!files.length||!ensureToken()) return;
+
+  for(const file of files){
+    try{
+      setStatus("업로드 중: "+file.name);
+      const metadata={name:file.name,parents:[FOLDER_ID]};
+      const boundary="-------ikjooDrive"+Date.now();
+      const delimiter="\r\n--"+boundary+"\r\n";
+      const close="\r\n--"+boundary+"--";
+      const body=new Blob([
+        delimiter,
+        "Content-Type: application/json; charset=UTF-8\r\n\r\n",
+        JSON.stringify(metadata),
+        delimiter,
+        "Content-Type: "+(file.type||"application/octet-stream")+"\r\n\r\n",
+        file,
+        close
+      ]);
+      const response=await driveFetch(
+        "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+        {
+          method:"POST",
+          headers:{"Content-Type":"multipart/related; boundary="+boundary},
+          body:body
+        }
+      );
+      await response.json();
+    }catch(error){
+      setStatus("업로드 실패: "+file.name+" · "+error.message,"error");
+      return;
+    }
+  }
+  setStatus("업로드 완료","ok");
+  loadFiles();
+});
+
+window.addEventListener("load",function(){
+  setTimeout(initGoogle,500);
+});
+</script>
+</body>
+</html>
