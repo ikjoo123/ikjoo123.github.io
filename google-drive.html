@@ -111,6 +111,7 @@ async function bulkDelete(){
  setStatus("선택한 항목을 삭제했습니다.","ok");
 }
 
+async function loadFiles(){
  if(!ensureToken())return;
  document.getElementById("files").innerHTML='<div class="empty">불러오는 중...</div>';
  try{
