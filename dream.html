@@ -574,27 +574,6 @@ async function apiFetch(path, options) {
 
 let dreams = [];
 
-const initialDreams = [
-    {
-        date: "2026.09.27",
-        title: "영혼을 잃은 고대의 새",
-        content: "의인화된 새들이 사는 세계였다. 새들은 각자 직장에 다니며 평범하게 살아가고 있었고, 큰 새와 작은 새가 섞여 있었다. 처음에는 땅이 약간 깃털 같은 모습으로 보였는데, 알고 보니 그 땅 자체가 영혼을 잃은 엄청나게 큰 고대의 새였다. 멀리서 보면 그 고대의 새가 하염없이 빙글빙글 돌고 있었고, 그 위에 새들이 모여 살아가고 있었다.",
-        image: "https://raw.githubusercontent.com/ikjoo123/ikjoo123.github.io/main/dream-2026-09-27.jpg"
-    },
-    {
-        date: "2026.09.28",
-        title: "거대한 파도와 수영장의 돌고래",
-        content: "정승제 강사에게 수학을 배워 수능을 봤다. 수능을 마치고 돌아오는 길에 버스를 타고 평야를 지나가는데 멀리서 거대한 파도가 다가왔다. 튜브를 타고 파도를 향해 바로 가서 매우 높은 파도를 타고 수영장으로 들어갔다. 그 수영장에는 사람들이 키우는 돌고래들이 살고 있었고, 가끔 외부의 멍청하고 통제되지 않는 야생 돌고래가 들어오면 경비가 쫓아냈다.",
-        image: "https://raw.githubusercontent.com/ikjoo123/ikjoo123.github.io/main/dream-2026-09-28.jpg"
-    },
-    {
-        date: "2026.09.30",
-        title: "삼겹살집에서 정신없이 이어진 인계",
-        content: "삼겹살집에서 신규 간호사에게 환자를 인계하는 상황이었다. 이름이 6글자인 일본인 환자가 있었는데, 요즘 들어 점점 피부가 까매지고 의욕도 없으며 힘도 잘 들어가지 않아 보호자에 의해 병원에 온 환자였다. 검사상 특별한 이상은 없었고 랩 수치도 괜찮았다. 처음에는 정신과적인 문제에 가까운 것 같았지만 신경과에 콜을 했고, 신경과에서는 중증근무력증 같다고 했다. 그래서 다음 날 검사를 진행한 후 입원시키려고 했다.\n\n그런데 내가 다른 환자들을 보느라 너무 바빠서 그 환자를 제대로 보지 못했다. 인계하기 전에 환자 정보를 찾아보려고 했는데 환자 이름이 길고 이상해서 이름을 제대로 입력하기도 어려웠다. 그때 환자가 갑자기 자기는 진료를 보지 않겠다고 하면서 거부했다. 겨우 설득해서 다시 자리로 데려갔는데, 내가 환자에게 말하는 방식이 조금 싸가지 없게 느껴졌는지 환자가 나를 싫어하는 것 같은 느낌도 들었다.\n\n그렇게 정신없이 상황을 정리한 뒤 다음 턴 신규 간호사에게 다시 인계를 하려고 했다. 그런데 이번에는 바코드가 제대로 되지 않아 바코드까지 고쳐야 했다. 정신없이 이것저것 처리하는 와중에 바로 앞에서는 누군가 아무렇지도 않게 삼겹살을 먹고 있었다. 전체적으로 환자를 보고, 다른 환자를 처리하고, 인계하고, 정보를 찾고, 바코드를 고치는 일이 계속 겹치면서 하루가 정신없이 흘러가는 꿈이었다.",
-        image: "https://raw.githubusercontent.com/ikjoo123/ikjoo123.github.io/main/dream-2026-09-30.webp"
-    }
-];
-
 async function loadDreams() {
     const response = await apiFetch("/api/dreams");
 
@@ -604,35 +583,6 @@ async function loadDreams() {
 
     const data = await response.json();
     dreams = Array.isArray(data.dreams) ? data.dreams : [];
-
-    const missingInitialDreams = initialDreams.filter(function(initialDream) {
-        return !dreams.some(function(dream) {
-            return dream.date === initialDream.date &&
-                   dream.title === initialDream.title;
-        });
-    });
-
-    if (!isAdmin) {
-        renderDreams();
-        return;
-    }
-
-    for (let i = 0; i < missingInitialDreams.length; i++) {
-        const initialDream = missingInitialDreams[i];
-
-        const response = await apiFetch("/api/dreams", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(initialDream)
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            if (data.dream) dreams.push(data.dream);
-        }
-    }
 
     renderDreams();
 }
@@ -656,9 +606,14 @@ function renderDreams() {
             '<div class="dreamImage">🌙 꿈 이미지</div>';
 
         if (dream.image) {
+            const imageSrc =
+                dream.image.indexOf("/") === 0
+                    ? API + dream.image
+                    : dream.image;
+
             imageHTML =
                 '<div class="dreamImage">' +
-                '<img src="' + escapeHTML(dream.image) + '" alt="꿈 이미지">' +
+                '<img src="' + escapeHTML(imageSrc) + '" alt="꿈 이미지">' +
                 '</div>';
         }
 
@@ -847,8 +802,13 @@ function openDream(index) {
     let imageHTML = "";
 
     if (dream.image) {
+        const imageSrc =
+            dream.image.indexOf("/") === 0
+                ? API + dream.image
+                : dream.image;
+
         imageHTML =
-            '<img src="' + escapeHTML(dream.image) + '" ' +
+            '<img src="' + escapeHTML(imageSrc) + '" ' +
             'alt="꿈 이미지" class="modalImage">';
     }
 
