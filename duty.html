@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>익주 · 근무</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f6f8;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#222}
+.container{max-width:900px;margin:auto;padding:24px 16px 50px}.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+h1{font-size:25px;margin:0}.back{border:1px solid #ddd;background:#fff;border-radius:10px;padding:9px 13px;text-decoration:none;color:#333}
+.datebar{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.date{text-align:center}.date strong{display:block;font-size:20px}.date span{font-size:13px;color:#777}
+.nav{border:1px solid #ddd;background:#fff;border-radius:10px;width:42px;height:42px;font-size:22px;cursor:pointer}
+.shifts{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.shift{background:#fff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden}.shiftHead{padding:13px 15px;font-weight:800;border-bottom:1px solid #eee}.shiftBody{padding:12px 15px}
+.group{margin-bottom:13px}.group:last-child{margin-bottom:0}.groupTitle{font-size:12px;color:#777;margin-bottom:6px;font-weight:700}
+.person{padding:7px 9px;background:#f7f7f8;border-radius:8px;margin-bottom:5px}.empty{color:#aaa;text-align:center;padding:12px 0;font-size:13px}
+.notice{margin-top:14px;color:#777;font-size:12px;line-height:1.6}
+@media(max-width:700px){.shifts{grid-template-columns:1fr}.datebar{padding:12px}.shiftHead{font-size:18px}}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="top"><h1>🩺 근무</h1><a class="back" href="index.html">← 익주 홈</a></div>
+<div class="datebar">
+<button class="nav" onclick="moveDay(-1)">‹</button>
+<div class="date"><strong id="dateTitle"></strong><span id="dateWeekday"></span></div>
+<button class="nav" onclick="moveDay(1)">›</button>
+</div>
+<div id="shifts" class="shifts"></div>
+<div class="notice">간호사와 의사 근무표를 날짜별로 표시합니다. 근무표를 보내주면 해당 기간의 데이터를 이 화면에 반영합니다.</div>
+</div>
+<script>
+const schedules={};
+let currentDate=new Date();
+function key(d){return d.toISOString().slice(0,10)}
+function localKey(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0");return y+"-"+m+"-"+day}
+function fmt(d){return d.getFullYear()+"년 "+(d.getMonth()+1)+"월 "+d.getDate()+"일"}
+function render(){
+ const k=localKey(currentDate), data=schedules[k]||{DAY:{nurses:[],doctors:[]},EVE:{nurses:[],doctors:[]},NIGHT:{nurses:[],doctors:[]}};
+ document.getElementById("dateTitle").textContent=fmt(currentDate);
+ document.getElementById("dateWeekday").textContent=["일요일","월요일","화요일","수요일","목요일","금요일","토요일"][currentDate.getDay()];
+ const html=["DAY","EVE","NIGHT"].map(shift=>{const x=data[shift]||{nurses:[],doctors:[]};return '<div class="shift"><div class="shiftHead">'+shift+'</div><div class="shiftBody">'+group("간호사",x.nurses)+group("의사",x.doctors)+'</div></div>'}).join("");
+ document.getElementById("shifts").innerHTML=html;
+}
+function group(title,arr){return '<div class="group"><div class="groupTitle">'+title+'</div>'+(arr&&arr.length?arr.map(n=>'<div class="person">'+escapeHtml(n)+'</div>').join(""):'<div class="empty">근무자 없음</div>')+'</div>'}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function moveDay(n){currentDate.setDate(currentDate.getDate()+n);render()}
+render();
+</script>
+</body>
+</html>
