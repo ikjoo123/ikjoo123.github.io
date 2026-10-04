@@ -2,266 +2,178 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>익주 · Google Drive</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
-*{box-sizing:border-box}
-body{margin:0;background:#f5f6f8;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#222}
-.container{max-width:900px;margin:0 auto;padding:28px 18px 50px}
-.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}
-h1{font-size:26px;margin:0}
-.back{border:1px solid #ddd;background:#fff;border-radius:10px;padding:9px 13px;text-decoration:none;color:#333}
-.panel{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:20px;box-shadow:0 5px 20px rgba(0,0,0,.04)}
-.status{padding:12px 14px;border-radius:10px;background:#f3f4f6;margin-bottom:16px;font-size:14px}
-.status.ok{background:#eef8f0}
-.status.error{background:#fff0f0;color:#b42318}
-.actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
-button{border:0;border-radius:10px;padding:10px 14px;background:#202124;color:#fff;font:inherit;cursor:pointer}
-button.secondary{background:#fff;color:#333;border:1px solid #ddd}
-button:disabled{opacity:.5;cursor:not-allowed}
-.file{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 4px;border-bottom:1px solid #eee}
-.file:last-child{border-bottom:0}
-.name{display:flex;align-items:center;gap:10px;min-width:0}
-.name span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.meta{color:#888;font-size:12px}
-.empty{text-align:center;color:#888;padding:30px 10px}
-#fileInput{display:none}
-.note{font-size:12px;color:#777;margin-top:16px;line-height:1.6}
+*{box-sizing:border-box}body{margin:0;background:#f5f6f8;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#222}
+.container{max-width:1000px;margin:auto;padding:28px 18px 50px}.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+h1{font-size:26px;margin:0}.back,.crumb{border:1px solid #ddd;background:#fff;border-radius:10px;padding:9px 13px;text-decoration:none;color:#333}
+.panel{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:20px;box-shadow:0 5px 20px #00000008}
+.status{padding:12px 14px;border-radius:10px;background:#f3f4f6;margin-bottom:16px;font-size:14px}.status.ok{background:#eef8f0}.status.error{background:#fff0f0;color:#b42318}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px}button{border:0;border-radius:10px;padding:9px 13px;background:#202124;color:#fff;font:inherit;cursor:pointer}
+button.secondary{background:#fff;color:#333;border:1px solid #ddd}button.danger{background:#fff0f0;color:#b42318;border:1px solid #f3c2c2}button:disabled{opacity:.5}
+.file{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 4px;border-bottom:1px solid #eee}.file:last-child{border:0}
+.name{display:flex;align-items:center;gap:10px;min-width:0}.title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.meta{color:#888;font-size:12px}
+.tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.empty{text-align:center;color:#888;padding:30px 10px}
+#fileInput{display:none}.note{font-size:12px;color:#777;margin-top:16px;line-height:1.6}.crumbbar{display:flex;align-items:center;gap:8px;margin-bottom:15px;flex-wrap:wrap}
+.modal{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;padding:18px;z-index:10}.modal.show{display:flex}
+.box{background:#fff;border-radius:16px;padding:22px;width:100%;max-width:420px}.box h3{margin:0 0 15px}.box input,.box select{width:100%;padding:11px;border:1px solid #ddd;border-radius:9px;font:inherit;margin-bottom:12px}.box .row{display:flex;gap:8px;justify-content:flex-end}
 </style>
 </head>
 <body>
 <div class="container">
-  <div class="top">
-    <h1>☁️ Google Drive</h1>
-    <a class="back" href="index.html">← 익주 홈</a>
-  </div>
+<div class="top"><h1>☁️ Google Drive</h1><a class="back" href="index.html">← 익주 홈</a></div>
+<div class="panel">
+<div id="status" class="status">Google Drive 연결 준비 중...</div>
+<div class="actions">
+<button onclick="connectDrive()">Google Drive 연결</button>
+<button id="refreshButton" class="secondary" onclick="loadFiles()" disabled>새로고침</button>
+<button id="uploadButton" class="secondary" onclick="document.getElementById('fileInput').click()" disabled>파일 업로드</button>
+<button id="newFolderButton" class="secondary" onclick="newFolder()" disabled>📁 새 폴더</button>
+<input id="fileInput" type="file" multiple>
+</div>
+<div id="crumbbar" class="crumbbar"></div>
+<div id="files"><div class="empty">Google Drive를 연결하면 테스트 폴더가 표시됩니다.</div></div>
+<div class="note">테스트 폴더를 기준으로 파일·폴더를 관리합니다. 삭제·이동·이름 변경은 Google Drive에 실제 반영되며 확인창을 거칩니다.</div>
+</div>
+</div>
 
-  <div class="panel">
-    <div id="status" class="status">Google Drive 연결 준비 중...</div>
-
-    <div class="actions">
-      <button id="connectButton" onclick="connectDrive()">Google Drive 연결</button>
-      <button id="refreshButton" class="secondary" onclick="loadFiles()" disabled>새로고침</button>
-      <button id="uploadButton" class="secondary" onclick="document.getElementById('fileInput').click()" disabled>파일 업로드</button>
-      <input id="fileInput" type="file" multiple>
-    </div>
-
-    <div id="files"><div class="empty">Google Drive를 연결하면 테스트 폴더의 파일이 표시됩니다.</div></div>
-
-    <div class="note">
-      연결 범위는 테스트 폴더의 파일 확인·다운로드·업로드 용도입니다.<br>
-      이 페이지에서는 삭제·이동·이름변경 기능을 제공하지 않습니다.
-    </div>
-  </div>
+<div id="modal" class="modal">
+<div class="box"><h3 id="modalTitle"></h3><div id="modalBody"></div><div class="row"><button class="secondary" onclick="closeModal()">취소</button><button id="modalOk" onclick="modalOk()">확인</button></div></div>
 </div>
 
 <script>
 const CLIENT_ID="604546742702-db6d9cndlp4bi1d0s0jfe0n7gj2i3ppp.apps.googleusercontent.com";
-const FOLDER_ID="1pWIMm2D1OOYXJF3GpF9BHlv6zTIHl5ZP";
+const ROOT_ID="1pWIMm2D1OOYXJF3GpF9BHlv6zTIHl5ZP";
 const DRIVE_SCOPE="https://www.googleapis.com/auth/drive";
-let tokenClient=null;
-let accessToken=null;
-let tokenExpiresAt=0;
+let tokenClient=null,accessToken=null,tokenExpiresAt=0,currentFolderId=ROOT_ID,currentFolderName="테스트 폴더",modalAction=null,modalTarget=null,folderCache=[];
 
-function setStatus(message,type){
-  const el=document.getElementById("status");
-  el.textContent=message;
-  el.className="status"+(type?" "+type:"");
-}
-
-function formatSize(bytes){
-  if(!bytes)return "0 B";
-  const units=["B","KB","MB","GB"];
-  let n=bytes,i=0;
-  while(n>=1024&&i<units.length-1){n/=1024;i++}
-  return n.toFixed(i?1:0)+" "+units[i];
-}
-
+function setStatus(m,t){const e=document.getElementById("status");e.textContent=m;e.className="status"+(t?" "+t:"")}
+function formatSize(b){if(!b)return"0 B";const u=["B","KB","MB","GB"];let n=b,i=0;while(n>=1024&&i<3){n/=1024;i++}return n.toFixed(i?1:0)+" "+u[i]}
 function initGoogle(){
-  if(!window.google || !google.accounts || !google.accounts.oauth2){
-    setStatus("Google 인증 모듈을 불러오는 중입니다. 잠시 후 다시 시도해주세요.","error");
-    return;
-  }
-  tokenClient=google.accounts.oauth2.initTokenClient({
-    client_id:CLIENT_ID,
-    scope:DRIVE_SCOPE,
-    callback:function(response){
-      if(response.error){
-        setStatus("Google Drive 연결에 실패했습니다: "+response.error,"error");
-        return;
-      }
-      accessToken=response.access_token;
-      tokenExpiresAt=Date.now()+(Number(response.expires_in||3600)*1000);
-      setStatus("Google Drive 연결 완료","ok");
-      document.getElementById("refreshButton").disabled=false;
-      document.getElementById("uploadButton").disabled=false;
-      loadFiles();
-    }
-  });
+ if(!window.google?.accounts?.oauth2){setStatus("Google 인증 모듈을 불러오는 중입니다. 잠시 후 다시 시도해주세요.","error");return}
+ tokenClient=google.accounts.oauth2.initTokenClient({client_id:CLIENT_ID,scope:DRIVE_SCOPE,callback:r=>{
+  if(r.error){setStatus("Google Drive 연결 실패: "+r.error,"error");return}
+  accessToken=r.access_token;tokenExpiresAt=Date.now()+Number(r.expires_in||3600)*1000;
+  enableUI();setStatus("Google Drive 연결 완료","ok");loadFiles();
+ }});
 }
-
-function connectDrive(){
-  if(!tokenClient){
-    initGoogle();
-    setTimeout(connectDrive,500);
-    return;
-  }
-  tokenClient.requestAccessToken({prompt:accessToken?"":"consent"});
+function enableUI(){["refreshButton","uploadButton","newFolderButton"].forEach(id=>document.getElementById(id).disabled=false)}
+function connectDrive(){if(!tokenClient){initGoogle();setTimeout(connectDrive,500);return}tokenClient.requestAccessToken({prompt:accessToken?"":"consent"})}
+function ensureToken(){if(accessToken&&Date.now()<tokenExpiresAt-60000)return true;if(tokenClient)tokenClient.requestAccessToken({prompt:""});return false}
+async function driveFetch(url,opt={}){
+ if(!accessToken)throw Error("Google Drive 연결이 필요합니다.");
+ const h=Object.assign({},opt.headers||{},{Authorization:"Bearer "+accessToken});
+ const r=await fetch(url,Object.assign({},opt,{headers:h}));
+ if(r.status===401){accessToken=null;setStatus("인증이 만료되었습니다. 다시 연결해주세요.","error");throw Error("인증 만료")}
+ if(!r.ok){let m="";try{m=(await r.json()).error?.message||""}catch(e){}throw Error(m||"Google Drive 오류 ("+r.status+")")}
+ return r
 }
-
-function ensureToken(){
-  if(!accessToken || Date.now()>tokenExpiresAt-60000){
-    if(tokenClient){
-      tokenClient.requestAccessToken({prompt:""});
-      return false;
-    }
-    return false;
-  }
-  return true;
+async function apiList(parent){
+ const q=encodeURIComponent("'" + parent + "' in parents and trashed=false");
+ const f=encodeURIComponent("files(id,name,mimeType,size,modifiedTime,webViewLink)");
+ const r=await driveFetch("https://www.googleapis.com/drive/v3/files?q="+q+"&fields="+f+"&orderBy=folder,name&pageSize=1000");
+ return (await r.json()).files||[];
 }
-
-async function driveFetch(url,options={}){
-  if(!accessToken) throw new Error("Google Drive 연결이 필요합니다.");
-  const headers=Object.assign({},options.headers||{},{Authorization:"Bearer "+accessToken});
-  const response=await fetch(url,Object.assign({},options,{headers}));
-  if(response.status===401){
-    accessToken=null;
-    setStatus("Google Drive 인증이 만료되었습니다. 다시 연결해주세요.","error");
-    throw new Error("인증 만료");
-  }
-  if(!response.ok){
-    let message="";
-    try{const data=await response.json();message=data.error?.message||""}catch(e){}
-    throw new Error(message||("Google Drive 오류 ("+response.status+")"));
-  }
-  return response;
-}
-
 async function loadFiles(){
-  if(!ensureToken()) return;
-  const filesEl=document.getElementById("files");
-  filesEl.innerHTML='<div class="empty">불러오는 중...</div>';
-  try{
-    const q=encodeURIComponent("'" + FOLDER_ID + "' in parents and trashed = false");
-    const fields=encodeURIComponent("files(id,name,mimeType,size,modifiedTime,webContentLink,webViewLink)");
-    const url="https://www.googleapis.com/drive/v3/files?q="+q+"&fields="+fields+"&orderBy=name";
-    const response=await driveFetch(url);
-    const data=await response.json();
-    renderFiles(data.files||[]);
-    setStatus("테스트 폴더 연결됨 · "+((data.files||[]).length)+"개 파일","ok");
-  }catch(error){
-    filesEl.innerHTML='<div class="empty">파일을 불러오지 못했습니다.</div>';
-    setStatus(error.message,"error");
-  }
+ if(!ensureToken())return;
+ document.getElementById("files").innerHTML='<div class="empty">불러오는 중...</div>';
+ try{
+  const files=await apiList(currentFolderId);renderCrumbs();renderFiles(files);
+  setStatus(currentFolderName+" · "+files.length+"개","ok");
+ }catch(e){setStatus(e.message,"error");document.getElementById("files").innerHTML='<div class="empty">불러오지 못했습니다.</div>'}
 }
-
+function renderCrumbs(){
+ const e=document.getElementById("crumbbar");e.innerHTML="";
+ const b=document.createElement("button");b.className="crumb";b.textContent="📁 테스트 폴더";b.onclick=()=>{currentFolderId=ROOT_ID;currentFolderName="테스트 폴더";loadFiles()};e.appendChild(b);
+ if(currentFolderId!==ROOT_ID){const s=document.createElement("span");s.textContent="› "+currentFolderName;e.appendChild(s)}
+}
 function renderFiles(files){
-  const filesEl=document.getElementById("files");
-  if(!files.length){
-    filesEl.innerHTML='<div class="empty">테스트 폴더가 비어 있습니다.</div>';
-    return;
-  }
-  filesEl.innerHTML="";
-  files.forEach(function(file){
-    const row=document.createElement("div");
-    row.className="file";
-
-    const name=document.createElement("div");
-    name.className="name";
-    const icon=document.createElement("span");
-    icon.textContent=file.mimeType==="application/vnd.google-apps.folder"?"📁":"📄";
-    const title=document.createElement("span");
-    title.textContent=file.name;
-    name.appendChild(icon);
-    name.appendChild(title);
-
-    const right=document.createElement("div");
-    right.style.display="flex";
-    right.style.alignItems="center";
-    right.style.gap="8px";
-
-    const meta=document.createElement("span");
-    meta.className="meta";
-    meta.textContent=file.size?formatSize(Number(file.size)):"Google 문서";
-
-    const button=document.createElement("button");
-    button.className="secondary";
-    button.textContent="다운로드";
-    button.onclick=function(){downloadFile(file)};
-
-    right.appendChild(meta);
-    right.appendChild(button);
-    row.appendChild(name);
-    row.appendChild(right);
-    filesEl.appendChild(row);
-  });
+ const e=document.getElementById("files");e.innerHTML="";
+ if(!files.length){e.innerHTML='<div class="empty">이 폴더가 비어 있습니다.</div>';return}
+ files.forEach(f=>{
+  const row=document.createElement("div");row.className="file";
+  const n=document.createElement("div");n.className="name";
+  const i=document.createElement("span");i.textContent=f.mimeType==="application/vnd.google-apps.folder"?"📁":"📄";
+  const t=document.createElement("span");t.className="title";t.textContent=f.name;n.append(i,t);
+  if(f.mimeType==="application/vnd.google-apps.folder"){n.style.cursor="pointer";n.onclick=()=>openFolder(f)}
+  const tools=document.createElement("div");tools.className="tools";
+  const meta=document.createElement("span");meta.className="meta";meta.textContent=f.size?formatSize(Number(f.size)):"폴더/Google 문서";
+  tools.appendChild(meta);
+  if(f.mimeType!=="application/vnd.google-apps.folder"){const d=btn("다운로드","secondary",()=>downloadFile(f));tools.appendChild(d)}
+  tools.appendChild(btn("이름변경","secondary",()=>renameItem(f)));
+  tools.appendChild(btn("이동","secondary",()=>moveItem(f)));
+  tools.appendChild(btn("삭제","danger",()=>deleteItem(f)));
+  row.append(n,tools);e.appendChild(row);
+ })
 }
-
-async function downloadFile(file){
-  if(!ensureToken()) return;
+function btn(text,cls,fn){const b=document.createElement("button");b.textContent=text;b.className=cls;b.onclick=fn;return b}
+function openFolder(f){currentFolderId=f.id;currentFolderName=f.name;loadFiles()}
+async function downloadFile(f){
+ if(!ensureToken())return;
+ try{
+  if(f.mimeType?.startsWith("application/vnd.google-apps.")){if(f.webViewLink)window.open(f.webViewLink,"_blank");return}
+  const r=await driveFetch("https://www.googleapis.com/drive/v3/files/"+encodeURIComponent(f.id)+"?alt=media");
+  const u=URL.createObjectURL(await r.blob()),a=document.createElement("a");a.href=u;a.download=f.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000)
+ }catch(e){setStatus("다운로드 실패: "+e.message,"error")}
+}
+function closeModal(){document.getElementById("modal").classList.remove("show");modalAction=null;modalTarget=null}
+function showModal(title,body,action,target){document.getElementById("modalTitle").textContent=title;document.getElementById("modalBody").innerHTML=body;modalAction=action;modalTarget=target;document.getElementById("modal").classList.add("show")}
+function modalOk(){if(modalAction)modalAction(modalTarget)}
+function renameItem(f){
+ const body='<input id="modalInput" value="'+escapeHtml(f.name)+'" maxlength="255">';
+ showModal("이름 변경",body,async x=>{
+  const name=document.getElementById("modalInput").value.trim();if(!name){alert("이름을 입력하세요.");return}
+  try{await driveFetch("https://www.googleapis.com/drive/v3/files/"+x.id,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:name})});closeModal();setStatus("이름 변경 완료","ok");loadFiles()}catch(e){setStatus("이름 변경 실패: "+e.message,"error");closeModal()}
+ },f)
+}
+async function deleteItem(f){
+ if(!confirm("정말 삭제할까요?\n\n"+f.name))return;
+ try{await driveFetch("https://www.googleapis.com/drive/v3/files/"+f.id,{method:"DELETE"});setStatus("삭제 완료","ok");loadFiles()}catch(e){setStatus("삭제 실패: "+e.message,"error")}
+}
+async function collectFolders(parent,prefix,list){
+ const files=await apiList(parent);
+ for(const f of files)if(f.mimeType==="application/vnd.google-apps.folder"){list.push({id:f.id,name:prefix+f.name});await collectFolders(f.id,prefix+"  └ " ,list)}
+}
+async function moveItem(f){
+ try{
+  folderCache=[{id:ROOT_ID,name:"테스트 폴더"}];await collectFolders(ROOT_ID,"",folderCache);
+  const opts=folderCache.filter(x=>x.id!==currentFolderId).map(x=>'<option value="'+x.id+'">'+escapeHtml(x.name)+'</option>').join("");
+  if(!opts){alert("이동할 폴더가 없습니다.");return}
+  showModal("이동할 폴더 선택",'<select id="modalSelect">'+opts+'</select>',async x=>{
+   const dest=document.getElementById("modalSelect").value;
+   try{
+    const meta=await driveFetch("https://www.googleapis.com/drive/v3/files/"+x.id+"?fields=parents");
+    const old=(await meta.json()).parents||[];
+    const p=new URLSearchParams();if(old.length)p.set("removeParents",old.join(","));p.set("addParents",dest);
+    await driveFetch("https://www.googleapis.com/drive/v3/files/"+x.id+"?"+p.toString(),{method:"PATCH"});
+    closeModal();setStatus("이동 완료","ok");loadFiles()
+   }catch(e){setStatus("이동 실패: "+e.message,"error");closeModal()}
+  },f)
+ }catch(e){setStatus("폴더 목록을 불러오지 못했습니다: "+e.message,"error")}
+}
+async function newFolder(){
+ const body='<input id="modalInput" placeholder="새 폴더 이름" maxlength="255">';
+ showModal("새 폴더 만들기",body,async()=>{
+  const name=document.getElementById("modalInput").value.trim();if(!name){alert("폴더 이름을 입력하세요.");return}
   try{
-    if(file.mimeType && file.mimeType.startsWith("application/vnd.google-apps.")){
-      if(file.webViewLink) window.open(file.webViewLink,"_blank");
-      return;
-    }
-    const response=await driveFetch("https://www.googleapis.com/drive/v3/files/"+encodeURIComponent(file.id)+"?alt=media");
-    const blob=await response.blob();
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement("a");
-    a.href=url;
-    a.download=file.name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(function(){URL.revokeObjectURL(url)},1000);
-  }catch(error){
-    setStatus("다운로드 실패: "+error.message,"error");
-  }
+   await driveFetch("https://www.googleapis.com/drive/v3/files",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:name,mimeType:"application/vnd.google-apps.folder",parents:[currentFolderId]})});
+   closeModal();setStatus("폴더 생성 완료","ok");loadFiles()
+  }catch(e){setStatus("폴더 생성 실패: "+e.message,"error");closeModal()}
+ })
 }
-
-document.getElementById("fileInput").addEventListener("change",async function(e){
-  const files=Array.from(e.target.files||[]);
-  e.target.value="";
-  if(!files.length||!ensureToken()) return;
-
-  for(const file of files){
-    try{
-      setStatus("업로드 중: "+file.name);
-      const metadata={name:file.name,parents:[FOLDER_ID]};
-      const boundary="-------ikjooDrive"+Date.now();
-      const delimiter="\r\n--"+boundary+"\r\n";
-      const close="\r\n--"+boundary+"--";
-      const body=new Blob([
-        delimiter,
-        "Content-Type: application/json; charset=UTF-8\r\n\r\n",
-        JSON.stringify(metadata),
-        delimiter,
-        "Content-Type: "+(file.type||"application/octet-stream")+"\r\n\r\n",
-        file,
-        close
-      ]);
-      const response=await driveFetch(
-        "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
-        {
-          method:"POST",
-          headers:{"Content-Type":"multipart/related; boundary="+boundary},
-          body:body
-        }
-      );
-      await response.json();
-    }catch(error){
-      setStatus("업로드 실패: "+file.name+" · "+error.message,"error");
-      return;
-    }
-  }
-  setStatus("업로드 완료","ok");
-  loadFiles();
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
+document.getElementById("fileInput").addEventListener("change",async e=>{
+ const files=[...e.target.files];e.target.value="";if(!files.length||!ensureToken())return;
+ for(const file of files){try{
+  setStatus("업로드 중: "+file.name);const meta={name:file.name,parents:[currentFolderId]},boundary="----ikjoo"+Date.now(),del="\r\n--"+boundary+"\r\n",close="\r\n--"+boundary+"--";
+  const body=new Blob([del,"Content-Type: application/json; charset=UTF-8\r\n\r\n",JSON.stringify(meta),del,"Content-Type: "+(file.type||"application/octet-stream")+"\r\n\r\n",file,close]);
+  await driveFetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",{method:"POST",headers:{"Content-Type":"multipart/related; boundary="+boundary},body})
+ }catch(e){setStatus("업로드 실패: "+file.name+" · "+e.message,"error");return}}
+ setStatus("업로드 완료","ok");loadFiles()
 });
-
-window.addEventListener("load",function(){
-  setTimeout(initGoogle,500);
-});
+window.addEventListener("load",()=>setTimeout(initGoogle,500));
 </script>
 </body>
 </html>
