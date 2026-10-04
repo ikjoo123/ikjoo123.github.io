@@ -126,10 +126,13 @@ function renderCrumbs(){
 }
 function renderFiles(files){
  const e=document.getElementById("files");e.innerHTML="";
+ document.getElementById("selectAllButton").textContent="☑️ 전체선택";
+ updateBulkButtons();
  if(!files.length){e.innerHTML='<div class="empty">이 폴더가 비어 있습니다.</div>';return}
  files.forEach(f=>{
   const row=document.createElement("div");row.className="file";
   const n=document.createElement("div");n.className="name";
+  const cb=document.createElement("input");cb.type="checkbox";cb.className="drive-select";cb.dataset.id=f.id;cb.checked=selectedIds.has(f.id);cb.onclick=e=>e.stopPropagation();cb.onchange=e=>toggleSelect(f.id,e.target.checked);n.appendChild(cb);
   const i=document.createElement("span");i.textContent=f.mimeType==="application/vnd.google-apps.folder"?"📁":"📄";
   const t=document.createElement("span");t.className="title";t.textContent=f.name;n.append(i,t);
   if(f.mimeType==="application/vnd.google-apps.folder"){n.style.cursor="pointer";n.onclick=()=>openFolder(f)}
