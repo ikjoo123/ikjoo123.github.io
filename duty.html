@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>익주 · 근무</title><style>*{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#fff8f1,#eef7ff 55%,#f7efff);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#222}.container{max-width:1000px;margin:auto;padding:24px 16px 50px}.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}h1{font-size:25px;margin:0}.back{border:1px solid #ddd;background:#fff;border-radius:10px;padding:9px 13px;text-decoration:none;color:#333}.datebar{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.date{text-align:center}.date strong{display:block;font-size:20px}.date span{font-size:13px;color:#777}.nav{border:1px solid #ddd;background:#fff;border-radius:10px;width:42px;height:42px;font-size:22px;cursor:pointer}.sectionTitle{margin:22px 0 10px;font-size:18px}.viewPanel.hidden{display:none!important}.doctors{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.doctorCard{background:rgba(255,255,255,.94);border-radius:18px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.07)}.doctorHead{padding:16px 15px;font-weight:800;font-size:18px}.doctorCard:nth-child(1) .doctorHead{background:#ffe7ed;color:#a33b55}.doctorCard:nth-child(2) .doctorHead{background:#e8f5e9;color:#32733a}.doctorCard:nth-child(3) .doctorHead{background:#fff4d6;color:#8a6500}.doctorBody{padding:12px 15px}.doctorLine{padding:10px 0;border-bottom:1px solid #eee}.doctorLine:last-child{border-bottom:0}.doctorLabel{font-size:12px;color:#777;font-weight:700}.doctorNames{margin-top:3px;font-weight:650}.time{font-size:11px;color:#888;margin-left:4px}.shifts{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.shift{background:rgba(255,255,255,.92);border-radius:18px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.07)}.shift:nth-child(1) .shiftHead{background:#fff0d8;color:#b45b00}.shift:nth-child(2) .shiftHead{background:#e9e4ff;color:#5b45a8}.shift:nth-child(3) .shiftHead{background:#dff4ff;color:#16718f}.shiftHead{padding:16px 15px;font-weight:800;font-size:18px}.shiftBody{padding:12px 15px}.group{margin-bottom:13px}.groupTitle{font-size:12px;color:#777;margin-bottom:6px;font-weight:700}.person{padding:9px 10px;background:#f7f7f8;border-radius:10px;margin-bottom:6px;font-weight:600;display:flex;justify-content:space-between;gap:8px}.code{font-size:12px;color:#777;font-weight:700}.empty{color:#aaa;text-align:center;padding:12px 0;font-size:13px}.notice{margin-top:14px;color:#777;font-size:12px;line-height:1.6}@media(max-width:700px){.shifts,.doctors{grid-template-columns:1fr}}.uploadPanel{margin-top:28px}.uploadBox{background:rgba(255,255,255,.94);border:1px dashed #d8d8d8;border-radius:16px;padding:18px;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.04)}.uploadHint{font-size:13px;color:#777;line-height:1.7;margin-bottom:12px}.uploadBtn{border:1px solid #ddd;background:#fff;border-radius:10px;padding:10px 16px;font-weight:700;cursor:pointer}.uploadStatus{margin-top:12px;font-size:13px;color:#666;min-height:20px}.uploadStatus.ok{color:#287a45}.uploadStatus.error{color:#c33}</style><script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script></head><body><div class="container"><div class="top"><h1>🧑‍⚕️ 근무</h1><a class="back" href="index.html">← 익주 홈</a></div><div class="datebar"><button class="nav" onclick="moveDay(-1)">‹</button><div class="date"><strong id="dateTitle"></strong><span id="dateWeekday"></span></div><button class="nav" onclick="moveDay(1)">›</button></div><div id="staffView" class="viewPanel"><div id="shifts" class="shifts"></div></div><div id="doctorView" class="viewPanel"><h2 class="sectionTitle">🧑‍⚕️ 의사 근무</h2><div id="doctors" class="doctors"></div></div><div class="uploadPanel" id="nextDutyUploadPanel">
 <h2 class="sectionTitle">📤 다음달 근무표가 없나요?</h2>
 <div class="uploadBox">
-  <div class="uploadHint">근무표 사진이나 Excel 파일을 올려주세요.<br>AI가 다음달 근무표를 분석해서 자동으로 반영합니다.</div>
+  <div class="uploadHint">근무표 사진이나 Excel 파일을 올려주세요.<br>AI가 다음달 근무표를 분석해서 자동으로 반영합니다.<br><small>수정된 근무표를 다시 올리면 최신 내용으로 업데이트됩니다.</small></div>
   <input id="nextDutyFile" type="file" accept=".xlsx,.xls,.csv,image/*" hidden>
   <button class="uploadBtn" onclick="document.getElementById('nextDutyFile').click()">근무표 업로드</button>
   <div id="nextDutyStatus" class="uploadStatus"></div>
@@ -25,13 +25,8 @@ const nextDutyFile=document.getElementById("nextDutyFile");
 const nextDutyStatus=document.getElementById("nextDutyStatus");
 const nextDutyUploadPanel=document.getElementById("nextDutyUploadPanel");
 async function checkNextDutyAvailability(){
-  try{
-    const r=await fetch(API+"/api/duty/"+nextMonthKey());
-    if(r.ok) nextDutyUploadPanel.style.display="none";
-    else nextDutyUploadPanel.style.display="";
-  }catch(e){
-    nextDutyUploadPanel.style.display="";
-  }
+  // 다음달 근무표가 이미 있어도 수정본을 다시 업로드할 수 있도록 항상 표시합니다.
+  nextDutyUploadPanel.style.display="";
 }
 function nextMonthKey(){
   const d=new Date();
@@ -90,7 +85,7 @@ nextDutyFile.addEventListener("change",async()=>{
     const data=await res.json().catch(()=>({}));
     if(!res.ok)throw new Error(data.error||"분석에 실패했습니다.");
     setUploadStatus("✅ "+month+" 근무표 분석 및 반영이 완료됐습니다.","ok");
-    nextDutyUploadPanel.style.display="none";
+    nextDutyUploadPanel.style.display="";
     dutyCache[month]=data.duty;
     currentDate=new Date(Number(month.slice(0,4)),Number(month.slice(5,7))-1,1);
     await render();
