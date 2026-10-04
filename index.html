@@ -15,12 +15,12 @@ body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:c
 .loginBox button{width:100%;padding:13px;border:0;border-radius:9px;background:#202124;color:white;font:inherit;cursor:pointer}
 .loginError{color:#d93025;font-size:13px;margin-bottom:10px}
 .hidden{display:none!important}
-.menu{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+.menu{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
 .card{background:white;border:1px solid #e5e7eb;border-radius:20px;padding:45px 20px;cursor:pointer;transition:.2s}
 .card:hover{transform:translateY(-4px);box-shadow:0 10px 30px rgba(0,0,0,.08)}
 .icon{font-size:45px;margin-bottom:15px}.title{font-size:21px;font-weight:700}.description{margin-top:8px;color:#888;font-size:14px}
 .logout{margin-top:24px;border:0;background:transparent;color:#777;cursor:pointer}
-@media(max-width:600px){.menu{grid-template-columns:1fr}}
+@media(max-width:800px){.menu{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -46,6 +46,10 @@ body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:c
         <div class="icon">🎨</div><div class="title">취미</div>
         <div class="description">음악 · 여행 · 사진 · 꿈</div>
       </div>
+      <div class="card" onclick="location.href='google-drive.html'">
+        <div class="icon">☁️</div><div class="title">Google Drive</div>
+        <div class="description">파일 · 폴더 관리</div>
+      </div>
     </div>
     <button id="logoutButton" class="logout">로그아웃</button>
   </div>
@@ -54,7 +58,8 @@ body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:c
 <script>
 const API="https://ikjoo123-github-io.zjaghkf0000.workers.dev";
 const TOKEN_KEY="ju_files_token";
-const INACTIVITY_LIMIT=30*60*1000;
+const SESSION_LIMIT=30*60*1000;
+const SESSION_STARTED_KEY="ju_session_started_at";
 const ROLE_KEY="ju_files_role";
 let inactivityTimer=null;
 
@@ -65,28 +70,35 @@ function showLogin(){
 function showApp(){
   document.getElementById("loginScreen").classList.add("hidden");
   document.getElementById("app").classList.remove("hidden");
-  startInactivityTimer();
+  startSessionTimer();
 }
 function logout(){
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(ROLE_KEY);
+  localStorage.removeItem(SESSION_STARTED_KEY);
   if(inactivityTimer) clearTimeout(inactivityTimer);
   showLogin();
 }
-function resetInactivityTimer(){
+function resetSessionTimer(){
   if(!localStorage.getItem(TOKEN_KEY)) return;
+  const started=Number(localStorage.getItem(SESSION_STARTED_KEY)||0);
+  if(!started){
+    localStorage.setItem(SESSION_STARTED_KEY,String(Date.now()));
+  }
+  const remaining=SESSION_LIMIT-(Date.now()-Number(localStorage.getItem(SESSION_STARTED_KEY)));
+  if(remaining<=0){ logout(); return; }
   if(inactivityTimer) clearTimeout(inactivityTimer);
-  inactivityTimer=setTimeout(logout,INACTIVITY_LIMIT);
+  inactivityTimer=setTimeout(logout,remaining);
 }
-function startInactivityTimer(){
-  ["click","keydown","touchstart","mousemove","scroll"].forEach(function(type){
-    document.addEventListener(type,resetInactivityTimer,{passive:true});
-  });
-  resetInactivityTimer();
+function startSessionTimer(){
+  resetSessionTimer();
 }
 async function checkLogin(){
   const token=localStorage.getItem(TOKEN_KEY);
   if(!token){showLogin();return;}
+  const started=Number(localStorage.getItem(SESSION_STARTED_KEY)||0);
+  if(started && Date.now()-started>=SESSION_LIMIT){logout();return;}
+  if(!started) localStorage.setItem(SESSION_STARTED_KEY,String(Date.now()));
   try{
     const response=await fetch(API+"/api/me",{headers:{Authorization:"Bearer "+token}});
     if(!response.ok) throw new Error("인증 실패");
@@ -110,6 +122,7 @@ document.getElementById("loginButton").onclick=async function(){
     if(!response.ok) throw new Error(data.error||"로그인 실패");
     localStorage.setItem(TOKEN_KEY,data.token);
     localStorage.setItem(ROLE_KEY,data.role || "admin");
+    localStorage.setItem(SESSION_STARTED_KEY,String(Date.now()));
     showApp();
   }catch(error){
     errorBox.textContent=error.message||"로그인에 실패했습니다.";
@@ -129,6 +142,7 @@ document.getElementById("guestButton").onclick=async function(){
     if(!response.ok) throw new Error(data.error||"게스트 로그인 실패");
     localStorage.setItem(TOKEN_KEY,data.token);
     localStorage.setItem(ROLE_KEY,"guest");
+    localStorage.setItem(SESSION_STARTED_KEY,String(Date.now()));
     showApp();
   }catch(error){
     errorBox.textContent=error.message||"게스트 로그인에 실패했습니다.";
