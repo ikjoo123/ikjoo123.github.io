@@ -495,8 +495,30 @@ staff의 각 사람은 [role,name,codes]이며 codes 길이는 해당 월 일수
               max_tokens: 7000
             });
           }
-          const raw = result && (result.response || result.result || result.text || "");
-          const parsed = extractJsonObject(raw);
+          let raw = result && (result.response || result.result || result.text || "");
+          let parsed;
+          try {
+            parsed = extractJsonObject(raw);
+          } catch (firstError) {
+            // Vision 모델이 JSON 대신 표/설명을 반환하는 경우 한 번 더 구조화합니다.
+            const recoveryPrompt = `다음은 병원 근무표를 보고 AI가 추출한 원문이다.
+대상 월은 ${targetMonth}이다. 원문에서 날짜별 근무를 다시 정리해서 아래 JSON만 출력하라.
+설명이나 markdown 없이 JSON만 출력한다.
+${schema}
+규칙: staff 각 항목은 [role,name,codes], codes는 해당 월의 1일부터 말일까지 정확히 일수만큼. DAY=D, EVE=E, NIGHT=N, OFF=O. 확실하지 않은 값은 빈 문자열.
+원문:
+${String(raw).slice(0,120000)}`;
+            const recovered = await env.AI.run("@cf/meta/llama-3.2-3b-instruct", {
+              messages: [
+                { role: "system", content: "Return only valid JSON. Never use markdown fences." },
+                { role: "user", content: recoveryPrompt }
+              ],
+              max_tokens: 7000,
+              temperature: 0
+            });
+            const recoveredRaw = recovered && (recovered.response || recovered.result || recovered.text || "");
+            parsed = extractJsonObject(recoveredRaw);
+          }
           const duty = normalizeDutyImport(parsed, targetMonth);
           await env.FILES.put("duty/" + targetMonth + ".json", JSON.stringify(duty), {
             httpMetadata: { contentType: "application/json; charset=utf-8" },
