@@ -1,142 +1,25 @@
 <!DOCTYPE html>
 <html lang="ko">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>익주</title>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>익주</title>
 <style>
-*{box-sizing:border-box}
-body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f6f8;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#222}
-.container{width:100%;max-width:900px;padding:30px;text-align:center}
-.logo{font-size:36px;font-weight:700;margin-bottom:10px}
-.subtitle{color:#777;margin-bottom:32px}
-.loginArea{max-width:420px;margin:0 auto}.loginBox{width:100%;background:white;padding:28px;border-radius:18px;box-shadow:0 8px 30px rgba(0,0,0,.08)}
-.loginBox input{width:100%;padding:13px;margin-bottom:10px;border:1px solid #ddd;border-radius:9px;font:inherit}
-.loginBox button{width:100%;padding:13px;border:0;border-radius:9px;background:#202124;color:white;font:inherit;cursor:pointer}
-.loginError{color:#d93025;font-size:13px;margin-bottom:10px}
-.hidden{display:none!important}
-.menu{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
-.card{background:white;border:1px solid #e5e7eb;border-radius:20px;padding:45px 20px;cursor:pointer;transition:.2s}
-.card:hover{transform:translateY(-4px);box-shadow:0 10px 30px rgba(0,0,0,.08)}
-.icon{font-size:45px;margin-bottom:15px}.title{font-size:21px;font-weight:700}.description{margin-top:8px;color:#888;font-size:14px}
-.logout{margin-top:24px;border:0;background:transparent;color:#777;cursor:pointer}
-@media(max-width:800px){.menu{grid-template-columns:1fr}}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f6f8;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#222}.container{width:100%;max-width:900px;padding:30px;text-align:center}.logo{font-size:36px;font-weight:700;margin-bottom:10px}.subtitle{color:#777;margin-bottom:32px}.loginArea{max-width:760px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:stretch}.loginBox,.publicDuty{background:white;padding:28px;border-radius:18px;box-shadow:0 8px 30px rgba(0,0,0,.08)}.loginBox input{width:100%;padding:13px;margin-bottom:10px;border:1px solid #ddd;border-radius:9px;font:inherit}.loginBox button{width:100%;padding:13px;border:0;border-radius:9px;background:#202124;color:white;font:inherit;cursor:pointer}.loginError{color:#d93025;font-size:13px;margin-bottom:10px}.publicDuty{display:flex;flex-direction:column;justify-content:center;align-items:center}.publicDuty .dutyIcon{font-size:38px;font-weight:800;margin-bottom:10px}.publicDuty h3{margin:0 0 8px;font-size:21px}.publicDuty p{margin:0 0 18px;color:#777;font-size:14px;line-height:1.5}.publicDuty button{border:0;border-radius:10px;padding:12px 22px;background:#202124;color:#fff;font:inherit;cursor:pointer}.hidden{display:none!important}.menu{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}.card{background:white;border:1px solid #e5e7eb;border-radius:20px;padding:45px 20px;cursor:pointer;transition:.2s}.card:hover{transform:translateY(-4px);box-shadow:0 10px 30px rgba(0,0,0,.08)}.icon{font-size:45px;margin-bottom:15px}.title{font-size:21px;font-weight:700}.description{margin-top:8px;color:#888;font-size:14px}.logout{margin-top:24px;border:0;background:transparent;color:#777;cursor:pointer}@media(max-width:800px){.loginArea{grid-template-columns:1fr}.menu{grid-template-columns:1fr}}
 </style>
 </head>
-<body>
-<div class="container">
-  <div class="logo">익주</div>
-  <div class="subtitle">나만의 공간</div>
-
-  <div class="loginArea">
-    <div id="loginScreen" class="loginBox">
-      <div id="loginError" class="loginError hidden"></div>
-      <input id="username" placeholder="아이디" autocomplete="username">
-      <input id="password" type="password" placeholder="비밀번호" autocomplete="current-password">
-      <button id="loginButton">관리자 로그인</button>
-    </div>
-  </div>
-
-  <div id="app" class="hidden">
-    <div class="menu">
-      <div class="card" onclick="location.href='duty.html'">
-        <div class="icon">🩺</div><div class="title">근무</div>
-        <div class="description">오늘 · DAY · EVE · NIGHT</div>
-      </div>
-      <div class="card" onclick="location.href='work.html'">
-        <div class="icon">📁</div><div class="title">업무</div>
-        <div class="description">업무 자료 · 메모 · 달력</div>
-      </div>
-      <div class="card" onclick="location.href='hobby.html'">
-        <div class="icon">🎨</div><div class="title">취미</div>
-        <div class="description">음악 · 여행 · 사진 · 꿈</div>
-      </div>
-      <div class="card" onclick="location.href='google-drive.html'">
-        <div class="icon">☁️</div><div class="title">Google Drive</div>
-        <div class="description">파일 · 폴더 관리</div>
-      </div>
-    </div>
-    <button id="logoutButton" class="logout">로그아웃</button>
-  </div>
+<body><div class="container"><div class="logo">익주</div><div class="subtitle">나만의 공간</div>
+<div id="loginArea" class="loginArea">
+<div id="loginScreen" class="loginBox"><div id="loginError" class="loginError hidden"></div><input id="username" placeholder="아이디" autocomplete="username"><input id="password" type="password" placeholder="비밀번호" autocomplete="current-password"><button id="loginButton">관리자 로그인</button></div>
+<div class="publicDuty"><div class="dutyIcon">근무</div><h3>오늘 근무 보기</h3><p>로그인하지 않아도<br>오늘의 DAY · EVE · NIGHT 근무자를 확인할 수 있습니다.</p><button onclick="location.href='duty.html'">근무표 보기</button></div>
 </div>
-
+<div id="app" class="hidden"><div class="menu"><div class="card" onclick="location.href='duty.html'"><div class="icon">근무</div><div class="title">근무</div><div class="description">오늘 · DAY · EVE · NIGHT</div></div><div class="card" onclick="location.href='work.html'"><div class="icon">📁</div><div class="title">업무</div><div class="description">업무 자료 · 메모 · 달력</div></div><div class="card" onclick="location.href='hobby.html'"><div class="icon">🎨</div><div class="title">취미</div><div class="description">음악 · 여행 · 사진 · 꿈</div></div><div class="card" onclick="location.href='google-drive.html'"><div class="icon">☁️</div><div class="title">Google Drive</div><div class="description">파일 · 폴더 관리</div></div></div><button id="logoutButton" class="logout">로그아웃</button></div>
+</div>
 <script>
-const API="https://ikjoo123-github-io.zjaghkf0000.workers.dev";
-const TOKEN_KEY="ju_files_token";
-const SESSION_LIMIT=30*60*1000;
-const SESSION_STARTED_KEY="ju_session_started_at";
-const ROLE_KEY="ju_files_role";
-let inactivityTimer=null;
-
-function showLogin(){
-  document.getElementById("loginScreen").classList.remove("hidden");
-  document.getElementById("app").classList.add("hidden");
-}
-function showApp(){
-  document.getElementById("loginScreen").classList.add("hidden");
-  document.getElementById("app").classList.remove("hidden");
-  startSessionTimer();
-}
-function logout(){
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(ROLE_KEY);
-  localStorage.removeItem(SESSION_STARTED_KEY);
-  if(inactivityTimer) clearTimeout(inactivityTimer);
-  showLogin();
-}
-function resetSessionTimer(){
-  if(!localStorage.getItem(TOKEN_KEY)) return;
-  const started=Number(localStorage.getItem(SESSION_STARTED_KEY)||0);
-  if(!started){
-    localStorage.setItem(SESSION_STARTED_KEY,String(Date.now()));
-  }
-  const remaining=SESSION_LIMIT-(Date.now()-Number(localStorage.getItem(SESSION_STARTED_KEY)));
-  if(remaining<=0){ logout(); return; }
-  if(inactivityTimer) clearTimeout(inactivityTimer);
-  inactivityTimer=setTimeout(logout,remaining);
-}
-function startSessionTimer(){
-  resetSessionTimer();
-}
-async function checkLogin(){
-  const token=localStorage.getItem(TOKEN_KEY);
-  if(!token){showLogin();return;}
-  const started=Number(localStorage.getItem(SESSION_STARTED_KEY)||0);
-  if(started && Date.now()-started>=SESSION_LIMIT){logout();return;}
-  if(!started) localStorage.setItem(SESSION_STARTED_KEY,String(Date.now()));
-  try{
-    const response=await fetch(API+"/api/me",{headers:{Authorization:"Bearer "+token}});
-    if(!response.ok) throw new Error("인증 실패");
-    showApp();
-  }catch(error){
-    localStorage.removeItem(TOKEN_KEY);
-    showLogin();
-  }
-}
-document.getElementById("loginButton").onclick=async function(){
-  const button=this;
-  const errorBox=document.getElementById("loginError");
-  const id=document.getElementById("username").value.trim();
-  const pw=document.getElementById("password").value;
-  errorBox.classList.add("hidden");
-  if(!id||!pw){errorBox.textContent="아이디와 비밀번호를 입력하세요.";errorBox.classList.remove("hidden");return}
-  button.disabled=true;
-  try{
-    const response=await fetch(API+"/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:id,password:pw})});
-    const data=await response.json();
-    if(!response.ok) throw new Error(data.error||"로그인 실패");
-    localStorage.setItem(TOKEN_KEY,data.token);
-    localStorage.setItem(ROLE_KEY,data.role || "admin");
-    localStorage.setItem(SESSION_STARTED_KEY,String(Date.now()));
-    showApp();
-  }catch(error){
-    errorBox.textContent=error.message||"로그인에 실패했습니다.";
-    errorBox.classList.remove("hidden");
-  }finally{button.disabled=false}
-};
-document.getElementById("password").addEventListener("keydown",function(e){if(e.key==="Enter")document.getElementById("loginButton").click()});
-document.getElementById("logoutButton").onclick=logout;
-checkLogin();
-</script>
-</body>
-</html>
+const API="https://ikjoo123-github-io.zjaghkf0000.workers.dev",TOKEN_KEY="ju_files_token",SESSION_LIMIT=30*60*1000,SESSION_STARTED_KEY="ju_session_started_at",ROLE_KEY="ju_files_role";let inactivityTimer=null;
+function showLogin(){document.getElementById("loginArea").classList.remove("hidden");document.getElementById("loginScreen").classList.remove("hidden");document.getElementById("app").classList.add("hidden")}
+function showApp(){document.getElementById("loginArea").classList.add("hidden");document.getElementById("app").classList.remove("hidden");startSessionTimer()}
+function logout(){localStorage.removeItem(TOKEN_KEY);localStorage.removeItem(ROLE_KEY);localStorage.removeItem(SESSION_STARTED_KEY);if(inactivityTimer)clearTimeout(inactivityTimer);showLogin()}
+function resetSessionTimer(){if(!localStorage.getItem(TOKEN_KEY))return;const started=Number(localStorage.getItem(SESSION_STARTED_KEY)||0);if(!started)localStorage.setItem(SESSION_STARTED_KEY,String(Date.now()));const remaining=SESSION_LIMIT-(Date.now()-Number(localStorage.getItem(SESSION_STARTED_KEY)));if(remaining<=0){logout();return}if(inactivityTimer)clearTimeout(inactivityTimer);inactivityTimer=setTimeout(logout,remaining)}
+function startSessionTimer(){resetSessionTimer()}
+async function checkLogin(){const token=localStorage.getItem(TOKEN_KEY);if(!token){showLogin();return}const started=Number(localStorage.getItem(SESSION_STARTED_KEY)||0);if(started&&Date.now()-started>=SESSION_LIMIT){logout();return}if(!started)localStorage.setItem(SESSION_STARTED_KEY,String(Date.now()));try{const response=await fetch(API+"/api/me",{headers:{Authorization:"Bearer "+token}});if(!response.ok)throw new Error("인증 실패");showApp()}catch(error){localStorage.removeItem(TOKEN_KEY);showLogin()}}
+document.getElementById("loginButton").onclick=async function(){const button=this,errorBox=document.getElementById("loginError"),id=document.getElementById("username").value.trim(),pw=document.getElementById("password").value;errorBox.classList.add("hidden");if(!id||!pw){errorBox.textContent="아이디와 비밀번호를 입력하세요.";errorBox.classList.remove("hidden");return}button.disabled=true;try{const response=await fetch(API+"/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:id,password:pw})});const data=await response.json();if(!response.ok)throw new Error(data.error||"로그인 실패");localStorage.setItem(TOKEN_KEY,data.token);localStorage.setItem(ROLE_KEY,data.role||"admin");localStorage.setItem(SESSION_STARTED_KEY,String(Date.now()));showApp()}catch(error){errorBox.textContent=error.message||"로그인에 실패했습니다.";errorBox.classList.remove("hidden")}finally{button.disabled=false}};
+document.getElementById("password").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("loginButton").click()});document.getElementById("logoutButton").onclick=logout;checkLogin();
+</script></body></html>
