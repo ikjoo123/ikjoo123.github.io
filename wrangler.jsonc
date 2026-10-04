@@ -3,6 +3,9 @@
   "name": "ikjoo123-github-io",
   "main": "worker.js",
   "compatibility_date": "2026-09-26",
+  "ai": {
+    "binding": "AI"
+  },
   "assets": {
     "directory": "."
   },
