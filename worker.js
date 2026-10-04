@@ -409,6 +409,23 @@ export default {
       }
 
       /*
+       * ADMIN DUTY UPDATE
+       * 근무표 조회는 공개, 수정은 관리자 로그인만 허용합니다.
+       */
+      if (dutyMatch && request.method === "PUT") {
+        const role = await getAuthRole(request, env);
+        if (role !== "admin") return errorResponse("관리자 권한이 필요합니다.", 403);
+        const month = dutyMatch[1];
+        let body;
+        try { body = await request.json(); } catch (_) { return errorResponse("잘못된 근무 데이터입니다.", 400); }
+        if (!body || !Array.isArray(body.staff) || typeof body.doctorData !== "object") {
+          return errorResponse("근무 데이터 형식이 올바르지 않습니다.", 400);
+        }
+        await env.FILES.put("duty/" + month + ".json", JSON.stringify({staff: body.staff, doctorData: body.doctorData}));
+        return jsonResponse({ok:true, month});
+      }
+
+      /*
        * 인증 확인
        */
       const authRole = await getAuthRole(request, env);
