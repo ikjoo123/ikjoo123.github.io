@@ -10,7 +10,7 @@ body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:c
 .container{width:100%;max-width:900px;padding:30px;text-align:center}
 .logo{font-size:36px;font-weight:700;margin-bottom:10px}
 .subtitle{color:#777;margin-bottom:32px}
-.loginArea{display:flex;gap:20px;align-items:stretch;max-width:760px;margin:0 auto}.loginBox{flex:1;max-width:none;margin:0;background:white;padding:28px;border-radius:18px;box-shadow:0 8px 30px rgba(0,0,0,.08)}.dutyQuick{width:300px;background:linear-gradient(135deg,#fff7ed,#eef7ff);border-radius:18px;padding:22px;box-shadow:0 8px 30px rgba(0,0,0,.08);cursor:pointer;text-align:left}.dutyQuick h3{margin:8px 0 6px}.dutyQuick p{color:#777;font-size:13px;line-height:1.5;margin:0 0 14px}.dutyQuick button{border:0;background:#202124;color:white;border-radius:9px;padding:10px 14px;font:inherit;cursor:pointer}.dutyArt{height:120px;border-radius:14px;background:linear-gradient(135deg,#ffe5e5,#e5f1ff);display:flex;align-items:center;justify-content:center;font-size:68px}
+.loginArea{max-width:420px;margin:0 auto}.loginBox{width:100%;background:white;padding:28px;border-radius:18px;box-shadow:0 8px 30px rgba(0,0,0,.08)}
 .loginBox input{width:100%;padding:13px;margin-bottom:10px;border:1px solid #ddd;border-radius:9px;font:inherit}
 .loginBox button{width:100%;padding:13px;border:0;border-radius:9px;background:#202124;color:white;font:inherit;cursor:pointer}
 .loginError{color:#d93025;font-size:13px;margin-bottom:10px}
@@ -20,7 +20,7 @@ body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:c
 .card:hover{transform:translateY(-4px);box-shadow:0 10px 30px rgba(0,0,0,.08)}
 .icon{font-size:45px;margin-bottom:15px}.title{font-size:21px;font-weight:700}.description{margin-top:8px;color:#888;font-size:14px}
 .logout{margin-top:24px;border:0;background:transparent;color:#777;cursor:pointer}
-@media(max-width:800px){.loginArea{flex-direction:column}.dutyQuick{width:auto}.menu{grid-template-columns:1fr}}
+@media(max-width:800px){.menu{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -34,12 +34,6 @@ body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:c
       <input id="username" placeholder="아이디" autocomplete="username">
       <input id="password" type="password" placeholder="비밀번호" autocomplete="current-password">
       <button id="loginButton">관리자 로그인</button>
-    </div>
-    <div class="dutyQuick" onclick="location.href='duty.html'">
-      <div class="dutyArt">🩺👩‍⚕️👨‍⚕️</div>
-      <h3>오늘 근무 보기</h3>
-      <p>로그인 없이 오늘의 DAY · EVE · NIGHT 근무자를 확인하세요.</p>
-      <button>근무표 보기 →</button>
     </div>
   </div>
 
