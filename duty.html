@@ -23,6 +23,16 @@ function group(title,arr){return '<div class="group"><div class="groupTitle">'+t
 
 const nextDutyFile=document.getElementById("nextDutyFile");
 const nextDutyStatus=document.getElementById("nextDutyStatus");
+const nextDutyUploadPanel=document.getElementById("nextDutyUploadPanel");
+async function checkNextDutyAvailability(){
+  try{
+    const r=await fetch(API+"/api/duty/"+nextMonthKey());
+    if(r.ok) nextDutyUploadPanel.style.display="none";
+    else nextDutyUploadPanel.style.display="";
+  }catch(e){
+    nextDutyUploadPanel.style.display="";
+  }
+}
 function nextMonthKey(){
   const d=new Date();
   d.setMonth(d.getMonth()+1,1);
@@ -80,6 +90,7 @@ nextDutyFile.addEventListener("change",async()=>{
     const data=await res.json().catch(()=>({}));
     if(!res.ok)throw new Error(data.error||"분석에 실패했습니다.");
     setUploadStatus("✅ "+month+" 근무표 분석 및 반영이 완료됐습니다.","ok");
+    nextDutyUploadPanel.style.display="none";
     dutyCache[month]=data.duty;
     currentDate=new Date(Number(month.slice(0,4)),Number(month.slice(5,7))-1,1);
     await render();
@@ -87,4 +98,5 @@ nextDutyFile.addEventListener("change",async()=>{
     setUploadStatus("⚠️ "+(e.message||"분석에 실패했습니다.")+" 기존 근무표는 변경하지 않았습니다.","error");
   }
 });
+checkNextDutyAvailability();
 </script></body></html>
