@@ -405,6 +405,14 @@ export default {
         if (!object) return null;
         try { return JSON.parse(await object.text()); } catch (_) { return null; }
       }
+      async function readDutyUpdatedAt(month) {
+        const object = await env.FILES.get("duty-sections/" + month + "/_updated-at.json");
+        if (!object) return {};
+        try {
+          const value = JSON.parse(await object.text());
+          return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+        } catch (_) { return {}; }
+      }
       async function backupDuty(month) {
         const object = await env.FILES.get("duty/" + month + ".json");
         if (!object) return;
@@ -420,7 +428,7 @@ export default {
       }
       async function getCombinedDuty(month) {
         const legacy = await readLegacyDuty(month);
-        const data = {staff:Array.isArray(legacy.staff)?legacy.staff:[], doctorData:legacy.doctorData&&typeof legacy.doctorData==="object"?legacy.doctorData:{}};
+        const data = {staff:Array.isArray(legacy.staff)?legacy.staff:[], doctorData:legacy.doctorData&&typeof legacy.doctorData==="object"?legacy.doctorData:{}, updatedAt:await readDutyUpdatedAt(month)};
         const nurses = await readDutySection(month,"nurses");
         const assistants = await readDutySection(month,"assistants");
         const doctors = await readDutySection(month,"doctors");
@@ -472,7 +480,10 @@ export default {
           delete body.pa; delete body.emt;
         }
         await env.FILES.put("duty-sections/" + month + "/" + section + ".json", JSON.stringify(value), {httpMetadata:{contentType:"application/json; charset=utf-8"}});
-        return jsonResponse({ok:true, month, section});
+        const updatedAt = await readDutyUpdatedAt(month);
+        updatedAt[section] = new Date().toISOString();
+        await env.FILES.put("duty-sections/" + month + "/_updated-at.json", JSON.stringify(updatedAt), {httpMetadata:{contentType:"application/json; charset=utf-8"}});
+        return jsonResponse({ok:true, month, section, updatedAt:updatedAt[section]});
       }
 
       /* 구버전 전체 저장 API는 더 이상 사용하지 않습니다. */
