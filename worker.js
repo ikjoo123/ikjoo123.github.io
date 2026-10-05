@@ -446,7 +446,16 @@ export default {
        * PUBLIC DUTY DATA
        * 근무표는 로그인 없이 조회할 수 있습니다.
        */
-      const dutySectionGetMatch = url.pathname.match(/^\/api\/duty\/(\d{4}-\d{2})\/(nurses|assistants|doctors|pa|emt)$/);\n      if (dutySectionGetMatch && request.method === "GET") {\n        const month = dutySectionGetMatch[1];\n        const section = dutySectionGetMatch[2];\n        const value = await readDutySection(month, section);\n        if (value === null) return errorResponse("근무 데이터를 찾을 수 없습니다.", 404);\n        return new Response(JSON.stringify(value), {status:200,headers:{...corsHeaders,"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"}});\n      }\n\n      const dutyMatch = url.pathname.match(/^\/api\/duty\/(\d{4}-\d{2})$/);
+      const dutySectionGetMatch = url.pathname.match(/^\/api\/duty\/(\d{4}-\d{2})\/(nurses|assistants|doctors|pa|emt)$/);
+      if (dutySectionGetMatch && request.method === "GET") {
+        const month = dutySectionGetMatch[1];
+        const section = dutySectionGetMatch[2];
+        const value = await readDutySection(month, section);
+        if (value === null) return errorResponse("근무 데이터를 찾을 수 없습니다.", 404);
+        return new Response(JSON.stringify(value), {status:200,headers:{...corsHeaders,"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"}});
+      }
+
+      const dutyMatch = url.pathname.match(/^\/api\/duty\/(\d{4}-\d{2})$/);
       if (dutyMatch && request.method === "GET") {
         const month = dutyMatch[1];
         const data = await getCombinedDuty(month);
