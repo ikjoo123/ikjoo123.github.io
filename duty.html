@@ -7,7 +7,7 @@ async function loadMonth(month){
     try{
       const res=await fetch(API+"/api/duty/"+month);
       dutyCache[month]=res.ok?await res.json():{staff:[],doctorData:{}};
-      if(month==="2026-10" && (!Array.isArray(dutyCache[month].doctorData?.emt) || !dutyCache[month].doctorData.emt.length)){
+      if(month==="2026-10"){
         try{
           const er=await fetch(API+"/api/duty/"+month+"/emt",{cache:"no-store"});
           if(er.ok){ dutyCache[month].doctorData??={}; dutyCache[month].doctorData.emt=await er.json(); }
