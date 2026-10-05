@@ -394,7 +394,7 @@ export default {
        * 간호사 / 보조원 / 의사 / PA / 응급구조사를 서로 독립 저장합니다.
        * 기존 단일 duty JSON도 하위호환으로 읽습니다.
        */
-      const dutySectionMatch = url.pathname.match(/^\\/api\\/duty\\/(\\d{4}-\\d{2})(?:\\/(nurses|assistants|doctors|pa|emt))?$/);
+      const dutySectionMatch = url.pathname.match(/^\/api\/duty\/(\d{4}-\d{2})(?:\/(nurses|assistants|doctors|pa|emt))?$/);
       async function readLegacyDuty(month) {
         const object = await env.FILES.get("duty/" + month + ".json");
         if (!object) return {staff: [], doctorData: {}};
