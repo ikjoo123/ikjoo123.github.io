@@ -428,7 +428,15 @@ export default {
       }
       async function getCombinedDuty(month) {
         const legacy = await readLegacyDuty(month);
-        const data = {staff:Array.isArray(legacy.staff)?legacy.staff:[], doctorData:legacy.doctorData&&typeof legacy.doctorData==="object"?legacy.doctorData:{}, updatedAt:await readDutyUpdatedAt(month)};
+        const updatedAt = await readDutyUpdatedAt(month);
+        const sectionNames = ["nurses","assistants","doctors","pa","emt"];
+        for (const sectionName of sectionNames) {
+          if (!updatedAt[sectionName]) {
+            const sectionObject = await env.FILES.get("duty-sections/" + month + "/" + sectionName + ".json");
+            if (sectionObject?.uploaded) updatedAt[sectionName] = sectionObject.uploaded.toISOString();
+          }
+        }
+        const data = {staff:Array.isArray(legacy.staff)?legacy.staff:[], doctorData:legacy.doctorData&&typeof legacy.doctorData==="object"?legacy.doctorData:{}, updatedAt};
         const nurses = await readDutySection(month,"nurses");
         const assistants = await readDutySection(month,"assistants");
         const doctors = await readDutySection(month,"doctors");
