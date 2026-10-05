@@ -409,7 +409,14 @@ export default {
         const object = await env.FILES.get("duty/" + month + ".json");
         if (!object) return;
         const text = await object.text();
-        await env.FILES.put("duty-backups/" + month + "/" + new Date().toISOString().replace(/[:.]/g,"-") + ".json", text, {httpMetadata:{contentType:"application/json; charset=utf-8"}});
+        await env.FILES.put("duty-backups/" + month + "/legacy-" + new Date().toISOString().replace(/[:.]/g,"-") + ".json", text, {httpMetadata:{contentType:"application/json; charset=utf-8"}});
+      }
+      async function backupDutySection(month, section) {
+        const key = "duty-sections/" + month + "/" + section + ".json";
+        const object = await env.FILES.get(key);
+        if (!object) return;
+        const text = await object.text();
+        await env.FILES.put("duty-backups/" + month + "/" + section + "-" + new Date().toISOString().replace(/[:.]/g,"-") + ".json", text, {httpMetadata:{contentType:"application/json; charset=utf-8"}});
       }
       async function getCombinedDuty(month) {
         const legacy = await readLegacyDuty(month);
@@ -452,6 +459,7 @@ export default {
         try { body = await request.json(); } catch (_) { return errorResponse("잘못된 근무 데이터입니다.", 400); }
         if (!section) return errorResponse("저장할 근무 구역이 지정되지 않았습니다.",400);
         await backupDuty(month);
+        await backupDutySection(month, section);
         let value = body;
         if (section === "nurses" || section === "assistants") {
           if (!Array.isArray(body)) return errorResponse("직원 근무 데이터 형식이 올바르지 않습니다.",400);
