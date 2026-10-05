@@ -479,11 +479,15 @@ export default {
           if (!body || typeof body !== "object" || Array.isArray(body)) return errorResponse("의사 근무 데이터 형식이 올바르지 않습니다.",400);
           delete body.pa; delete body.emt;
         }
+        const previousValue = await readDutySection(month, section);
+        const changed = JSON.stringify(previousValue) !== JSON.stringify(value);
         await env.FILES.put("duty-sections/" + month + "/" + section + ".json", JSON.stringify(value), {httpMetadata:{contentType:"application/json; charset=utf-8"}});
         const updatedAt = await readDutyUpdatedAt(month);
-        updatedAt[section] = new Date().toISOString();
-        await env.FILES.put("duty-sections/" + month + "/_updated-at.json", JSON.stringify(updatedAt), {httpMetadata:{contentType:"application/json; charset=utf-8"}});
-        return jsonResponse({ok:true, month, section, updatedAt:updatedAt[section]});
+        if (changed) {
+          updatedAt[section] = new Date().toISOString();
+          await env.FILES.put("duty-sections/" + month + "/_updated-at.json", JSON.stringify(updatedAt), {httpMetadata:{contentType:"application/json; charset=utf-8"}});
+        }
+        return jsonResponse({ok:true, month, section, changed, updatedAt:updatedAt[section]});
       }
 
       /* 구버전 전체 저장 API는 더 이상 사용하지 않습니다. */
