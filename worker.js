@@ -390,40 +390,84 @@ export default {
       }
 
       /*
+       * DUTY DATA STORAGE
+       * 간호사 / 보조원 / 의사 / PA / 응급구조사를 서로 독립 저장합니다.
+       * 기존 단일 duty JSON도 하위호환으로 읽습니다.
+       */
+      const dutySectionMatch = url.pathname.match(/^\\/api\\/duty\\/(\\d{4}-\\d{2})(?:\\/(nurses|assistants|doctors|pa|emt))?$/);
+      async function readLegacyDuty(month) {
+        const object = await env.FILES.get("duty/" + month + ".json");
+        if (!object) return {staff: [], doctorData: {}};
+        try { return JSON.parse(await object.text()); } catch (_) { return {staff: [], doctorData: {}}; }
+      }
+      async function readDutySection(month, section) {
+        const object = await env.FILES.get("duty-sections/" + month + "/" + section + ".json");
+        if (!object) return null;
+        try { return JSON.parse(await object.text()); } catch (_) { return null; }
+      }
+      async function backupDuty(month) {
+        const object = await env.FILES.get("duty/" + month + ".json");
+        if (!object) return;
+        const text = await object.text();
+        await env.FILES.put("duty-backups/" + month + "/" + new Date().toISOString().replace(/[:.]/g,"-") + ".json", text, {httpMetadata:{contentType:"application/json; charset=utf-8"}});
+      }
+      async function getCombinedDuty(month) {
+        const legacy = await readLegacyDuty(month);
+        const data = {staff:Array.isArray(legacy.staff)?legacy.staff:[], doctorData:legacy.doctorData&&typeof legacy.doctorData==="object"?legacy.doctorData:{}};
+        const nurses = await readDutySection(month,"nurses");
+        const assistants = await readDutySection(month,"assistants");
+        const doctors = await readDutySection(month,"doctors");
+        const pa = await readDutySection(month,"pa");
+        const emt = await readDutySection(month,"emt");
+        if (Array.isArray(nurses)) data.staff = data.staff.filter(s=>s[0]!=="n").concat(nurses);
+        if (Array.isArray(assistants)) data.staff = data.staff.filter(s=>s[0]!=="a").concat(assistants);
+        if (doctors && typeof doctors==="object") data.doctorData = {...data.doctorData,...doctors};
+        if (Array.isArray(pa)) data.doctorData.pa = pa;
+        if (Array.isArray(emt)) data.doctorData.emt = emt;
+        return data;
+      }
+
+      /*
        * PUBLIC DUTY DATA
        * 근무표는 로그인 없이 조회할 수 있습니다.
        */
       const dutyMatch = url.pathname.match(/^\/api\/duty\/(\d{4}-\d{2})$/);
       if (dutyMatch && request.method === "GET") {
         const month = dutyMatch[1];
-        const object = await env.FILES.get("duty/" + month + ".json");
-        if (!object) return errorResponse("근무 데이터를 찾을 수 없습니다.", 404);
-        return new Response(object.body, {
-          status: 200,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json; charset=utf-8",
-            "Cache-Control": "no-store"
-          }
-        });
+        const data = await getCombinedDuty(month);
+        if ((!data.staff || !data.staff.length) && (!data.doctorData || !Object.keys(data.doctorData).length)) return errorResponse("근무 데이터를 찾을 수 없습니다.", 404);
+        return new Response(JSON.stringify(data), {status:200,headers:{...corsHeaders,"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"}});
       }
 
       /*
        * ADMIN DUTY UPDATE
        * 근무표 조회는 공개, 수정은 관리자 로그인만 허용합니다.
        */
-      if (dutyMatch && request.method === "PUT") {
+      if (dutySectionMatch && request.method === "PUT") {
         const role = await getAuthRole(request, env);
         if (role !== "admin") return errorResponse("관리자 권한이 필요합니다.", 403);
-        const month = dutyMatch[1];
+        const month = dutySectionMatch[1];
+        const section = dutySectionMatch[2];
         let body;
         try { body = await request.json(); } catch (_) { return errorResponse("잘못된 근무 데이터입니다.", 400); }
-        if (!body || !Array.isArray(body.staff) || typeof body.doctorData !== "object") {
-          return errorResponse("근무 데이터 형식이 올바르지 않습니다.", 400);
+        if (!section) return errorResponse("저장할 근무 구역이 지정되지 않았습니다.",400);
+        await backupDuty(month);
+        let value = body;
+        if (section === "nurses" || section === "assistants") {
+          if (!Array.isArray(body)) return errorResponse("직원 근무 데이터 형식이 올바르지 않습니다.",400);
+          const expectedRole = section === "nurses" ? "n" : "a";
+          if (body.some(s=>!Array.isArray(s)||s[0]!==expectedRole||typeof s[1]!=="string"||!Array.isArray(s[2]))) return errorResponse("잘못된 직원 데이터가 포함되어 있습니다.",400);
+        } else if (section === "pa" || section === "emt") {
+          if (!Array.isArray(body)) return errorResponse("근무 데이터 형식이 올바르지 않습니다.",400);
+        } else if (section === "doctors") {
+          if (!body || typeof body !== "object" || Array.isArray(body)) return errorResponse("의사 근무 데이터 형식이 올바르지 않습니다.",400);
+          delete body.pa; delete body.emt;
         }
-        await env.FILES.put("duty/" + month + ".json", JSON.stringify({staff: body.staff, doctorData: body.doctorData}));
-        return jsonResponse({ok:true, month});
+        await env.FILES.put("duty-sections/" + month + "/" + section + ".json", JSON.stringify(value), {httpMetadata:{contentType:"application/json; charset=utf-8"}});
+        return jsonResponse({ok:true, month, section});
       }
+
+      /* 구버전 전체 저장 API는 더 이상 사용하지 않습니다. */
 
       /*
        * 인증 확인
