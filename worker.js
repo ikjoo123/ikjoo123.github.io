@@ -475,7 +475,41 @@ export default {
        * ADMIN DUTY UPDATE
        * 근무표 조회는 공개, 수정은 관리자 로그인만 허용합니다.
        */
-      if (dutySectionMatch && request.method === "PUT") {
+            /*
+       * ADMIN DUTY PERSON PATCH
+       * 특정 직원 1명만 교체합니다. 다른 직원 데이터는 유지합니다.
+       */
+      const dutyPersonMatch = url.pathname.match(/^\/api\/duty\/(\d{4}-\d{2})\/(nurses|assistants)\/([^/]+)$/);
+      if (dutyPersonMatch && request.method === "PUT") {
+        const role = await getAuthRole(request, env);
+        if (role !== "admin") return errorResponse("관리자 권한이 필요합니다.", 403);
+        const month = dutyPersonMatch[1];
+        const section = dutyPersonMatch[2];
+        const name = decodeURIComponent(dutyPersonMatch[3]);
+        let body;
+        try { body = await request.json(); } catch (_) { return errorResponse("잘못된 근무 데이터입니다.", 400); }
+        if (!body || !Array.isArray(body.shifts) || body.shifts.length !== 31) {
+          return errorResponse("근무 데이터는 31일 배열이어야 합니다.",400);
+        }
+        const expectedRole = section === "nurses" ? "n" : "a";
+        const current = await readDutySection(month, section);
+        if (!Array.isArray(current)) return errorResponse("기존 근무 데이터를 찾을 수 없습니다.",404);
+        const index = current.findIndex(s => Array.isArray(s) && s[0] === expectedRole && s[1] === name);
+        if (index < 0) return errorResponse("해당 직원을 찾을 수 없습니다.",404);
+        await backupDuty(month);
+        await backupDutySection(month, section);
+        const value = current.map((s,i) => i === index ? [s[0], s[1], body.shifts] : s);
+        const changed = JSON.stringify(current) !== JSON.stringify(value);
+        if (changed) {
+          await env.FILES.put("duty-sections/" + month + "/" + section + ".json", JSON.stringify(value), {httpMetadata:{contentType:"application/json; charset=utf-8"}});
+          const updatedAt = await readDutyUpdatedAt(month);
+          updatedAt[section] = new Date().toISOString();
+          await env.FILES.put("duty-sections/" + month + "/_updated-at.json", JSON.stringify(updatedAt), {httpMetadata:{contentType:"application/json; charset=utf-8"}});
+        }
+        return jsonResponse({ok:true, month, section, name, changed});
+      }
+
+if (dutySectionMatch && request.method === "PUT") {
         const role = await getAuthRole(request, env);
         if (role !== "admin") return errorResponse("관리자 권한이 필요합니다.", 403);
         const month = dutySectionMatch[1];
