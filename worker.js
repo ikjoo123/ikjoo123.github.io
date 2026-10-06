@@ -458,6 +458,39 @@ export default {
       if (dutySectionGetMatch && request.method === "GET") {
         const month = dutySectionGetMatch[1];
         const section = dutySectionGetMatch[2];
+        if (month === "2026-10" && section === "nurses") {
+          try {
+            const markerKey = "duty-sections/2026-10/.song-song-ji-patched";
+            if (!(await env.FILES.get(markerKey))) {
+              const current = await readDutySection(month, section);
+              const shifts = ["D","D","X","X","X","D","D","D","N","N","X","X","X","D1","D","D","X","D","E","N","N","X","X","E2","E","E","E","X","X","E","E"];
+              if (Array.isArray(current)) {
+                const idx = current.findIndex(s => Array.isArray(s) && s[0] === "n" && s[1] === "송송지");
+                if (idx >= 0) {
+                  const value = current.map((s,i) => i === idx ? [s[0], s[1], shifts] : s);
+                  if (JSON.stringify(current) !== JSON.stringify(value)) {
+                    await backupDuty(month); await backupDutySection(month, section);
+                    await env.FILES.put("duty-sections/2026-10/nurses.json", JSON.stringify(value), {httpMetadata:{contentType:"application/json; charset=utf-8"}});
+                    const updatedAt = await readDutyUpdatedAt(month); updatedAt.nurses = new Date().toISOString();
+                    await env.FILES.put("duty-sections/2026-10/_updated-at.json", JSON.stringify(updatedAt), {httpMetadata:{contentType:"application/json; charset=utf-8"}});
+                  }
+                  await env.FILES.put(markerKey, JSON.stringify({ok:true,appliedAt:new Date().toISOString()}), {httpMetadata:{contentType:"application/json; charset=utf-8"}});
+                }
+              }
+            }
+          } catch (_) {}
+        }
+        if (month === "2026-10" && section === "emt") {
+          try {
+            const current = await readDutySection(month, section);
+            if (!Array.isArray(current) || current.length === 0) {
+              const value = [["오혜영","김로이","최희주"],["오혜영","이단비","김로이"],["최지수","오혜영","이단비"],["최지수","최희주","이단비"],["김로이","최지수","최희주"],["김로이","오혜영","최희주"],["이단비","김로이","오혜영"],["최지수","김로이","오혜영"],["이단비","최지수","김로이"],["최희주","최지수","김로이"],["최희주","이단비","최지수"],["최희주","이단비","최지수"],["오혜영","최희주","이단비"],["오혜영","최희주","이단비"],["김로이","오혜영","최지수"],["김로이","오혜영","최지수"],["최희주","김로이","오혜영"],["이단비","최희주","오혜영"],["이단비","최지수","최희주"],["김로이","최지수","이단비"],["김로이","오혜영","이단비"],["최희주","김로이","오혜영"],["최지수","최희주","이단비"],["최지수","최희주","김로이"],["최지수","오혜영","김로이"],["이단비","최지수","김로이"],["최희주","이단비","최지수"],["최희주","이단비","오혜영"],["김로이","이단비","최희주"],["최지수","이단비","최희주"],["오혜영","김로이","최지수"]];
+              await env.FILES.put("duty-sections/2026-10/emt.json", JSON.stringify(value), {httpMetadata:{contentType:"application/json; charset=utf-8"}});
+              const updatedAt = await readDutyUpdatedAt(month); updatedAt.emt = new Date().toISOString();
+              await env.FILES.put("duty-sections/2026-10/_updated-at.json", JSON.stringify(updatedAt), {httpMetadata:{contentType:"application/json; charset=utf-8"}});
+            }
+          } catch (_) {}
+        }
         const value = await readDutySection(month, section);
         if (value === null) return errorResponse("근무 데이터를 찾을 수 없습니다.", 404);
         return new Response(JSON.stringify(value), {status:200,headers:{...corsHeaders,"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"}});
