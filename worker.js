@@ -2096,6 +2096,26 @@ if (dutySectionMatch && request.method === "PUT") {
         });
       }
 
+      /* TEMP: one-click safe patch for 송송지 only */
+      if (request.method === "GET" && url.pathname === "/__patch-song-song-ji-202610" && url.searchParams.get("k") === "ssj202610-9f4c2a") {
+        const month = "2026-10"; const section = "nurses"; const name = "송송지";
+        const shifts = ["D","D","X","X","X","D","D","D","N","N","X","X","X","D1","D","D","X","D","E","N","N","X","X","E2","E","E","E","X","X","E","E"];
+        const current = await readDutySection(month, section);
+        if (!Array.isArray(current)) return errorResponse("간호사 데이터를 찾을 수 없습니다.",404);
+        const index = current.findIndex(s => Array.isArray(s) && s[0] === "n" && s[1] === name);
+        if (index < 0) return errorResponse("송송지 직원을 찾을 수 없습니다.",404);
+        const value = current.map((s,i) => i === index ? [s[0], s[1], shifts] : s);
+        if (JSON.stringify(current) !== JSON.stringify(value)) {
+          await backupDuty(month);
+          await backupDutySection(month, section);
+          await env.FILES.put("duty-sections/" + month + "/" + section + ".json", JSON.stringify(value), {httpMetadata:{contentType:"application/json; charset=utf-8"}});
+          const updatedAt = await readDutyUpdatedAt(month);
+          updatedAt[section] = new Date().toISOString();
+          await env.FILES.put("duty-sections/" + month + "/_updated-at.json", JSON.stringify(updatedAt), {httpMetadata:{contentType:"application/json; charset=utf-8"}});
+        }
+        return jsonResponse({ok:true, name, month, changed: JSON.stringify(current)!==JSON.stringify(value)});
+      }
+
       return jsonResponse({
         ok: true,
         message: "API OK"
