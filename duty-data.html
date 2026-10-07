@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>근무 데이터 관리</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#f6f8fb;color:#222;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{max-width:1100px;margin:auto;padding:22px 16px 50px}h1{font-size:23px;margin:0 0 16px}.panel{background:#fff;border:1px solid #e4e7eb;border-radius:16px;padding:16px;margin-bottom:14px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.input,select,textarea{font:inherit;border:1px solid #d2d7de;border-radius:9px;background:#fff}.input,select{padding:9px}.btn{border:1px solid #d2d7de;background:#fff;border-radius:9px;padding:9px 13px;cursor:pointer}.btn:disabled{opacity:.5;cursor:not-allowed}.btn.primary{font-weight:700}textarea{width:100%;height:65vh;min-height:400px;margin-top:12px;padding:14px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13px;line-height:1.5;tab-size:2}.status{margin-top:12px;padding:11px;border-radius:9px;background:#f7f7f8;line-height:1.6}.ok{color:#26743a}.bad{color:#a33}.help{font-size:13px;color:#666;line-height:1.7}.hidden{display:none!important}
+*{box-sizing:border-box}body{margin:0;background:#f6f8fb;color:#222;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{max-width:1100px;margin:auto;padding:22px 16px 50px}h1{font-size:23px;margin:0 0 16px}.panel{background:#fff;border:1px solid #e4e7eb;border-radius:16px;padding:16px;margin-bottom:14px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.input,select,textarea{font:inherit;border:1px solid #d2d7de;border-radius:9px;background:#fff}.input,select{padding:9px}.btn{border:1px solid #d2d7de;background:#fff;border-radius:9px;padding:9px 13px;cursor:pointer}.btn:disabled{opacity:.5;cursor:not-allowed}.btn.primary{font-weight:700}textarea{width:100%;height:65vh;min-height:400px;margin-top:12px;padding:14px;font-size:14px;line-height:1.65;tab-size:2}.raw{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13px}.status{margin-top:12px;padding:11px;border-radius:9px;background:#f7f7f8;line-height:1.6}.ok{color:#26743a}.bad{color:#a33}.help{font-size:13px;color:#666;line-height:1.7}.hidden{display:none!important}.count{margin-top:8px;font-size:13px;color:#666}.preview{margin-top:12px;padding:12px;background:#f7f7f8;border-radius:10px;white-space:pre-wrap;font-size:13px;line-height:1.6}
 </style></head><body><main class="wrap">
 <h1>🗂️ 근무 데이터 관리</h1>
 <div class="panel">
@@ -9,44 +9,87 @@
   <input id="month" class="input" value="2026-10" placeholder="2026-10">
   <select id="section"><option value="nurses">간호사 · nurses.json</option><option value="assistants">보조원 · assistants.json</option><option value="doctors">의사 · doctors.json</option><option value="pa">PA · pa.json</option><option value="emt">응급구조사 · emt.json</option></select>
   <button id="load" class="btn primary">📥 불러오기</button>
-  <button id="check" class="btn" disabled>🔎 JSON 검사</button>
+  <button id="check" class="btn" disabled>🔎 입력 검사</button>
   <button id="save" class="btn primary" disabled>💾 R2 저장</button>
   <button id="back" class="btn">← 근무로</button>
  </div>
- <div class="help" style="margin-top:12px">
-  관리자 전용입니다. 선택한 월/구역의 R2 JSON을 그대로 편집할 수 있습니다.<br>
-  <b>저장 전 JSON 검사를 먼저 하고, 저장하면 해당 JSON 하나만 백업 후 교체합니다.</b>
+ <div id="help" class="help" style="margin-top:12px">
+  관리자 전용입니다. <b>응급구조사는 JSON을 직접 수정하지 않아도 됩니다.</b><br>
+  이름 다음에 근무를 31개만 순서대로 적어주세요. <b>D / E / N</b>은 근무, <b>공란 / Hx / 연 / 차 / X / OFF</b>는 휴무로 처리합니다.<br>
+  예: <code>오혜영 D D E 공란 Hx E N N ...</code> 또는 이름을 한 줄 쓰고 다음 줄에 근무를 적어도 됩니다.
  </div>
  <textarea id="editor" spellcheck="false" disabled></textarea>
+ <div id="count" class="count"></div>
+ <div id="preview" class="preview hidden"></div>
  <div id="status" class="status">관리자 확인 중...</div>
 </div>
 </main>
 <script>
 const API="https://ikjoo123-github-io.zjaghkf0000.workers.dev";
 const $=id=>document.getElementById(id);
-let loaded=null;
+let loaded=null, currentMode="json";
 function token(){return localStorage.getItem("ju_files_token")||""}
-async function admin(){
- try{const r=await fetch(API+"/api/me",{headers:{Authorization:"Bearer "+token()}});return r.ok&&(await r.json()).role==="admin"}catch(_){return false}
-}
+async function admin(){try{const r=await fetch(API+"/api/me",{headers:{Authorization:"Bearer "+token()}});return r.ok&&(await r.json()).role==="admin"}catch(_){return false}}
 function setStatus(html){$("status").innerHTML=html}
 function pretty(v){return JSON.stringify(v,null,2)}
 function validate(v,section){
- if(v===null||v===undefined)throw new Error("JSON 데이터가 비어 있습니다.");
+ if(v===null||v===undefined)throw new Error("데이터가 비어 있습니다.");
  if(section==="nurses"||section==="assistants"){
   if(!Array.isArray(v))throw new Error("직원 데이터는 배열이어야 합니다.");
-  const role=section==="nurses"?"n":"a";
-  const names=new Set();
-  for(const x of v){
-   if(!Array.isArray(x)||x.length!==3||x[0]!==role||typeof x[1]!=="string"||!Array.isArray(x[2]))throw new Error("직원 데이터 형식이 잘못되었습니다: "+JSON.stringify(x));
-   if(x[2].length!==31)throw new Error(x[1]+"의 근무일수가 "+x[2].length+"일입니다. 31일이어야 합니다.");
-   if(names.has(x[1]))throw new Error("이름 중복: "+x[1]);names.add(x[1]);
-  }
- }else if(section==="doctors"){
-  if(typeof v!=="object"||Array.isArray(v))throw new Error("의사 데이터는 객체여야 합니다.");
- }else if(section==="pa"||section==="emt"){
-  if(!Array.isArray(v))throw new Error(section+" 데이터는 배열이어야 합니다.");
+  const role=section==="nurses"?"n":"a",names=new Set();
+  for(const x of v){if(!Array.isArray(x)||x.length!==3||x[0]!==role||typeof x[1]!=="string"||!Array.isArray(x[2]))throw new Error("직원 데이터 형식이 잘못되었습니다.");if(x[2].length!==31)throw new Error(x[1]+"의 근무일수가 "+x[2].length+"일입니다. 31일이어야 합니다.");if(names.has(x[1]))throw new Error("이름 중복: "+x[1]);names.add(x[1])}
+ }else if(section==="doctors"){if(typeof v!=="object"||Array.isArray(v))throw new Error("의사 데이터는 객체여야 합니다.")}
+ else if(section==="pa"||section==="emt"){if(!Array.isArray(v))throw new Error(section+" 데이터는 배열이어야 합니다.")}
+}
+function emtToText(data){
+ const names={};
+ for(let day=0;day<31;day++){
+  const rows=Array.isArray(data[day])?data[day]:[];
+  ["D","E","N"].forEach((code,i)=>{const name=String(rows[i]?.[0]??"").trim();if(name){if(!names[name])names[name]=Array(31).fill("공란");names[name][day]=code}});
  }
+ return Object.entries(names).map(([name,codes])=>name+"\n"+codes.join(" / ")).join("\n\n");
+}
+function normalizeToken(x){
+ const s=String(x??"").trim();
+ if(!s)return "공란";
+ const u=s.toUpperCase();
+ if(u==="D"||u==="DAY")return "D";
+ if(u==="E"||u==="EVE"||u==="EVENING")return "E";
+ if(u==="N"||u==="NIGHT")return "N";
+ return "공란";
+}
+function splitCodes(s){
+ return s.replace(/[,，、|]/g," ").split(/\s+|\/+/).map(normalizeToken).filter(Boolean);
+}
+function parseEmtText(text){
+ const lines=text.split(/\r?\n/).map(x=>x.trim()).filter(Boolean), people=[];
+ for(let i=0;i<lines.length;){
+  let line=lines[i];
+  const m=line.match(/^(.+?)\s+(D|E|N|X|OFF|공란|Hx|연|차)(?:\s*[\/ ]\s*(?:D|E|N|X|OFF|공란|Hx|연|차))+$/i);
+  if(m){people.push({name:m[1].trim(),codes:splitCodes(line.slice(m[1].length))});i++;continue}
+  const name=line.replace(/^[-•·]\s*/,"").trim();
+  const next=lines[i+1]||"";
+  const codes=splitCodes(next);
+  if(codes.length>=1 && /^(?:D|E|N|X|OFF|공란|Hx|연|차)(?:\s*[\/ ]\s*(?:D|E|N|X|OFF|공란|Hx|연|차))*$/i.test(next)){people.push({name,codes});i+=2}
+  else {people.push({name,codes:[]});i++}
+ }
+ const errors=[];
+ const seen=new Set();
+ people.forEach(p=>{if(!p.name)errors.push("이름이 비어 있습니다.");if(seen.has(p.name))errors.push("이름 중복: "+p.name);seen.add(p.name);if(p.codes.length!==31)errors.push(p.name+" : "+p.codes.length+"개 입력됨 → 31개 필요")});
+ if(errors.length)throw new Error(errors.join("\n"));
+ const out=Array.from({length:31},()=>[[],[],[]]);
+ people.forEach(p=>p.codes.forEach((code,day)=>{const c=normalizeToken(code);if(c==="D")out[day][0]=[p.name];if(c==="E")out[day][1]=[p.name];if(c==="N")out[day][2]=[p.name]}));
+ return {data:out,people};
+}
+function checkEmt(showPreview=true){
+ try{
+  const parsed=parseEmtText($("editor").value);
+  const work=parsed.people.reduce((n,p)=>n+p.codes.filter(c=>["D","E","N"].includes(normalizeToken(c))).length,0);
+  $("count").textContent="✅ "+parsed.people.length+"명 · 각 31일 확인 · 실제 근무 "+work+"개";
+  if(showPreview){$("preview").classList.remove("hidden");$("preview").textContent=parsed.people.map(p=>p.name+" : "+p.codes.map(normalizeToken).join(" / ")).join("\n")}
+  setStatus('<span class="ok">✅ 입력 형식과 31일 수를 모두 확인했습니다.</span>');
+  return parsed.data;
+ }catch(e){$("preview").classList.add("hidden");setStatus('<span class="bad">❌ '+e.message.replace(/\n/g,"<br>")+'</span>');return null}
 }
 async function loadData(){
  if(!(await admin())){setStatus('<span class="bad">관리자 로그인이 필요합니다.</span>');return}
@@ -56,31 +99,34 @@ async function loadData(){
  try{
   const r=await fetch(API+"/api/duty/"+month+"/"+section,{cache:"no-store"});
   if(!r.ok)throw new Error("데이터 없음 또는 불러오기 실패 ("+r.status+")");
-  const data=await r.json();validate(data,section);
-  loaded={month,section};$("editor").value=pretty(data);$("editor").disabled=false;$("check").disabled=false;$("save").disabled=false;
-  setStatus('<span class="ok">✅ '+month+' / '+section+'.json 불러옴</span>');
+  const data=await r.json();validate(data,section);loaded={month,section};
+  currentMode=section==="emt"?"text":"json";
+  $("editor").classList.toggle("raw",currentMode==="json");
+  $("editor").value=currentMode==="text"?emtToText(data):pretty(data);
+  $("editor").disabled=false;$("check").disabled=false;$("save").disabled=false;$("preview").classList.add("hidden");
+  $("count").textContent="";
+  setStatus('<span class="ok">✅ '+month+' / '+section+' 불러옴</span>');
  }catch(e){loaded=null;$("editor").disabled=true;$("check").disabled=true;$("save").disabled=true;setStatus('<span class="bad">❌ '+e.message+'</span>')}
 }
 function checkData(){
+ if(!loaded)return null;
+ if(loaded.section==="emt")return checkEmt();
  try{const v=JSON.parse($("editor").value);validate(v,loaded.section);setStatus('<span class="ok">✅ JSON 형식 및 기본 근무 데이터 검사를 통과했습니다.</span>');return v}catch(e){setStatus('<span class="bad">❌ '+e.message+'</span>');return null}
 }
-$("load").onclick=loadData;
-$("check").onclick=checkData;
+$("load").onclick=loadData;$("check").onclick=()=>checkData();
 $("save").onclick=async()=>{
- if(!loaded)return;
- const v=checkData();if(v===null)return;
- if(!confirm(loaded.month+" / "+loaded.section+".json을 R2에 저장할까요?"))return;
- $("save").disabled=true;setStatus("백업 후 저장 중...");
+ if(!loaded)return;const v=checkData();if(v===null)return;
+ if(!confirm(loaded.month+" / "+loaded.section+" 근무표를 R2에 저장할까요?"))return;
+ $("save").disabled=true;setStatus("저장 중...");
  try{
   const r=await fetch(API+"/api/duty/"+loaded.month+"/"+loaded.section,{method:"PUT",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token()},body:JSON.stringify(v)});
   if(!r.ok)throw new Error("저장 실패 ("+r.status+")");
-  const vr=await fetch(API+"/api/duty/"+loaded.month+"/"+loaded.section,{cache:"no-store"});
-  if(!vr.ok)throw new Error("저장 후 확인 실패");
-  const saved=await vr.json();
-  if(JSON.stringify(saved)!==JSON.stringify(v))throw new Error("저장 후 JSON이 입력 내용과 다릅니다.");
+  const vr=await fetch(API+"/api/duty/"+loaded.month+"/"+loaded.section,{cache:"no-store"});if(!vr.ok)throw new Error("저장 후 확인 실패");
+  const saved=await vr.json();if(JSON.stringify(saved)!==JSON.stringify(v))throw new Error("저장 후 데이터가 입력 내용과 다릅니다.");
   setStatus('<span class="ok">✅ R2 저장 및 다시 읽기 확인 완료</span>');
  }catch(e){setStatus('<span class="bad">❌ '+e.message+'</span>')}finally{$("save").disabled=false}
 };
 $("back").onclick=()=>location.href="duty.html";
+$("section").onchange=()=>{loaded=null;$("editor").value="";$("editor").disabled=true;$("check").disabled=true;$("save").disabled=true;$("count").textContent="";$("preview").classList.add("hidden");};
 (async()=>{if(!(await admin()))setStatus('<span class="bad">관리자 로그인이 필요합니다.</span>');else setStatus("✅ 관리자 로그인 확인");})();
 </script></body></html>
