@@ -82,4 +82,23 @@ $("analyze").onclick=async()=>{
 };
 $("back").onclick=()=>location.href="duty.html";
 (async()=>{if(!(await admin()))$("status").innerHTML="<span class=bad>관리자 로그인이 필요합니다.</span>";else $("status").innerHTML="✅ 관리자 로그인 확인";})();
+</script></body></html$("save").onclick=async()=>{
+ if(!pending)return;
+ $("save").disabled=true;$("status").textContent="저장 중...";
+ try{
+  const r=await fetch(API+"/api/duty/"+pending.month+"/"+pending.sec,{method:"PUT",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token()},body:JSON.stringify(pending.result)});
+  if(!r.ok)throw new Error("저장 실패 ("+r.status+")");
+  const verify=await loadCurrent(pending.month,pending.sec);
+  const role=pending.sec==="nurses"?"n":pending.sec==="assistants"?"a":null;
+  const bad=[];
+  for(const p of pending.rows){
+   const x=verify.find(v=>Array.isArray(v)&&v[1]===p.name&&(role? v[0]===role:true));
+   if(!x||JSON.stringify(x[2])!==JSON.stringify(p.shifts))bad.push(p.name);
+  }
+  if(bad.length)throw new Error("저장 후 확인 실패: "+bad.join(", "));
+  $("status").innerHTML='<span class=ok>✅ 반영 및 저장 확인 완료</span>';
+ }catch(e){$("status").innerHTML='<span class=bad>❌ '+esc(e.message)+'</span>';$("save").disabled=false}
+};
+$("back").onclick=()=>location.href="duty.html";
+(async()=>{if(!(await admin()))$("status").innerHTML="<span class=bad>관리자 로그인이 필요합니다.</span>";else $("status").innerHTML="✅ 관리자 로그인 확인";})();
 </script></body></html>
