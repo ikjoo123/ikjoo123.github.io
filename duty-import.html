@@ -19,25 +19,50 @@ const API="https://ikjoo123-github-io.zjaghkf0000.workers.dev";let pending=null;
 const $=id=>document.getElementById(id);
 function token(){return localStorage.getItem("ju_files_token")||""}
 async function admin(){try{const r=await fetch(API+"/api/me",{headers:{Authorization:"Bearer "+token()}});return r.ok&&(await r.json()).role==="admin"}catch(e){return false}}
-function parts(line){return line.trim().split(/\t|\s{2,}/).map(x=>x.trim()).filter(x=>x!=="")}
-function person(text,section,days){
- const out=[],errors=[]; text.split(/\r?\n/).map(x=>x.trim()).filter(Boolean).forEach((line,n)=>{
-  const p=parts(line);if(p[0].toLowerCase()==="이름")return;
-  if(p.length!==days+1){errors.push((n+1)+"행 "+p[0]+": "+(p.length-1)+"일 입력 (필요 "+days+"일)");return}
-  out.push(section==="nurses"?["n",p[0],p.slice(1)]:[p[0],p.slice(1)]);
- });return {out,errors}
+function parseCompactLine(line,days){
+ const m=line.trim().match(/^(\\S+)\\s+(.+)$/); if(!m)return {error:"이름과 근무코드를 띄어쓰기로 구분해주세요."};
+ const name=m[1], raw=m[2].replace(/\\s+/g,"").toUpperCase();
+ if(raw.length!==days)return {error:name+": "+raw.length+"개 입력 (필요 "+days+"개)"};
+ const allowed=new Set(["D","E","N","X","M"]);
+ const shifts=[...raw];
+ const bad=shifts.map((v,i)=>allowed.has(v)?null:(i+1)+"일 '"+v+"'").filter(Boolean);
+ if(bad.length)return {error:name+": 허용되지 않은 코드 "+bad.join(", ")};
+ return {name,shifts};
 }
-function doctors(text,days){
- const out={specialist:Array.from({length:days},()=>[]),resident:Array.from({length:days},()=>[]),intern:Array.from({length:days},()=>[])},errors=[];
- text.split(/\r?\n/).map(x=>x.trim()).filter(Boolean).forEach((line,n)=>{const p=parts(line),d=Number(p[0]);if(!d||d>days){errors.push((n+1)+"행 날짜 오류");return}let role="specialist",i=1;if(["전공의","resident"].includes(p[1])){role="resident";i=2}else if(["인턴","intern"].includes(p[1])){role="intern";i=2}while(i<p.length){if(["D","E","N","M"].includes(p[i])&&p[i+1]){out[role][d-1].push(p[i+1]);i+=2}else{errors.push((n+1)+"행 형식 오류");break}}});return {out,errors}
+function compactPeople(text,days,section){
+ const rows=[],errors=[],seen=new Set();
+ text.split(/\\r?\\n/).map(x=>x.trim()).filter(Boolean).forEach((line,n)=>{
+  const p=parseCompactLine(line,days);
+  if(p.error){errors.push((n+1)+"행 "+p.error);return}
+  if(seen.has(p.name)){errors.push((n+1)+"행 "+p.name+": 이름 중복");return}
+  seen.add(p.name);
+  rows.push(p);
+ });
+ return {rows,errors,section};
 }
 function show(p){
- $("preview").classList.remove("hidden");let rows=[];
- if(Array.isArray(p.payload)){rows=p.payload.map(x=>"<tr><td>"+esc(x[0])+"</td><td>"+x[1].map(esc).join(" / ")+"</td></tr>")}
- else rows=Object.entries(p.payload).flatMap(([role,a])=>a.map((x,i)=>x.length?["<tr><td>"+role+"</td><td>"+(i+1)+"일</td><td>"+x.map(esc).join(", ")+"</td></tr>"]:[]));
- $("previewBody").innerHTML="<table><thead><tr><th>구분</th><th>근무</th></tr></thead><tbody>"+rows.join("")+"</tbody></table>";
+ $("preview").classList.remove("hidden");
+ const rows=p.rows.map(x=>"<tr><td>"+esc(x.name)+"</td><td>"+x.shifts.map((v,i)=>(i+1)+":"+esc(v)).join(" / ")+"</td></tr>");
+ $("previewBody").innerHTML="<table><thead><tr><th>이름</th><th>1일 → 말일</th></tr></thead><tbody>"+rows.join("")+"</tbody></table>";
 }
 function esc(x){return String(x).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+async function loadCurrent(month,section){
+ const r=await fetch(API+"/api/duty/"+month+"/"+section,{cache:"no-store"});
+ if(!r.ok)throw new Error("기존 "+section+" 데이터를 불러오지 못했습니다.");
+ return await r.json();
+}
+function mergePeople(current,rows,section){
+ if(!Array.isArray(current))throw new Error("기존 데이터 형식이 배열이 아닙니다.");
+ const role=section==="nurses"?"n":section==="assistants"?"a":null;
+ const result=current.map(x=>Array.isArray(x)?[...x]:x);
+ const missing=[];
+ for(const p of rows){
+  const idx=result.findIndex(x=>Array.isArray(x)&&x[1]===p.name&&(role?x[0]===role:true));
+  if(idx<0){missing.push(p.name);continue}
+  result[idx]=[...result[idx].slice(0,2),p.shifts];
+ }
+ return {result,missing};
+}
 $("analyze").onclick=async()=>{
  if(!(await admin())){$("status").innerHTML="<span class=bad>관리자 로그인이 필요합니다.</span>";return}
  const month=$("month").value.trim(),sec=$("section").value,text=$("input").value;
