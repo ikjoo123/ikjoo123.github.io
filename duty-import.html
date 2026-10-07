@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>근무표 가져오기</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f6f8fb;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#222}.wrap{max-width:1000px;margin:auto;padding:24px 16px 50px}h1{font-size:24px;margin:0 0 18px}.panel{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px;margin-bottom:14px}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.input,select,textarea{font:inherit;border:1px solid #d5d9df;border-radius:9px;padding:9px;background:#fff}textarea{width:100%;min-height:260px;resize:vertical;margin-top:12px;line-height:1.55}.btn{border:1px solid #d5d9df;background:#fff;border-radius:9px;padding:9px 13px;cursor:pointer}.btn.primary{font-weight:700}.btn:disabled{opacity:.5;cursor:not-allowed}.help{font-size:13px;color:#666;line-height:1.7}.ok{color:#26743a}.bad{color:#a33}.preview{overflow:auto;margin-top:12px}.preview table{border-collapse:collapse;width:100%;font-size:13px}.preview th,.preview td{border:1px solid #e5e7eb;padding:7px;text-align:left;white-space:nowrap}.status{margin-top:12px;padding:12px;border-radius:10px;background:#f7f7f8;line-height:1.6}.hidden{display:none!important}
+</style></head><body><main class="wrap">
+<h1>📋 근무표 가져오기</h1>
+<div class="panel"><div class="row">
+<select id="section"><option value="nurses">간호사</option><option value="doctors">의사</option><option value="pa">PA</option><option value="emt">응급구조사</option></select>
+<input id="month" class="input" placeholder="2026-11" value="2026-11">
+<button id="analyze" class="btn primary">🔍 분석</button><button id="save" class="btn primary" disabled>💾 반영</button><button id="back" class="btn">← 근무로</button>
+</div>
+<div class="help" style="margin-top:12px">간호사 / PA / 응급구조사: <b>이름 + 1일~말일 근무코드</b>를 한 줄에 붙여넣습니다. 엑셀에서 행을 그대로 복사해도 됩니다.<br>의사: <b>일자 D 이름 E 이름 N 이름</b> 형식으로 입력합니다.<br>분석 후 오류를 확인하고 <b>반영</b>을 눌러야 실제 데이터가 변경됩니다.</div>
+<textarea id="input" placeholder="예시&#10;송송지&#9;D&#9;D&#9;X&#9;X&#9;X&#9;D ...&#10;김철수&#9;E&#9;E&#9;N&#9;X&#9;X&#9;E ...&#10;&#10;의사 예시&#10;1 D 박현수 E 고정인 N 정성구"></textarea>
+<div id="status" class="status">관리자 확인 중...</div></div>
+<div id="preview" class="panel hidden"><b>미리보기</b><div class="preview" id="previewBody"></div></div>
+</main>
+<script>
+const API="https://ikjoo123-github-io.zjaghkf0000.workers.dev";let pending=null;
+const $=id=>document.getElementById(id);
+function token(){return localStorage.getItem("ju_files_token")||""}
+async function admin(){try{const r=await fetch(API+"/api/me",{headers:{Authorization:"Bearer "+token()}});return r.ok&&(await r.json()).role==="admin"}catch(e){return false}}
+function parts(line){return line.trim().split(/\t|\s{2,}/).map(x=>x.trim()).filter(x=>x!=="")}
+function person(text,section,days){
+ const out=[],errors=[]; text.split(/\r?\n/).map(x=>x.trim()).filter(Boolean).forEach((line,n)=>{
+  const p=parts(line);if(p[0].toLowerCase()==="이름")return;
+  if(p.length!==days+1){errors.push((n+1)+"행 "+p[0]+": "+(p.length-1)+"일 입력 (필요 "+days+"일)");return}
+  out.push(section==="nurses"?["n",p[0],p.slice(1)]:[p[0],p.slice(1)]);
+ });return {out,errors}
+}
+function doctors(text,days){
+ const out={specialist:Array.from({length:days},()=>[]),resident:Array.from({length:days},()=>[]),intern:Array.from({length:days},()=>[])},errors=[];
+ text.split(/\r?\n/).map(x=>x.trim()).filter(Boolean).forEach((line,n)=>{const p=parts(line),d=Number(p[0]);if(!d||d>days){errors.push((n+1)+"행 날짜 오류");return}let role="specialist",i=1;if(["전공의","resident"].includes(p[1])){role="resident";i=2}else if(["인턴","intern"].includes(p[1])){role="intern";i=2}while(i<p.length){if(["D","E","N","M"].includes(p[i])&&p[i+1]){out[role][d-1].push(p[i+1]);i+=2}else{errors.push((n+1)+"행 형식 오류");break}}});return {out,errors}
+}
+function show(p){
+ $("preview").classList.remove("hidden");let rows=[];
+ if(Array.isArray(p.payload)){rows=p.payload.map(x=>"<tr><td>"+esc(x[0])+"</td><td>"+x[1].map(esc).join(" / ")+"</td></tr>")}
+ else rows=Object.entries(p.payload).flatMap(([role,a])=>a.map((x,i)=>x.length?["<tr><td>"+role+"</td><td>"+(i+1)+"일</td><td>"+x.map(esc).join(", ")+"</td></tr>"]:[]));
+ $("previewBody").innerHTML="<table><thead><tr><th>구분</th><th>근무</th></tr></thead><tbody>"+rows.join("")+"</tbody></table>";
+}
+function esc(x){return String(x).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+$("analyze").onclick=async()=>{
+ if(!(await admin())){$("status").innerHTML="<span class=bad>관리자 로그인이 필요합니다.</span>";return}
+ const month=$("month").value.trim(),sec=$("section").value,text=$("input").value;
+ if(!/^\d{4}-\d{2}$/.test(month)){$("status").innerHTML="<span class=bad>월 형식이 잘못됐습니다. 예: 2026-11</span>";return}
+ const days=new Date(+month.slice(0,4),+month.slice(5,7),0).getDate();
+ const p=sec==="doctors"?doctors(text,days):person(text,sec,days);pending={month,sec,p};
+ show(p);$("save").disabled=!!p.errors.length;
+ $("status").innerHTML=p.errors.length?'<span class=bad>⚠️ 오류 '+p.errors.length+'건<br>'+p.errors.map(esc).join("<br>")+"</span>":'<span class=ok>✅ '+(Array.isArray(p.payload)?p.payload.length:"의사 근무")+ "개 항목 분석 완료. 미리보기 확인 후 반영하세요.</span>";
+};
+$("save").onclick=async()=>{
+ if(!pending||pending.p.errors.length)return;
+ $("save").disabled=true;$("status").textContent="저장 중...";
+ try{
+  const r=await fetch(API+"/api/duty/"+pending.month+"/"+pending.sec,{method:"PUT",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token()},body:JSON.stringify(pending.p.out||pending.p.payload)});
+  if(!r.ok)throw new Error("저장 실패 ("+r.status+")");
+  $("status").innerHTML='<span class=ok>✅ 반영 완료</span>';
+ }catch(e){$("status").innerHTML='<span class=bad>❌ '+esc(e.message)+'</span>';$("save").disabled=false}
+};
+$("back").onclick=()=>location.href="duty.html";
+(async()=>{if(!(await admin()))$("status").innerHTML="<span class=bad>관리자 로그인이 필요합니다.</span>";else $("status").innerHTML="✅ 관리자 로그인 확인";})();
+</script></body></html>
