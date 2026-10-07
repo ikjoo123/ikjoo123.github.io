@@ -66,20 +66,19 @@ function mergePeople(current,rows,section){
 $("analyze").onclick=async()=>{
  if(!(await admin())){$("status").innerHTML="<span class=bad>관리자 로그인이 필요합니다.</span>";return}
  const month=$("month").value.trim(),sec=$("section").value,text=$("input").value;
- if(!/^\d{4}-\d{2}$/.test(month)){$("status").innerHTML="<span class=bad>월 형식이 잘못됐습니다. 예: 2026-11</span>";return}
+ if(!/^\\d{4}-\\d{2}$/.test(month)){$("status").innerHTML="<span class=bad>월 형식이 잘못됐습니다. 예: 2026-11</span>";return}
  const days=new Date(+month.slice(0,4),+month.slice(5,7),0).getDate();
- const p=sec==="doctors"?doctors(text,days):person(text,sec,days);pending={month,sec,p};
- show(p);$("save").disabled=!!p.errors.length;
- $("status").innerHTML=p.errors.length?'<span class=bad>⚠️ 오류 '+p.errors.length+'건<br>'+p.errors.map(esc).join("<br>")+"</span>":'<span class=ok>✅ '+(Array.isArray(p.payload)?p.payload.length:"의사 근무")+ "개 항목 분석 완료. 미리보기 확인 후 반영하세요.</span>";
-};
-$("save").onclick=async()=>{
- if(!pending||pending.p.errors.length)return;
- $("save").disabled=true;$("status").textContent="저장 중...";
+ if(sec==="doctors"){ $("status").innerHTML="<span class=bad>의사는 현재 기존 방식과 충돌하지 않도록 다음 단계에서 추가할게.</span>"; $("save").disabled=true; return; }
+ if(sec!=="nurses"&&sec!=="assistants"){$("status").innerHTML="<span class=bad>먼저 간호사/보조원 입력을 안정적으로 적용한 뒤 PA/응급구조사를 같은 방식으로 연결할게.</span>";$("save").disabled=true;return}
+ const p=compactPeople(text,days,sec);
+ if(p.errors.length){pending=null;show(p);$("save").disabled=true;$("status").innerHTML='<span class=bad>⚠️ 오류 '+p.errors.length+'건<br>'+p.errors.map(esc).join("<br>")+"</span>";return}
  try{
-  const r=await fetch(API+"/api/duty/"+pending.month+"/"+pending.sec,{method:"PUT",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token()},body:JSON.stringify(pending.p.out||pending.p.payload)});
-  if(!r.ok)throw new Error("저장 실패 ("+r.status+")");
-  $("status").innerHTML='<span class=ok>✅ 반영 완료</span>';
- }catch(e){$("status").innerHTML='<span class=bad>❌ '+esc(e.message)+'</span>';$("save").disabled=false}
+  const current=await loadCurrent(month,sec), merged=mergePeople(current,p.rows,sec);
+  pending={month,sec,current,result:merged.result,rows:p.rows};
+  show(p);
+  $("save").disabled=merged.missing.length>0;
+  $("status").innerHTML=merged.missing.length?'<span class=bad>⚠️ 기존 명단에서 찾지 못한 이름: '+merged.missing.map(esc).join(", ")+"</span>":'<span class=ok>✅ '+p.rows.length+'명 분석 완료. 기존 명단에서 이름을 찾아 해당 사람의 근무만 교체합니다.</span>';
+ }catch(e){pending=null;$("save").disabled=true;$("status").innerHTML='<span class=bad>❌ '+esc(e.message)+'</span>'}
 };
 $("back").onclick=()=>location.href="duty.html";
 (async()=>{if(!(await admin()))$("status").innerHTML="<span class=bad>관리자 로그인이 필요합니다.</span>";else $("status").innerHTML="✅ 관리자 로그인 확인";})();
