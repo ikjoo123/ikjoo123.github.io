@@ -532,14 +532,10 @@ export default {
           const author = cleanText(body.author, 40) || "익명";
           const message = String(body.message || "").trim().slice(0, 5000);
           if (!message && !current.attachment) return errorResponse("글 내용 또는 첨부파일이 있어야 합니다.", 400);
-          const backupKey = "duty-board/" + month + "/_backups/" + Date.now() + "-posts.json";
-          await env.FILES.put(backupKey, postsText, {httpMetadata:{contentType:"application/json; charset=utf-8"}});
           posts[index] = {...current, author, message, updatedAt:new Date().toISOString()};
           await env.FILES.put(postsKey, JSON.stringify(posts), {httpMetadata:{contentType:"application/json; charset=utf-8"}});
           return jsonResponse({ok:true, post:posts[index]});
         }
-        const backupKey = "duty-board/" + month + "/_backups/" + Date.now() + "-posts.json";
-        await env.FILES.put(backupKey, postsText, {httpMetadata:{contentType:"application/json; charset=utf-8"}});
         posts.splice(index, 1);
         await env.FILES.put(postsKey, JSON.stringify(posts), {httpMetadata:{contentType:"application/json; charset=utf-8"}});
         if (current.attachment && typeof current.attachment.key === "string" && current.attachment.key.startsWith("duty-board/" + month + "/files/")) {
