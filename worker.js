@@ -482,8 +482,8 @@ export default {
         let attachment = null;
         if (file instanceof File && file.size > 0) {
           const original = cleanText(file.name, 180).replace(/[\\/\\\\]/g, "_") || "첨부파일";
-          const key = "duty-board/" + month + "/files/" + id + "-" + original;
-          await env.FILES.put(key, file.stream(), {httpMetadata:{contentType:file.type || "application/octet-stream"}});
+          const key = "duty-board/" + month + "/files/" + id;
+          await env.FILES.put(key, file.stream(), {httpMetadata:{contentType:file.type || "application/octet-stream",contentDisposition:"attachment"}});
           attachment = {name: original, size:file.size, key:key};
         }
         const postsKey = "duty-board/" + month + "/posts.json";
