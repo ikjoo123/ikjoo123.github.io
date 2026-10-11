@@ -456,7 +456,7 @@ export default {
        */
       const boardGet = url.pathname.match(/^\/api\/duty-board\/(\d{4}-\d{2})$/);
       const boardUpload = url.pathname.match(/^\/api\/duty-board\/(\d{4}-\d{2})\/posts$/);
-      const boardFile = url.pathname.match(/^\/api\/duty-board-file\/(\d{4}-\d{2})\/([A-Za-z0-9_-]+)$/);
+      const boardFile = url.pathname.match(/^\/api\/duty-board-file\/(\d{4}-\d{2})\/([^/]+)$/);
       const validBoardMonth = (m) => /^\d{4}-(0[1-9]|1[0-2])$/.test(m);
 
       if (boardGet && request.method === "GET") {
@@ -482,7 +482,7 @@ export default {
         let attachment = null;
         if (file instanceof File && file.size > 0) {
           const original = cleanText(file.name, 180).replace(/[\\/\\\\]/g, "_") || "첨부파일";
-          const key = "duty-board/" + month + "/files/" + id;
+          const key = "duty-board/" + month + "/files/" + id + "-" + original;
           await env.FILES.put(key, file.stream(), {httpMetadata:{contentType:file.type || "application/octet-stream",contentDisposition:"attachment"}});
           attachment = {name: original, size:file.size, key:key};
         }
@@ -499,7 +499,7 @@ export default {
       if (boardFile && request.method === "GET") {
         const month = boardFile[1], id = boardFile[2];
         if (!validBoardMonth(month)) return errorResponse("월 형식이 올바르지 않습니다.", 400);
-        const obj = await env.FILES.get("duty-board/" + month + "/files/" + id);
+        let fileKey; try { fileKey = decodeURIComponent(id); } catch (_) { return errorResponse("첨부파일 주소가 올바르지 않습니다.", 400); } if (!/^[A-Za-z0-9_-]+-.+$/.test(fileKey) || fileKey.includes("/") || fileKey.includes("\\")) return errorResponse("첨부파일 주소가 올바르지 않습니다.", 400); const obj = await env.FILES.get("duty-board/" + month + "/files/" + fileKey);
         if (!obj) return errorResponse("첨부파일을 찾을 수 없습니다.", 404);
         const headers = new Headers(corsHeaders);
         obj.writeHttpMetadata(headers);
