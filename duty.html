@@ -90,18 +90,37 @@ async function saveDuty(){const saveButton=document.getElementById("saveDutyBtn"
   }catch(e){say(e.message||"업로드 실패")}finally{$b("boardSubmit").disabled=false}
  });
  $b("boardPosts").addEventListener("click",async ev=>{
-  const edit=ev.target.closest("[data-board-edit]"),del=ev.target.closest("[data-board-delete]");
-  if(!edit&&!del)return;
-  const month=$b("boardMonth").value,id=(edit||del).dataset.boardEdit||(del&&del.dataset.boardDelete);
-  const postList=await fetch(api+"/api/duty-board/"+month,{cache:"no-store"}).then(r=>r.json()).catch(()=>({posts:[]}));
-  const post=(postList.posts||[]).find(p=>p.id===id);if(!post){say("게시글을 찾을 수 없습니다. 새로고침해 주세요.");return}
+  const edit=ev.target.closest("[data-board-edit]"),del=ev.target.closest("[data-board-delete]"),save=ev.target.closest("[data-board-save]"),cancel=ev.target.closest("[data-board-cancel]");
+  if(!edit&&!del&&!save&&!cancel)return;
+  const month=$b("boardMonth").value;
   const token=localStorage.getItem("ju_files_token");
+  if(cancel){await loadBoard();return}
   if(edit){
-   const author=prompt("작성자 수정",post.author||"익명");if(author===null)return;
-   const message=prompt("게시글 내용 수정",post.message||"");if(message===null)return;
-   say("수정 중...");
-   try{const r=await fetch(api+"/api/duty-board/"+month+"/posts/"+encodeURIComponent(id),{method:"PUT",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:JSON.stringify({author,message})});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||"수정에 실패했습니다.");say("수정 완료");await loadBoard()}catch(e){say(e.message||"수정에 실패했습니다.")}
-  }else{
+   const id=edit.dataset.boardEdit;
+   const postList=await fetch(api+"/api/duty-board/"+month,{cache:"no-store"}).then(r=>r.json()).catch(()=>({posts:[]}));
+   const post=(postList.posts||[]).find(p=>p.id===id);
+   if(!post){say("게시글을 찾을 수 없습니다. 새로고침해 주세요.");return}
+   const article=edit.closest("article");
+   if(!article)return;
+   const editor=document.createElement("div");editor.style.cssText="margin-top:10px;padding:12px;background:#f8fafc;border:1px solid #dbe2ea;border-radius:10px";
+   const authorLabel=document.createElement("label");authorLabel.textContent="작성자";authorLabel.style.cssText="display:block;font-size:13px;margin-bottom:4px";
+   const authorInput=document.createElement("input");authorInput.type="text";authorInput.maxLength=40;authorInput.value=post.author||"익명";authorInput.style.cssText="box-sizing:border-box;width:100%;padding:9px;border:1px solid #cbd5e1;border-radius:7px;margin-bottom:10px";
+   const messageLabel=document.createElement("label");messageLabel.textContent="게시글 내용";messageLabel.style.cssText="display:block;font-size:13px;margin-bottom:4px";
+   const messageInput=document.createElement("textarea");messageInput.maxLength=5000;messageInput.value=post.message||"";messageInput.rows=6;messageInput.style.cssText="box-sizing:border-box;width:100%;padding:9px;border:1px solid #cbd5e1;border-radius:7px;resize:vertical;font:inherit";
+   const actions=document.createElement("div");actions.style.cssText="display:flex;gap:8px;margin-top:9px";
+   const saveBtn=document.createElement("button");saveBtn.type="button";saveBtn.textContent="변경 저장";saveBtn.dataset.boardSave=id;saveBtn.style.cssText="padding:8px 13px;border:0;border-radius:7px;background:#2563eb;color:white";
+   const cancelBtn=document.createElement("button");cancelBtn.type="button";cancelBtn.textContent="취소";cancelBtn.dataset.boardCancel="1";cancelBtn.style.cssText="padding:8px 13px;border:1px solid #cbd5e1;border-radius:7px;background:white";
+   actions.append(saveBtn,cancelBtn);editor.append(authorLabel,authorInput,messageLabel,messageInput,actions);
+   const old=article.querySelector("[data-board-editor]");if(old)old.remove();editor.dataset.boardEditor="1";article.appendChild(editor);messageInput.focus();return;
+  }
+  if(save){
+   const id=save.dataset.boardSave,editor=save.closest("[data-board-editor]"),author=editor?.querySelector("input")?.value??"",message=editor?.querySelector("textarea")?.value??"";
+   if(!message.trim()&&!editor?.closest("article")?.querySelector("a[href*='/api/duty-board-file/']")){say("글 내용 또는 첨부파일이 있어야 합니다.");return}
+   save.disabled=true;say("수정 중...");
+   try{const r=await fetch(api+"/api/duty-board/"+month+"/posts/"+encodeURIComponent(id),{method:"PUT",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:JSON.stringify({author,message})});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||"수정에 실패했습니다.");say("수정 완료");await loadBoard()}catch(e){say(e.message||"수정에 실패했습니다.");save.disabled=false}return;
+  }
+  if(del){
+   const id=del.dataset.boardDelete;
    if(!confirm("이 게시글을 삭제할까요? 첨부파일도 함께 삭제됩니다."))return;
    say("삭제 중...");
    try{const r=await fetch(api+"/api/duty-board/"+month+"/posts/"+encodeURIComponent(id),{method:"DELETE",headers:{Authorization:"Bearer "+token}});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||"삭제에 실패했습니다.");say("삭제 완료");await loadBoard()}catch(e){say(e.message||"삭제에 실패했습니다.")}
