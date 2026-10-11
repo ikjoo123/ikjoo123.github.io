@@ -108,6 +108,35 @@ async function createToken(username, password) {
   return payload + "." + signature;
 }
 
+
+async function hashBoardPassword(password) {
+  const iterations = 150000;
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits({name:"PBKDF2", salt, iterations, hash:"SHA-256"}, key, 256);
+  const hex = bytes => Array.from(new Uint8Array(bytes), b => b.toString(16).padStart(2,"0")).join("");
+  return "pbkdf2$" + iterations + "$" + hex(salt) + "$" + hex(bits);
+}
+async function verifyBoardPassword(password, stored) {
+  try {
+    const parts = String(stored || "").split("$");
+    if (parts.length !== 4 || parts[0] !== "pbkdf2") return false;
+    const iterations = Number(parts[1]);
+    if (!Number.isInteger(iterations) || iterations < 10000 || iterations > 500000) return false;
+    const fromHex = value => {
+      if (!/^(?:[a-f0-9]{2})+$/i.test(value)) throw new Error("invalid hex");
+      return new Uint8Array(value.match(/.{2}/g).map(x => parseInt(x,16)));
+    };
+    const salt = fromHex(parts[2]), expected = fromHex(parts[3]);
+    const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
+    const actual = new Uint8Array(await crypto.subtle.deriveBits({name:"PBKDF2", salt, iterations, hash:"SHA-256"}, key, 256));
+    if (actual.length !== expected.length) return false;
+    let diff = 0;
+    for (let i=0;i<actual.length;i++) diff |= actual[i] ^ expected[i];
+    return diff === 0;
+  } catch (_) { return false; }
+}
+
 async function getAuthRole(request, env) {
   try {
     const authorization = request.headers.get("Authorization") || "";
@@ -465,7 +494,11 @@ export default {
         const obj = await env.FILES.get("duty-board/" + month + "/posts.json");
         let posts = [];
         if (obj) { try { posts = JSON.parse(await obj.text()); if (!Array.isArray(posts)) posts = []; } catch (_) { posts = []; } }
-        return new Response(JSON.stringify({month, posts}), {status:200,headers:{...corsHeaders,"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"}});
+        const publicPosts = posts.map(post => {
+          const {editPasswordHash, ...visible} = post || {};
+          return {...visible, hasEditPassword: Boolean(editPasswordHash)};
+        });
+        return new Response(JSON.stringify({month, posts:publicPosts}), {status:200,headers:{...corsHeaders,"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"}});
       }
 
       if (boardUpload && request.method === "POST") {
@@ -475,7 +508,10 @@ export default {
         try { form = await request.formData(); } catch (_) { return errorResponse("업로드 형식이 올바르지 않습니다.", 400); }
         const author = cleanText(form.get("author"), 40) || "익명";
         const message = String(form.get("message") || "").trim().slice(0, 5000);
+        const editPassword = String(form.get("editPassword") || "").trim();
         const file = form.get("file");
+        if (editPassword && editPassword.length < 4) return errorResponse("비밀번호는 4자 이상 입력해주세요.", 400);
+        if (editPassword.length > 128) return errorResponse("비밀번호는 128자 이하로 입력해주세요.", 400);
         if (!message && !(file instanceof File)) return errorResponse("글이나 파일을 입력해주세요.", 400);
         
         const id = crypto.randomUUID().replace(/-/g, "");
@@ -498,7 +534,8 @@ export default {
         const oldObj = await env.FILES.get(postsKey);
         let posts = [];
         if (oldObj) { try { posts = JSON.parse(await oldObj.text()); if (!Array.isArray(posts)) posts = []; } catch (_) { posts = []; } }
-        const post = {id, author, message, createdAt:new Date().toISOString(), attachment};
+        const editPasswordHash = editPassword ? await hashBoardPassword(editPassword) : null;
+        const post = {id, author, message, createdAt:new Date().toISOString(), attachment, ...(editPasswordHash ? {editPasswordHash} : {})};
         posts.unshift(post);
         await env.FILES.put(postsKey, JSON.stringify(posts), {httpMetadata:{contentType:"application/json; charset=utf-8"}});
         return jsonResponse({ok:true, post}, 201);
@@ -506,7 +543,9 @@ export default {
 
       const boardPostMatch = url.pathname.match(/^\/api\/duty-board\/(\d{4}-\d{2})\/posts\/([^/]+)$/);
       if (boardPostMatch && (request.method === "PUT" || request.method === "DELETE")) {
-        if (!(await verifyToken(request, env))) return errorResponse("관리자 권한이 필요합니다.", 403);
+        const isAdmin = await verifyToken(request, env);
+        let requestBody = {};
+        try { requestBody = await request.json(); } catch (_) { requestBody = {}; }
         const month = boardPostMatch[1];
         const postId = boardPostMatch[2];
         if (!validBoardMonth(month) || !/^[a-f0-9]{32}$/i.test(postId)) return errorResponse("게시글 주소가 올바르지 않습니다.", 400);
@@ -526,9 +565,11 @@ export default {
         const index = posts.findIndex(p => p && p.id === postId);
         if (index < 0) return errorResponse("게시글을 찾을 수 없습니다.", 404);
         const current = posts[index];
+        if (!isAdmin && current.editPasswordHash && !(await verifyBoardPassword(String(requestBody.password || ""), current.editPasswordHash))) {
+          return errorResponse("게시글 비밀번호가 올바르지 않습니다.", 403);
+        }
         if (request.method === "PUT") {
-          let body;
-          try { body = await request.json(); } catch (_) { return errorResponse("수정 내용이 올바르지 않습니다.", 400); }
+          const body = requestBody;
           const author = cleanText(body.author, 40) || "익명";
           const message = String(body.message || "").trim().slice(0, 5000);
           if (!message && !current.attachment) return errorResponse("글 내용 또는 첨부파일이 있어야 합니다.", 400);
