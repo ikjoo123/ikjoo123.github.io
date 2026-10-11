@@ -7,7 +7,7 @@
  </div>
  <div id="boardComposer" hidden>
   <form id="boardForm">
-   <div style="display:flex;gap:8px;flex-wrap:wrap"><input id="boardAuthor" maxlength="40" placeholder="작성자 (선택)" style="flex:1;min-width:140px;padding:10px;border:1px solid #d5d9df;border-radius:8px"><input id="boardFile" type="file" style="flex:2;min-width:200px;padding:7px;border:1px solid #d5d9df;border-radius:8px"></div>
+   <div style="display:flex;gap:8px;flex-wrap:wrap"><input id="boardAuthor" maxlength="40" placeholder="작성자 (선택)" style="flex:1;min-width:140px;padding:10px;border:1px solid #d5d9df;border-radius:8px"><input id="boardFile" type="file" style="flex:2;min-width:200px;padding:7px;border:1px solid #d5d9df;border-radius:8px"></div><input id="boardEditPassword" type="password" maxlength="128" autocomplete="new-password" placeholder="수정·삭제 비밀번호 (선택, 4자 이상)" style="box-sizing:border-box;width:100%;margin-top:8px;padding:10px;border:1px solid #d5d9df;border-radius:8px"><div style="font-size:12px;color:#777;margin-top:4px">비밀번호를 설정하지 않으면 누구나 수정·삭제할 수 있습니다. 관리자는 항상 수정·삭제할 수 있습니다.</div>
    <textarea id="boardMessage" maxlength="5000" placeholder="근무 관련 글이나 댓글을 자유롭게 작성하세요. (파일만 올려도 됩니다)" style="width:100%;min-height:110px;margin-top:8px;padding:10px;border:1px solid #d5d9df;border-radius:8px;font:inherit;resize:vertical"></textarea>
    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px"><button id="boardSubmit" type="submit" style="padding:10px 15px;border:1px solid #d5d9df;border-radius:8px;background:#f8fafc;font-weight:700">글·파일 업로드</button><span style="font-size:12px;color:#666">업로드 내용은 선택한 월에 저장됩니다.</span></div>
   </form>
@@ -68,8 +68,9 @@ async function saveDuty(){const saveButton=document.getElementById("saveDutyBtn"
       const id=p.attachment.key.split("/").pop();
       file='<div style="margin-top:8px"><a href="'+api+"/api/duty-board-file/"+encodeURIComponent(month)+"/"+encodeURIComponent(id)+'" target="_blank" rel="noopener" style="overflow-wrap:anywhere">📎 '+escB(p.attachment.name)+' ('+Math.ceil((p.attachment.size||0)/1024)+' KB)</a></div>';
     }
-    const adminTools=boardIsAdmin?'<div style="display:flex;gap:6px;margin-top:9px"><button type="button" data-board-edit="'+escB(p.id)+'" style="padding:5px 10px;border:1px solid #d5d9df;border-radius:7px;background:#fff">✏️ 수정</button><button type="button" data-board-delete="'+escB(p.id)+'" style="padding:5px 10px;border:1px solid #f1c5c5;border-radius:7px;background:#fff7f7;color:#a33">🗑️ 삭제</button></div>':'';
-    return '<article style="border-top:1px solid #e5e7eb;padding:13px 2px"><div style="display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap"><strong>'+escB(p.author||"익명")+'</strong><time style="font-size:12px;color:#777">'+escB(dt)+'</time></div><div style="white-space:pre-wrap;overflow-wrap:anywhere;margin-top:8px">'+escB(p.message||"")+'</div>'+file+adminTools+'</article>';
+    const accessLabel=p.hasEditPassword?'<span style="font-size:11px;color:#18794e">🔒 비밀번호 설정됨</span>':'<span style="font-size:11px;color:#a16207">⚠️ 비밀번호 없음 · 누구나 수정/삭제 가능</span>';
+    const adminTools='<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:9px"><button type="button" data-board-edit="'+escB(p.id)+'" data-board-protected="'+(p.hasEditPassword?'1':'0')+'" style="padding:5px 10px;border:1px solid #d5d9df;border-radius:7px;background:#fff">✏️ 수정</button><button type="button" data-board-delete="'+escB(p.id)+'" data-board-protected="'+(p.hasEditPassword?'1':'0')+'" style="padding:5px 10px;border:1px solid #f1c5c5;border-radius:7px;background:#fff7f7;color:#a33">🗑️ 삭제</button><span style="font-size:12px;color:#667085">'+(boardIsAdmin?'관리자':'')+'</span></div>';
+    return '<article style="border-top:1px solid #e5e7eb;padding:13px 2px"><div style="display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap"><strong>'+escB(p.author||"익명")+'</strong><time style="font-size:12px;color:#777">'+escB(dt)+'</time></div><div style="margin-top:4px">'+accessLabel+'</div><div style="white-space:pre-wrap;overflow-wrap:anywhere;margin-top:8px">'+escB(p.message||"")+'</div>'+file+adminTools+'</article>';
    }).join(""):'<div style="padding:18px 4px;color:#777">이 달에는 등록된 글이나 파일이 없습니다.</div>';
    say(month+" 게시글 "+posts.length+"개");
   }catch(e){say(e.message||"불러오기 실패")}
@@ -78,15 +79,16 @@ async function saveDuty(){const saveButton=document.getElementById("saveDutyBtn"
  $b("boardMonth").addEventListener("change",loadBoard);
  $b("boardForm").addEventListener("submit",async ev=>{
   ev.preventDefault();
-  const month=$b("boardMonth").value,file=$b("boardFile").files[0],message=$b("boardMessage").value.trim(),author=$b("boardAuthor").value.trim();
+  const month=$b("boardMonth").value,file=$b("boardFile").files[0],message=$b("boardMessage").value.trim(),author=$b("boardAuthor").value.trim(),editPassword=$b("boardEditPassword").value;
   if(!message&&!file){say("글을 입력하거나 파일을 선택해주세요.");return}
-  const form=new FormData();form.append("author",author);form.append("message",message);if(file)form.append("file",file);
+  if(editPassword&&editPassword.length<4){say("비밀번호는 4자 이상 입력해주세요.");return}
+  const form=new FormData();form.append("author",author);form.append("message",message);form.append("editPassword",editPassword);if(file)form.append("file",file);
   $b("boardSubmit").disabled=true;say("업로드 중...");
   try{
    const r=await fetch(api+"/api/duty-board/"+month+"/posts",{method:"POST",body:form});
    const d=await r.json().catch(()=>({}));
    if(!r.ok)throw new Error(d.error||d.message||"업로드에 실패했습니다.");
-   $b("boardMessage").value="";$b("boardFile").value="";say("업로드 완료");await loadBoard();
+   $b("boardMessage").value="";$b("boardFile").value="";$b("boardEditPassword").value="";say("업로드 완료");await loadBoard();
   }catch(e){say(e.message||"업로드 실패")}finally{$b("boardSubmit").disabled=false}
  });
  $b("boardPosts").addEventListener("click",async ev=>{
@@ -100,6 +102,8 @@ async function saveDuty(){const saveButton=document.getElementById("saveDutyBtn"
    const postList=await fetch(api+"/api/duty-board/"+month,{cache:"no-store"}).then(r=>r.json()).catch(()=>({posts:[]}));
    const post=(postList.posts||[]).find(p=>p.id===id);
    if(!post){say("게시글을 찾을 수 없습니다. 새로고침해 주세요.");return}
+   let editPassword="";
+   if(!boardIsAdmin&&post.hasEditPassword){editPassword=prompt("이 게시글의 수정·삭제 비밀번호를 입력하세요.");if(editPassword===null)return}
    const article=edit.closest("article");
    if(!article)return;
    const editor=document.createElement("div");editor.style.cssText="margin-top:10px;padding:12px;background:#f8fafc;border:1px solid #dbe2ea;border-radius:10px";
@@ -111,19 +115,21 @@ async function saveDuty(){const saveButton=document.getElementById("saveDutyBtn"
    const saveBtn=document.createElement("button");saveBtn.type="button";saveBtn.textContent="변경 저장";saveBtn.dataset.boardSave=id;saveBtn.style.cssText="padding:8px 13px;border:0;border-radius:7px;background:#2563eb;color:white";
    const cancelBtn=document.createElement("button");cancelBtn.type="button";cancelBtn.textContent="취소";cancelBtn.dataset.boardCancel="1";cancelBtn.style.cssText="padding:8px 13px;border:1px solid #cbd5e1;border-radius:7px;background:white";
    actions.append(saveBtn,cancelBtn);editor.append(authorLabel,authorInput,messageLabel,messageInput,actions);
-   const old=article.querySelector("[data-board-editor]");if(old)old.remove();editor.dataset.boardEditor="1";article.appendChild(editor);messageInput.focus();return;
+   const old=article.querySelector("[data-board-editor]");if(old)old.remove();editor.dataset.boardEditor="1";editor.dataset.boardPassword=editPassword;article.appendChild(editor);messageInput.focus();return;
   }
   if(save){
    const id=save.dataset.boardSave,editor=save.closest("[data-board-editor]"),author=editor?.querySelector("input")?.value??"",message=editor?.querySelector("textarea")?.value??"";
    if(!message.trim()&&!editor?.closest("article")?.querySelector("a[href*='/api/duty-board-file/']")){say("글 내용 또는 첨부파일이 있어야 합니다.");return}
    save.disabled=true;say("수정 중...");
-   try{const r=await fetch(api+"/api/duty-board/"+month+"/posts/"+encodeURIComponent(id),{method:"PUT",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:JSON.stringify({author,message})});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||"수정에 실패했습니다.");say("수정 완료");await loadBoard()}catch(e){say(e.message||"수정에 실패했습니다.");save.disabled=false}return;
+   try{const r=await fetch(api+"/api/duty-board/"+month+"/posts/"+encodeURIComponent(id),{method:"PUT",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:JSON.stringify({author,message,password:editor?.dataset.boardPassword||""})});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||"수정에 실패했습니다.");say("수정 완료");await loadBoard()}catch(e){say(e.message||"수정에 실패했습니다.");save.disabled=false}return;
   }
   if(del){
    const id=del.dataset.boardDelete;
+   let password="";
+   if(!boardIsAdmin&&del.dataset.boardProtected==="1"){password=prompt("이 게시글의 삭제 비밀번호를 입력하세요.");if(password===null)return}
    if(!confirm("이 게시글을 삭제할까요? 첨부파일도 함께 삭제됩니다."))return;
    say("삭제 중...");
-   try{const r=await fetch(api+"/api/duty-board/"+month+"/posts/"+encodeURIComponent(id),{method:"DELETE",headers:{Authorization:"Bearer "+token}});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||"삭제에 실패했습니다.");say("삭제 완료");await loadBoard()}catch(e){say(e.message||"삭제에 실패했습니다.")}
+   try{const r=await fetch(api+"/api/duty-board/"+month+"/posts/"+encodeURIComponent(id),{method:"DELETE",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:JSON.stringify({password})});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||"삭제에 실패했습니다.");say("삭제 완료");await loadBoard()}catch(e){say(e.message||"삭제에 실패했습니다.")}
   }
  });
  (async()=>{boardIsAdmin=await checkAdmin();await loadBoard()})();
