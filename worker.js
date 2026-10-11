@@ -481,8 +481,16 @@ export default {
         const id = crypto.randomUUID().replace(/-/g, "");
         let attachment = null;
         if (file instanceof File && file.size > 0) {
-          const original = cleanText(file.name, 180).replace(/[\\/\\\\]/g, "_") || "첨부파일";
-          const key = "duty-board/" + month + "/files/" + id + "-" + original;
+          let original = cleanText(file.name, 180).replace(/[\\/\\\\]/g, "_") || "첨부파일";
+          const prefix = "duty-board/" + month + "/files/";
+          let key = prefix + original;
+          if (await env.FILES.head(key)) {
+            const dot = original.lastIndexOf(".");
+            const stem = dot > 0 ? original.slice(0, dot) : original;
+            const ext = dot > 0 ? original.slice(dot) : "";
+            let n = 2;
+            do { original = stem + " (" + n++ + ")" + ext; key = prefix + original; } while (await env.FILES.head(key) && n < 10000);
+          }
           await env.FILES.put(key, file.stream(), {httpMetadata:{contentType:file.type || "application/octet-stream",contentDisposition:"attachment"}});
           attachment = {name: original, size:file.size, key:key};
         }
@@ -499,7 +507,7 @@ export default {
       if (boardFile && request.method === "GET") {
         const month = boardFile[1], id = boardFile[2];
         if (!validBoardMonth(month)) return errorResponse("월 형식이 올바르지 않습니다.", 400);
-        let fileKey; try { fileKey = decodeURIComponent(id); } catch (_) { return errorResponse("첨부파일 주소가 올바르지 않습니다.", 400); } if (!/^[A-Za-z0-9_-]+-.+$/.test(fileKey) || fileKey.includes("/") || fileKey.includes("\\")) return errorResponse("첨부파일 주소가 올바르지 않습니다.", 400); const obj = await env.FILES.get("duty-board/" + month + "/files/" + fileKey);
+        let fileName; try { fileName = decodeURIComponent(id); } catch (_) { return errorResponse("첨부파일 주소가 올바르지 않습니다.", 400); } if (!fileName || fileName.includes("/") || fileName.includes("\\")) return errorResponse("첨부파일 주소가 올바르지 않습니다.", 400); const obj = await env.FILES.get("duty-board/" + month + "/files/" + fileName);
         if (!obj) return errorResponse("첨부파일을 찾을 수 없습니다.", 404);
         const headers = new Headers(corsHeaders);
         obj.writeHttpMetadata(headers);
