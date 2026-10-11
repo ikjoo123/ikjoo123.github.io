@@ -506,8 +506,7 @@ export default {
 
       const boardPostMatch = url.pathname.match(/^\/api\/duty-board\/(\d{4}-\d{2})\/posts\/([^/]+)$/);
       if (boardPostMatch && (request.method === "PUT" || request.method === "DELETE")) {
-        const authError = requireAdmin();
-        if (authError) return authError;
+        if (!(await verifyToken(request, env))) return errorResponse("관리자 권한이 필요합니다.", 403);
         const month = boardPostMatch[1];
         const postId = boardPostMatch[2];
         if (!validBoardMonth(month) || !/^[a-f0-9]{32}$/i.test(postId)) return errorResponse("게시글 주소가 올바르지 않습니다.", 400);
