@@ -451,6 +451,64 @@ export default {
       }
 
       /*
+       * MONTHLY PUBLIC DUTY BOARD
+       * 댓글/첨부파일은 월별로 R2에 분리 저장됩니다.
+       */
+      const boardGet = url.pathname.match(/^\/api\/duty-board\/(\d{4}-\d{2})$/);
+      const boardUpload = url.pathname.match(/^\/api\/duty-board\/(\d{4}-\d{2})\/posts$/);
+      const boardFile = url.pathname.match(/^\/api\/duty-board-file\/(\d{4}-\d{2})\/([A-Za-z0-9_-]+)$/);
+      const validBoardMonth = (m) => /^\d{4}-(0[1-9]|1[0-2])$/.test(m);
+
+      if (boardGet && request.method === "GET") {
+        const month = boardGet[1];
+        if (!validBoardMonth(month)) return errorResponse("월 형식이 올바르지 않습니다.", 400);
+        const obj = await env.FILES.get("duty-board/" + month + "/posts.json");
+        let posts = [];
+        if (obj) { try { posts = JSON.parse(await obj.text()); if (!Array.isArray(posts)) posts = []; } catch (_) { posts = []; } }
+        return new Response(JSON.stringify({month, posts}), {status:200,headers:{...corsHeaders,"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"}});
+      }
+
+      if (boardUpload && request.method === "POST") {
+        const month = boardUpload[1];
+        if (!validBoardMonth(month)) return errorResponse("월 형식이 올바르지 않습니다.", 400);
+        let form;
+        try { form = await request.formData(); } catch (_) { return errorResponse("업로드 형식이 올바르지 않습니다.", 400); }
+        const author = cleanText(form.get("author"), 40) || "익명";
+        const message = String(form.get("message") || "").trim().slice(0, 5000);
+        const file = form.get("file");
+        if (!message && !(file instanceof File)) return errorResponse("글이나 파일을 입력해주세요.", 400);
+        if (file instanceof File && file.size > 25 * 1024 * 1024) return errorResponse("파일은 25MB 이하만 업로드할 수 있습니다.", 413);
+        const id = crypto.randomUUID().replace(/-/g, "");
+        let attachment = null;
+        if (file instanceof File && file.size > 0) {
+          const original = cleanText(file.name, 180).replace(/[\\/\\\\]/g, "_") || "첨부파일";
+          const key = "duty-board/" + month + "/files/" + id + "-" + original;
+          await env.FILES.put(key, file.stream(), {httpMetadata:{contentType:file.type || "application/octet-stream"}});
+          attachment = {name: original, size:file.size, key:key};
+        }
+        const postsKey = "duty-board/" + month + "/posts.json";
+        const oldObj = await env.FILES.get(postsKey);
+        let posts = [];
+        if (oldObj) { try { posts = JSON.parse(await oldObj.text()); if (!Array.isArray(posts)) posts = []; } catch (_) { posts = []; } }
+        const post = {id, author, message, createdAt:new Date().toISOString(), attachment};
+        posts.unshift(post);
+        await env.FILES.put(postsKey, JSON.stringify(posts), {httpMetadata:{contentType:"application/json; charset=utf-8"}});
+        return jsonResponse({ok:true, post}, 201);
+      }
+
+      if (boardFile && request.method === "GET") {
+        const month = boardFile[1], id = boardFile[2];
+        if (!validBoardMonth(month)) return errorResponse("월 형식이 올바르지 않습니다.", 400);
+        const obj = await env.FILES.get("duty-board/" + month + "/files/" + id);
+        if (!obj) return errorResponse("첨부파일을 찾을 수 없습니다.", 404);
+        const headers = new Headers(corsHeaders);
+        obj.writeHttpMetadata(headers);
+        headers.set("Cache-Control", "public, max-age=3600");
+        headers.set("Content-Disposition", "attachment");
+        return new Response(obj.body, {status:200,headers});
+      }
+
+      /*
        * PUBLIC DUTY DATA
        * 근무표는 로그인 없이 조회할 수 있습니다.
        */
