@@ -504,7 +504,7 @@ export default {
         return jsonResponse({ok:true, post}, 201);
       }
 
-      const boardPostMatch = url.pathname.match(/^\\/api\\/duty-board\\/(\\d{4}-\\d{2})\\/posts\\/([^/]+)$/);
+      const boardPostMatch = url.pathname.match(/^\/api\/duty-board\/(\d{4}-\d{2})\/posts\/([^/]+)$/);
       if (boardPostMatch && (request.method === "PUT" || request.method === "DELETE")) {
         const authError = requireAdmin();
         if (authError) return authError;
