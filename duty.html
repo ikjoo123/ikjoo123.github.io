@@ -48,6 +48,7 @@ async function saveDuty(){const saveButton=document.getElementById("saveDutyBtn"
 </script><script>(async()=>{isAdmin=await checkAdmin();if(isAdmin){document.getElementById("editDutyBtn").classList.remove("hidden");document.getElementById("dutyDataBtn").classList.remove("hidden");}document.getElementById("editDutyBtn").onclick=toggleEdit;document.getElementById("saveDutyBtn").onclick=saveDuty;})();</script><script>
 (function(){
  const api=API;
+ let boardIsAdmin=false;
  const $b=id=>document.getElementById(id);
  const now=new Date();$b("boardMonth").value=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
  const escB=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -67,7 +68,8 @@ async function saveDuty(){const saveButton=document.getElementById("saveDutyBtn"
       const id=p.attachment.key.split("/").pop();
       file='<div style="margin-top:8px"><a href="'+api+"/api/duty-board-file/"+encodeURIComponent(month)+"/"+encodeURIComponent(id)+'" target="_blank" rel="noopener" style="overflow-wrap:anywhere">📎 '+escB(p.attachment.name)+' ('+Math.ceil((p.attachment.size||0)/1024)+' KB)</a></div>';
     }
-    return '<article style="border-top:1px solid #e5e7eb;padding:13px 2px"><div style="display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap"><strong>'+escB(p.author||"익명")+'</strong><time style="font-size:12px;color:#777">'+escB(dt)+'</time></div><div style="white-space:pre-wrap;overflow-wrap:anywhere;margin-top:8px">'+escB(p.message||"")+'</div>'+file+'</article>';
+    const adminTools=boardIsAdmin?'<div style="display:flex;gap:6px;margin-top:9px"><button type="button" data-board-edit="'+escB(p.id)+'" style="padding:5px 10px;border:1px solid #d5d9df;border-radius:7px;background:#fff">✏️ 수정</button><button type="button" data-board-delete="'+escB(p.id)+'" style="padding:5px 10px;border:1px solid #f1c5c5;border-radius:7px;background:#fff7f7;color:#a33">🗑️ 삭제</button></div>':'';
+    return '<article style="border-top:1px solid #e5e7eb;padding:13px 2px"><div style="display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap"><strong>'+escB(p.author||"익명")+'</strong><time style="font-size:12px;color:#777">'+escB(dt)+'</time></div><div style="white-space:pre-wrap;overflow-wrap:anywhere;margin-top:8px">'+escB(p.message||"")+'</div>'+file+adminTools+'</article>';
    }).join(""):'<div style="padding:18px 4px;color:#777">이 달에는 등록된 글이나 파일이 없습니다.</div>';
    say(month+" 게시글 "+posts.length+"개");
   }catch(e){say(e.message||"불러오기 실패")}
@@ -87,7 +89,25 @@ async function saveDuty(){const saveButton=document.getElementById("saveDutyBtn"
    $b("boardMessage").value="";$b("boardFile").value="";say("업로드 완료");await loadBoard();
   }catch(e){say(e.message||"업로드 실패")}finally{$b("boardSubmit").disabled=false}
  });
- loadBoard();
+ $b("boardPosts").addEventListener("click",async ev=>{
+  const edit=ev.target.closest("[data-board-edit]"),del=ev.target.closest("[data-board-delete]");
+  if(!edit&&!del)return;
+  const month=$b("boardMonth").value,id=(edit||del).dataset.boardEdit||(del&&del.dataset.boardDelete);
+  const postList=await fetch(api+"/api/duty-board/"+month,{cache:"no-store"}).then(r=>r.json()).catch(()=>({posts:[]}));
+  const post=(postList.posts||[]).find(p=>p.id===id);if(!post){say("게시글을 찾을 수 없습니다. 새로고침해 주세요.");return}
+  const token=localStorage.getItem("ju_files_token");
+  if(edit){
+   const author=prompt("작성자 수정",post.author||"익명");if(author===null)return;
+   const message=prompt("게시글 내용 수정",post.message||"");if(message===null)return;
+   say("수정 중...");
+   try{const r=await fetch(api+"/api/duty-board/"+month+"/posts/"+encodeURIComponent(id),{method:"PUT",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:JSON.stringify({author,message})});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||"수정에 실패했습니다.");say("수정 완료");await loadBoard()}catch(e){say(e.message||"수정에 실패했습니다.")}
+  }else{
+   if(!confirm("이 게시글을 삭제할까요? 첨부파일도 함께 삭제됩니다."))return;
+   say("삭제 중...");
+   try{const r=await fetch(api+"/api/duty-board/"+month+"/posts/"+encodeURIComponent(id),{method:"DELETE",headers:{Authorization:"Bearer "+token}});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||"삭제에 실패했습니다.");say("삭제 완료");await loadBoard()}catch(e){say(e.message||"삭제에 실패했습니다.")}
+  }
+ });
+ (async()=>{boardIsAdmin=await checkAdmin();await loadBoard()})();
  $b("boardToggle").addEventListener("click",()=>{const content=$b("boardComposer"),open=content.hidden;content.hidden=!open;$b("boardToggle").setAttribute("aria-expanded",String(open));$b("boardToggleIcon").textContent=open?"－ 접기":"＋ 글쓰기";});
 })();
 </script></body></html>
