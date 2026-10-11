@@ -477,7 +477,7 @@ export default {
         const message = String(form.get("message") || "").trim().slice(0, 5000);
         const file = form.get("file");
         if (!message && !(file instanceof File)) return errorResponse("글이나 파일을 입력해주세요.", 400);
-        if (file instanceof File && file.size > 25 * 1024 * 1024) return errorResponse("파일은 25MB 이하만 업로드할 수 있습니다.", 413);
+        
         const id = crypto.randomUUID().replace(/-/g, "");
         let attachment = null;
         if (file instanceof File && file.size > 0) {
