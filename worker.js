@@ -456,21 +456,24 @@ export default {
         await env.FILES.put("duty-backups/" + month + "/" + section + "-" + new Date().toISOString().replace(/[:.]/g,"-") + ".json", text, {httpMetadata:{contentType:"application/json; charset=utf-8"}});
       }
       async function getCombinedDuty(month) {
-        const legacy = await readLegacyDuty(month);
-        const updatedAt = await readDutyUpdatedAt(month);
         const sectionNames = ["nurses","assistants","doctors","pa","emt"];
-        for (const sectionName of sectionNames) {
-          if (!updatedAt[sectionName]) {
-            const sectionObject = await env.FILES.get("duty-sections/" + month + "/" + sectionName + ".json");
-            if (sectionObject?.uploaded) updatedAt[sectionName] = sectionObject.uploaded.toISOString();
+        const [legacy, updatedAt, sectionObjects] = await Promise.all([
+          readLegacyDuty(month),
+          readDutyUpdatedAt(month),
+          Promise.all(sectionNames.map(sectionName => env.FILES.get("duty-sections/" + month + "/" + sectionName + ".json")))
+        ]);
+        const sectionValues = await Promise.all(sectionObjects.map(async object => {
+          if (!object) return null;
+          try { return JSON.parse(await object.text()); } catch (_) { return null; }
+        }));
+        for (let i = 0; i < sectionNames.length; i++) {
+          const sectionName = sectionNames[i];
+          if (!updatedAt[sectionName] && sectionObjects[i]?.uploaded) {
+            updatedAt[sectionName] = sectionObjects[i].uploaded.toISOString();
           }
         }
         const data = {staff:Array.isArray(legacy.staff)?legacy.staff:[], doctorData:legacy.doctorData&&typeof legacy.doctorData==="object"?legacy.doctorData:{}, updatedAt};
-        const nurses = await readDutySection(month,"nurses");
-        const assistants = await readDutySection(month,"assistants");
-        const doctors = await readDutySection(month,"doctors");
-        const pa = await readDutySection(month,"pa");
-        const emt = await readDutySection(month,"emt");
+        const [nurses, assistants, doctors, pa, emt] = sectionValues;
         if (Array.isArray(nurses)) data.staff = data.staff.filter(s=>s[0]!=="n").concat(nurses);
         if (Array.isArray(assistants)) data.staff = data.staff.filter(s=>s[0]!=="a").concat(assistants);
         if (doctors && typeof doctors==="object") data.doctorData = {...data.doctorData,...doctors};
