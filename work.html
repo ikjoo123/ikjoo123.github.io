@@ -830,6 +830,13 @@ main {
     </div>
   </div>
 
+  <div class="notesBackupToolbar" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin:0 auto 16px;max-width:650px">
+    <button id="backupNotesButton" type="button">⬇️ 메모 백업 다운로드</button>
+    <button id="restoreNotesButton" type="button">♻️ 백업 복원</button>
+    <input id="restoreNotesInput" type="file" accept="application/json,.json" hidden>
+    <span id="noteAutosaveStatus" style="font-size:12px;color:#667085;align-self:center">작성 중인 메모 자동저장 준비됨</span>
+  </div>
+
   <div
     id="notesGrid"
     class="notesGrid"
@@ -2926,6 +2933,126 @@ document.getElementById(
 ).onclick =
   clearNoteComposer;
 
+const NOTE_DRAFT_KEY = "ju_notes_draft_v1";
+let noteDraftAutosaveTimer = null;
+
+function saveNoteDraft() {
+  const draft = {
+    title: noteTitle.value,
+    text: noteText.value,
+    color: selectedColor,
+    editingNoteId: editingNoteId,
+    savedAt: new Date().toISOString()
+  };
+  try {
+    if (draft.title.trim() || draft.text.trim()) {
+      localStorage.setItem(NOTE_DRAFT_KEY, JSON.stringify(draft));
+      document.getElementById("noteAutosaveStatus").textContent =
+        "작성 중인 메모 자동저장됨 · " +
+        new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+    } else {
+      localStorage.removeItem(NOTE_DRAFT_KEY);
+      document.getElementById("noteAutosaveStatus").textContent = "작성 중인 메모 자동저장 준비됨";
+    }
+  } catch (error) {
+    console.error("메모 임시 자동저장 실패", error);
+    document.getElementById("noteAutosaveStatus").textContent = "자동저장 실패 · 브라우저 저장공간 확인";
+  }
+}
+
+function restoreNoteDraft() {
+  try {
+    const raw = localStorage.getItem(NOTE_DRAFT_KEY);
+    if (!raw) return;
+    const draft = JSON.parse(raw);
+    if (!draft || (!draft.title && !draft.text)) return;
+    if (!confirm("이전에 작성하다 만 메모가 있어요. 복구할까요?")) return;
+    editingNoteId = draft.editingNoteId || null;
+    noteTitle.value = draft.title || "";
+    noteText.value = draft.text || "";
+    selectedColor = draft.color || "yellow";
+    document.querySelectorAll(".colorDot").forEach(function(dot) {
+      dot.classList.toggle("selected", dot.dataset.color === selectedColor);
+    });
+    document.getElementById("noteAutosaveStatus").textContent = "이전 작성 내용 복구됨";
+  } catch (error) {
+    console.error("메모 임시 내용 복구 실패", error);
+  }
+}
+
+[noteTitle, noteText].forEach(function(field) {
+  field.addEventListener("input", saveNoteDraft);
+});
+document.querySelectorAll(".colorDot").forEach(function(dot) {
+  dot.addEventListener("click", saveNoteDraft);
+});
+noteDraftAutosaveTimer = setInterval(saveNoteDraft, 60 * 1000);
+restoreNoteDraft();
+
+document.getElementById("backupNotesButton").onclick = async function() {
+  try {
+    const response = await apiFetch("/api/notes");
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "메모 목록을 불러오지 못했습니다.");
+    const backup = {
+      format: "ikjoo-notes-backup-v1",
+      exportedAt: new Date().toISOString(),
+      notes: data.notes || []
+    };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "익주_업무메모_백업_" + new Date().toISOString().slice(0, 10) + ".json";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    alert("메모 백업 파일을 다운로드했습니다. 안전한 곳에 보관해 주세요.");
+  } catch (error) {
+    console.error(error);
+    alert("백업 실패: " + error.message);
+  }
+};
+
+document.getElementById("restoreNotesButton").onclick = function() {
+  document.getElementById("restoreNotesInput").click();
+};
+document.getElementById("restoreNotesInput").addEventListener("change", async function() {
+  const file = this.files && this.files[0];
+  this.value = "";
+  if (!file) return;
+  try {
+    const backup = JSON.parse(await file.text());
+    const notes = Array.isArray(backup) ? backup : backup.notes;
+    if (!Array.isArray(notes)) throw new Error("올바른 익주 메모 백업 파일이 아닙니다.");
+    if (!confirm(notes.length + "개의 메모를 복원합니다. 같은 ID의 메모는 덮어쓸 수 있습니다. 계속할까요?")) return;
+    let restored = 0;
+    for (const note of notes) {
+      const response = await apiFetch("/api/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: note.id,
+          title: note.title || "",
+          text: note.text || "",
+          color: note.color || "yellow"
+        })
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error((data.error || "복원 실패") + " (복원 완료 " + restored + "개)");
+      }
+      restored++;
+    }
+    await loadNotes();
+    alert(restored + "개의 메모를 복원했습니다.");
+  } catch (error) {
+    console.error(error);
+    alert("백업 복원 실패: " + error.message);
+  }
+});
+
 async function saveNote() {
 
   const title =
@@ -2970,12 +3097,15 @@ async function saveNote() {
     return;
   }
 
+  localStorage.removeItem(NOTE_DRAFT_KEY);
   clearNoteComposer();
 
   await loadNotes();
 }
 
 function clearNoteComposer() {
+  localStorage.removeItem(NOTE_DRAFT_KEY);
+  document.getElementById("noteAutosaveStatus").textContent = "작성 중인 메모 자동저장 준비됨";
 
   editingNoteId =
     null;
