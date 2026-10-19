@@ -3065,6 +3065,7 @@ function renderNoteImagePreview() {
       noteImageKeys.splice(index, 1);
       renderNoteImagePreview();
       saveNoteDraft();
+      scheduleNoteServerAutosave();
     };
     item.append(img, remove);
     preview.appendChild(item);
@@ -3096,6 +3097,7 @@ document.getElementById("noteImageInput").addEventListener("change", async funct
       noteImageKeys.push(data.key);
       renderNoteImagePreview();
       saveNoteDraft();
+      scheduleNoteServerAutosave();
     } catch (error) {
       alert(file.name + " 업로드 실패: " + error.message);
     }
@@ -3150,10 +3152,16 @@ function restoreNoteDraft() {
 }
 
 [noteTitle, noteText].forEach(function(field) {
-  field.addEventListener("input", saveNoteDraft);
+  field.addEventListener("input", function() {
+    saveNoteDraft();
+    scheduleNoteServerAutosave();
+  });
 });
 document.querySelectorAll(".colorDot").forEach(function(dot) {
-  dot.addEventListener("click", saveNoteDraft);
+  dot.addEventListener("click", function() {
+    saveNoteDraft();
+    scheduleNoteServerAutosave();
+  });
 });
 noteDraftAutosaveTimer = setInterval(saveNoteDraft, 60 * 1000);
 restoreNoteDraft();
@@ -3222,58 +3230,139 @@ document.getElementById("restoreNotesInput").addEventListener("change", async fu
   }
 });
 
+let noteAutoSaveTimer = null;
+let noteAutoSaveInProgress = false;
+let noteAutoSaveQueued = false;
+let noteAutoSaveRevision = 0;
+
+function scheduleNoteServerAutosave() {
+  noteAutoSaveRevision++;
+  if (noteAutoSaveTimer) clearTimeout(noteAutoSaveTimer);
+  noteAutoSaveTimer = setTimeout(function() {
+    noteAutoSaveTimer = null;
+    autoSaveNoteToServer();
+  }, 1500);
+  const status = document.getElementById("noteAutosaveStatus");
+  if (status && (noteTitle.value.trim() || noteText.value.trim() || noteImageKeys.length)) {
+    status.textContent = "입력 중 · 잠시 후 자동 저장";
+  }
+}
+
+async function autoSaveNoteToServer() {
+  if (noteAutoSaveInProgress) {
+    noteAutoSaveQueued = true;
+    return;
+  }
+
+  const title = noteTitle.value.trim();
+  const text = noteText.value.trim();
+  if (!title && !text) return;
+
+  const revision = noteAutoSaveRevision;
+  const snapshotId = editingNoteId;
+  const snapshotTitle = title;
+  const snapshotText = textWithNoteImageKeys(text, noteImageKeys.slice());
+  const snapshotColor = selectedColor;
+
+  noteAutoSaveInProgress = true;
+  noteAutoSaveQueued = false;
+  const status = document.getElementById("noteAutosaveStatus");
+  if (status) status.textContent = "Cloudflare에 자동 저장 중…";
+
+  try {
+    const response = await apiFetch("/api/notes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: snapshotId,
+        title: snapshotTitle,
+        text: snapshotText,
+        color: snapshotColor
+      })
+    });
+    const data = await response.json();
+    if (!response.ok || !data.note || !data.note.id) {
+      throw new Error(data.error || "자동 저장 실패");
+    }
+
+    // 새 메모는 첫 저장 때 발급된 ID를 기억해 이후 자동 저장이 중복 메모를 만들지 않게 합니다.
+    if (editingNoteId === snapshotId) editingNoteId = data.note.id;
+
+    if (revision === noteAutoSaveRevision &&
+        noteTitle.value.trim() === snapshotTitle &&
+        noteText.value.trim() === text &&
+        selectedColor === snapshotColor &&
+        JSON.stringify(noteImageKeys) === JSON.stringify(extractNoteImageKeys(snapshotText))) {
+      localStorage.removeItem(NOTE_DRAFT_KEY);
+      if (status) {
+        status.textContent = "✓ 서버 자동 저장 완료 · " +
+          new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+      }
+      await loadNotes();
+    } else {
+      noteAutoSaveQueued = true;
+    }
+  } catch (error) {
+    console.error("메모 서버 자동저장 실패", error);
+    if (status) status.textContent = "⚠ 서버 자동 저장 실패 · 작성 내용은 브라우저에 임시 보관됨";
+    saveNoteDraft();
+  } finally {
+    noteAutoSaveInProgress = false;
+    if (noteAutoSaveQueued || revision !== noteAutoSaveRevision) {
+      noteAutoSaveQueued = false;
+      if (noteAutoSaveTimer) clearTimeout(noteAutoSaveTimer);
+      noteAutoSaveTimer = setTimeout(function() {
+        noteAutoSaveTimer = null;
+        autoSaveNoteToServer();
+      }, 400);
+    }
+  }
+}
+
 async function saveNote() {
+  if (noteAutoSaveTimer) {
+    clearTimeout(noteAutoSaveTimer);
+    noteAutoSaveTimer = null;
+  }
 
-  const title =
-    noteTitle.value.trim();
-
-  const text =
-    noteText.value.trim();
-
+  const title = noteTitle.value.trim();
+  const text = noteText.value.trim();
   if (!title && !text) {
     alert("사진만 저장할 수는 없어요. 제목이나 메모 내용을 입력해 주세요.");
     return;
   }
 
-  const response =
-    await apiFetch(
-      "/api/notes",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type":
-            "application/json"
-        },
-        body:
-          JSON.stringify({
-            id:
-              editingNoteId,
-            title: title,
-            text: textWithNoteImageKeys(text, noteImageKeys),
-            color:
-              selectedColor
-          })
-      }
-    );
+  try {
+    const response = await apiFetch("/api/notes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: editingNoteId,
+        title: title,
+        text: textWithNoteImageKeys(text, noteImageKeys),
+        color: selectedColor
+      })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      alert(data.error || "메모 저장 실패");
+      return;
+    }
 
-  const data =
-    await response.json();
-
-  if (!response.ok) {
-    alert(
-      data.error ||
-      "메모 저장 실패"
-    );
-    return;
+    localStorage.removeItem(NOTE_DRAFT_KEY);
+    clearNoteComposer();
+    await loadNotes();
+  } catch (error) {
+    console.error("메모 저장 실패", error);
+    alert("메모 저장에 실패했어요. 인터넷 연결을 확인하고 다시 시도해 주세요.");
   }
-
-  localStorage.removeItem(NOTE_DRAFT_KEY);
-  clearNoteComposer();
-
-  await loadNotes();
 }
 
 function clearNoteComposer() {
+  if (noteAutoSaveTimer) clearTimeout(noteAutoSaveTimer);
+  noteAutoSaveTimer = null;
+  noteAutoSaveQueued = false;
+  noteAutoSaveRevision++;
   localStorage.removeItem(NOTE_DRAFT_KEY);
   document.getElementById("noteAutosaveStatus").textContent = "작성 중인 메모 자동저장 준비됨";
 
