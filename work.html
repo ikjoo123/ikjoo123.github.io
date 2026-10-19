@@ -3009,17 +3009,17 @@ let noteImageKeys = [];
 let noteImagePreviewUrls = [];
 
 function extractNoteImageKeys(value) {
-  const match = String(value || "").match(/\\n?\\[\\[JU_NOTE_IMAGES:([^\\]]*)\\]\\]/);
+  const match = String(value || "").match(/\n?\[\[JU_NOTE_IMAGES:([^\]]*)\]\]/);
   return match && match[1] ? match[1].split("|").filter(Boolean) : [];
 }
 
 function visibleNoteText(value) {
-  return String(value || "").replace(/\\n?\\[\\[JU_NOTE_IMAGES:[^\\]]*\\]\\]/g, "").trim();
+  return String(value || "").replace(/\n?\[\[JU_NOTE_IMAGES:[^\]]*\]\]/g, "").trim();
 }
 
 function textWithNoteImageKeys(value, keys) {
   const clean = visibleNoteText(value);
-  return keys.length ? clean + "\\n\\n[[JU_NOTE_IMAGES:" + keys.join("|") + "]]" : clean;
+  return keys.length ? clean + "\n\n[[JU_NOTE_IMAGES:" + keys.join("|") + "]]" : clean;
 }
 
 async function loadNoteImage(img, key) {
