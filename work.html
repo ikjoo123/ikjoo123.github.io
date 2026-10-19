@@ -320,6 +320,65 @@ main {
   padding: 14px 16px;
 }
 
+.noteImageToolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 0 16px 12px;
+}
+.noteImageToolbar button {
+  border: 1px solid #ddd;
+  background: #fff;
+  padding: 8px 11px;
+  border-radius: 8px;
+}
+.noteImageHint { font-size: 12px; color: #777; }
+.noteImagePreview {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 0 16px 12px;
+}
+.noteImageItem {
+  position: relative;
+  width: 96px;
+  height: 96px;
+}
+.noteImageItem img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  cursor: zoom-in;
+}
+.noteImageRemove {
+  position: absolute;
+  right: -6px;
+  top: -6px;
+  border: 0;
+  border-radius: 50%;
+  background: #222;
+  color: white;
+  width: 24px;
+  height: 24px;
+}
+.noteCardImages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.noteCardImages img {
+  max-width: 100%;
+  width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+  background: rgba(255,255,255,.45);
+  border-radius: 8px;
+  cursor: zoom-in;
+}
 .notesComposer textarea {
   height: 180px;
   min-height: 180px;
@@ -775,6 +834,13 @@ main {
       id="noteText"
       placeholder="메모 작성..."
     ></textarea>
+
+    <div class="noteImageToolbar">
+      <button id="addNoteImages" type="button">🖼️ 사진 첨부</button>
+      <span class="noteImageHint">사진을 여러 장 첨부하고 메모와 함께 저장할 수 있어요.</span>
+      <input id="noteImageInput" type="file" accept="image/*" multiple hidden>
+    </div>
+    <div id="noteImagePreview" class="noteImagePreview"></div>
 
     <div class="noteComposerBottom">
 
@@ -2939,17 +3005,114 @@ document.getElementById(
 
 const NOTE_DRAFT_KEY = "ju_notes_draft_v1";
 let noteDraftAutosaveTimer = null;
+let noteImageKeys = [];
+let noteImagePreviewUrls = [];
+
+function extractNoteImageKeys(value) {
+  const match = String(value || "").match(/\\n?\\[\\[JU_NOTE_IMAGES:([^\\]]*)\\]\\]/);
+  return match && match[1] ? match[1].split("|").filter(Boolean) : [];
+}
+
+function visibleNoteText(value) {
+  return String(value || "").replace(/\\n?\\[\\[JU_NOTE_IMAGES:[^\\]]*\\]\\]/g, "").trim();
+}
+
+function textWithNoteImageKeys(value, keys) {
+  const clean = visibleNoteText(value);
+  return keys.length ? clean + "\\n\\n[[JU_NOTE_IMAGES:" + keys.join("|") + "]]" : clean;
+}
+
+async function loadNoteImage(img, key) {
+  try {
+    const response = await apiFetch("/api/download?key=" + encodeURIComponent(key));
+    if (!response.ok) throw new Error("이미지 불러오기 실패");
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    notePreviewObjectUrls.add(objectUrl);
+    img.src = objectUrl;
+  } catch (error) {
+    img.alt = "이미지를 불러오지 못했습니다";
+  }
+}
+
+const notePreviewObjectUrls = new Set();
+
+function revokeNotePreviewUrls() {
+  notePreviewObjectUrls.forEach(url => URL.revokeObjectURL(url));
+  notePreviewObjectUrls.clear();
+}
+
+function renderNoteImagePreview() {
+  const preview = document.getElementById("noteImagePreview");
+  preview.innerHTML = "";
+  noteImagePreviewUrls.forEach(url => URL.revokeObjectURL(url));
+  noteImagePreviewUrls = [];
+
+  noteImageKeys.forEach((key, index) => {
+    const item = document.createElement("div");
+    item.className = "noteImageItem";
+    const img = document.createElement("img");
+    img.alt = "첨부 사진 " + (index + 1);
+    img.title = "눌러서 크게 보기";
+    loadNoteImage(img, key);
+    img.onclick = () => window.open(img.src, "_blank", "noopener");
+    const remove = document.createElement("button");
+    remove.className = "noteImageRemove";
+    remove.type = "button";
+    remove.textContent = "×";
+    remove.title = "사진 첨부에서 제거";
+    remove.onclick = () => {
+      noteImageKeys.splice(index, 1);
+      renderNoteImagePreview();
+      saveNoteDraft();
+    };
+    item.append(img, remove);
+    preview.appendChild(item);
+  });
+}
+
+document.getElementById("addNoteImages").onclick = () => document.getElementById("noteImageInput").click();
+
+document.getElementById("noteImageInput").addEventListener("change", async function() {
+  const files = Array.from(this.files || []);
+  this.value = "";
+  if (!files.length) return;
+
+  for (const file of files) {
+    if (!file.type.startsWith("image/")) continue;
+    if (file.size > 15 * 1024 * 1024) {
+      alert(file.name + "은 15MB를 초과해 첨부하지 않았습니다.");
+      continue;
+    }
+    const form = new FormData();
+    form.append("file", file);
+    form.append("folder", "__note-images__");
+    form.append("relativePath", file.name);
+    form.append("confirmedLarge", "false");
+    try {
+      const response = await apiFetch("/api/upload", { method: "POST", body: form });
+      const data = await response.json();
+      if (!response.ok || !data.key) throw new Error(data.error || "사진 업로드 실패");
+      noteImageKeys.push(data.key);
+      renderNoteImagePreview();
+      saveNoteDraft();
+    } catch (error) {
+      alert(file.name + " 업로드 실패: " + error.message);
+    }
+  }
+});
 
 function saveNoteDraft() {
   const draft = {
     title: noteTitle.value,
     text: noteText.value,
     color: selectedColor,
+    imageKeys: noteImageKeys.slice(),
     editingNoteId: editingNoteId,
     savedAt: new Date().toISOString()
   };
   try {
-    if (draft.title.trim() || draft.text.trim()) {
+    if (draft.title.trim() || draft.text.trim() || (draft.imageKeys && draft.imageKeys.length)) {
       localStorage.setItem(NOTE_DRAFT_KEY, JSON.stringify(draft));
       document.getElementById("noteAutosaveStatus").textContent =
         "작성 중인 메모 자동저장됨 · " +
@@ -2969,11 +3132,13 @@ function restoreNoteDraft() {
     const raw = localStorage.getItem(NOTE_DRAFT_KEY);
     if (!raw) return;
     const draft = JSON.parse(raw);
-    if (!draft || (!draft.title && !draft.text)) return;
+    if (!draft || (!draft.title && !draft.text && !(draft.imageKeys && draft.imageKeys.length))) return;
     if (!confirm("이전에 작성하다 만 메모가 있어요. 복구할까요?")) return;
     editingNoteId = draft.editingNoteId || null;
     noteTitle.value = draft.title || "";
-    noteText.value = draft.text || "";
+    noteText.value = visibleNoteText(draft.text || "");
+    noteImageKeys = Array.isArray(draft.imageKeys) ? draft.imageKeys.slice() : extractNoteImageKeys(draft.text || "");
+    renderNoteImagePreview();
     selectedColor = draft.color || "yellow";
     document.querySelectorAll(".colorDot").forEach(function(dot) {
       dot.classList.toggle("selected", dot.dataset.color === selectedColor);
@@ -3066,6 +3231,7 @@ async function saveNote() {
     noteText.value.trim();
 
   if (!title && !text) {
+    alert("사진만 저장할 수는 없어요. 제목이나 메모 내용을 입력해 주세요.");
     return;
   }
 
@@ -3083,7 +3249,7 @@ async function saveNote() {
             id:
               editingNoteId,
             title: title,
-            text: text,
+            text: textWithNoteImageKeys(text, noteImageKeys),
             color:
               selectedColor
           })
@@ -3116,6 +3282,8 @@ function clearNoteComposer() {
 
   noteTitle.value = "";
   noteText.value = "";
+  noteImageKeys = [];
+  renderNoteImagePreview();
 
   notesComposer.classList.remove(
   "expanded"
@@ -3228,7 +3396,25 @@ function renderNotes(
         "noteCardText";
 
       text.textContent =
-        note.text || "";
+        visibleNoteText(note.text || "");
+
+      const imageKeys = extractNoteImageKeys(note.text || "");
+      if (imageKeys.length) {
+        const images = document.createElement("div");
+        images.className = "noteCardImages";
+        imageKeys.forEach(function(key, index) {
+          const img = document.createElement("img");
+          img.alt = "메모 첨부 사진 " + (index + 1);
+          img.loading = "lazy";
+          img.onclick = function(event) {
+            event.stopPropagation();
+            if (img.src) window.open(img.src, "_blank", "noopener");
+          };
+          loadNoteImage(img, key);
+          images.appendChild(img);
+        });
+        card.appendChild(images);
+      }
 
       const menu =
         document.createElement(
@@ -3354,7 +3540,9 @@ function editNote(note) {
     note.title || "";
 
   noteText.value =
-    note.text || "";
+    visibleNoteText(note.text || "");
+  noteImageKeys = extractNoteImageKeys(note.text || "");
+  renderNoteImagePreview();
 
   selectedColor =
     note.color ||
