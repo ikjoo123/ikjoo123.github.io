@@ -710,9 +710,13 @@ main {
       📁 새 폴더
     </button>
 
+    <button id="selectDownloadButton">
+      ⬇️ 선택 파일 일괄 다운로드
+    </button>
+
     <button id="selectDeleteButton">
-  ☑️ 여러 파일 삭제
-</button>
+      ☑️ 여러 파일 삭제
+    </button>
   
     <input
       id="fileInput"
@@ -3798,6 +3802,45 @@ document.getElementById("eventDelete").onclick = async function() {
   closeEventForm();
   await loadCalendarEvents();
   renderCalendar();
+};
+
+/*
+ * MULTI DOWNLOAD FILES
+ */
+
+document.getElementById(
+  "selectDownloadButton"
+).onclick = async function() {
+  const keys = Array.from(selectedFileKeys);
+
+  if (keys.length === 0) {
+    alert("다운로드할 파일을 선택하세요.");
+    return;
+  }
+
+  if (!confirm("선택한 " + keys.length + "개 파일을 순서대로 다운로드할까요?")) {
+    return;
+  }
+
+  const button = this;
+  const originalText = button.textContent;
+  button.disabled = true;
+
+  try {
+    for (let i = 0; i < keys.length; i++) {
+      button.textContent = "다운로드 중 " + (i + 1) + "/" + keys.length;
+      await downloadFile(keys[i]);
+
+      // 브라우저가 연속 다운로드를 처리할 시간을 조금 줍니다.
+      if (i < keys.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 350));
+      }
+    }
+    alert(keys.length + "개 파일의 다운로드 요청을 완료했습니다. 브라우저에서 여러 파일 다운로드를 허용해 주세요.");
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText;
+  }
 };
 
 /*
